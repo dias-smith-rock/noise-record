@@ -16,26 +16,32 @@ enum WeightingType: String, CaseIterable, Codable, Sendable {
 }
 
 struct DeviceCalibrationStore: Sendable {
-    private static let userOffsetKey = "calibration.userOffset"
+    private static let userAdjustmentKey = "calibration.userAdjustment"
     private static let weightingKey = "settings.weighting"
+    private static let highSensitivityKey = "settings.highSensitivityMode"
 
-    static let defaultOffset: Float = 100.0
+    /// Baseline offset for quiet-room display ~30–40 dBA in measurement mode.
+    static let defaultOffset: Float = 115.0
 
     private static let deviceLookup: [String: Float] = [
-        "iPhone16,1": 102.0,
-        "iPhone16,2": 102.0,
-        "iPhone15,4": 101.5,
-        "iPhone15,5": 101.5,
-        "iPhone15,2": 101.0,
-        "iPhone15,3": 101.0,
-        "iPhone14,7": 100.5,
-        "iPhone14,8": 100.5,
-        "iPhone14,2": 100.0,
-        "iPhone14,3": 100.0,
-        "iPhone13,2": 99.5,
-        "iPhone13,3": 99.5,
-        "iPad13,18": 98.0,
-        "iPad13,19": 98.0,
+        "iPhone17,1": 118.0,
+        "iPhone17,2": 118.0,
+        "iPhone17,3": 118.0,
+        "iPhone17,4": 118.0,
+        "iPhone16,1": 118.0,
+        "iPhone16,2": 118.0,
+        "iPhone15,4": 116.5,
+        "iPhone15,5": 116.5,
+        "iPhone15,2": 116.0,
+        "iPhone15,3": 116.0,
+        "iPhone14,7": 115.5,
+        "iPhone14,8": 115.5,
+        "iPhone14,2": 115.0,
+        "iPhone14,3": 115.0,
+        "iPhone13,2": 115.0,
+        "iPhone13,3": 115.0,
+        "iPad13,18": 115.0,
+        "iPad13,19": 115.0,
     ]
 
     static var deviceModelIdentifier: String {
@@ -48,26 +54,34 @@ struct DeviceCalibrationStore: Sendable {
         }
     }
 
-    static var lookupOffset: Float {
-        deviceLookup[deviceModelIdentifier] ?? defaultOffset
+    /// Device hardware offset (115–118 dB range).
+    static var deviceOffset: Float {
+        if let mapped = deviceLookup[deviceModelIdentifier] {
+            return mapped
+        }
+        let model = deviceModelIdentifier
+        if model.hasPrefix("iPhone16") || model.hasPrefix("iPhone17") {
+            return 118.0
+        }
+        return defaultOffset
     }
 
-    static var userOffset: Float? {
+    /// Legacy alias.
+    static var lookupOffset: Float { deviceOffset }
+
+    /// User fine-tuning added on top of device offset.
+    static var userAdjustment: Float {
         get {
-            let value = UserDefaults.standard.object(forKey: userOffsetKey) as? Float
-            return value
+            UserDefaults.standard.object(forKey: userAdjustmentKey) as? Float ?? 0
         }
         set {
-            if let newValue {
-                UserDefaults.standard.set(newValue, forKey: userOffsetKey)
-            } else {
-                UserDefaults.standard.removeObject(forKey: userOffsetKey)
-            }
+            UserDefaults.standard.set(newValue, forKey: userAdjustmentKey)
         }
     }
 
+    /// dB_SPL = 20·log10(RMS) + deviceOffset + userAdjustment
     static var totalOffset: Float {
-        (userOffset ?? lookupOffset)
+        deviceOffset + userAdjustment
     }
 
     static var weightingType: WeightingType {
@@ -81,12 +95,16 @@ struct DeviceCalibrationStore: Sendable {
         }
     }
 
-    /// Calibrate against a reference SPL meter reading (e.g. 94 dB @ 1 kHz).
+    static var isHighSensitivityMode: Bool {
+        get { UserDefaults.standard.bool(forKey: highSensitivityKey) }
+        set { UserDefaults.standard.set(newValue, forKey: highSensitivityKey) }
+    }
+
     static func calibrate(referenceSPL: Float, measuredDBFS: Float) {
-        userOffset = referenceSPL - measuredDBFS
+        userAdjustment = referenceSPL - measuredDBFS - deviceOffset
     }
 
     static func resetCalibration() {
-        userOffset = nil
+        userAdjustment = 0
     }
 }

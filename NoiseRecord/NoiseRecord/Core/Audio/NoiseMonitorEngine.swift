@@ -20,6 +20,7 @@ final class NoiseMonitorEngine {
     var errorMessage: String?
 
     var currentDB: Float = 0
+    var lastDBFS: Float = 0
     var maxDB: Float = 0
     var minDB: Float = 120
     var averageDB: Float = 0
@@ -30,6 +31,16 @@ final class NoiseMonitorEngine {
     var latestSpectrum: FFTSpectrum?
     var latestNoiseLabel: String?
     var latestNoiseConfidence: Double = 0
+
+    /// When enabled, bypasses A/C weighting and measures raw PCM (Z-weighting).
+    var isHighSensitivityMode: Bool = DeviceCalibrationStore.isHighSensitivityMode {
+        didSet {
+            DeviceCalibrationStore.isHighSensitivityMode = isHighSensitivityMode
+            if isMonitoring {
+                restartPipeline()
+            }
+        }
+    }
 
     var highThreshold: Float = 55 {
         didSet { voiceRecorder.highThreshold = highThreshold }
@@ -47,7 +58,7 @@ final class NoiseMonitorEngine {
     private var weightingFilter: AudioWeightingFilter?
     private var fftAnalyzer: FFTAnalyzer?
     private var leqCalculator = LeqCalculator()
-    private var slidingAverage = SlidingAverage(windowSize: 20)
+    private var slidingAverage = SlidingAverage(windowSize: 8)
     private var sessionSumDB: Float = 0
     private var filteredScratch: [Float] = []
     private var fftFrameAccumulator: [Float] = []
@@ -59,12 +70,18 @@ final class NoiseMonitorEngine {
 
     var onRecordingFinished: ((RecordingFinishedEvent) -> Void)?
 
+    /// Effective weighting applied to the audio pipeline.
+    var effectiveWeighting: WeightingType {
+        isHighSensitivityMode ? .z : weightingType
+    }
+
     init() {
         highThreshold = UserDefaults.standard.object(forKey: "settings.highThreshold") as? Float ?? 55
         lowThreshold = UserDefaults.standard.object(forKey: "settings.lowThreshold") as? Float ?? 48
         voiceActivatedEnabled = UserDefaults.standard.bool(forKey: "settings.voiceActivated")
         backgroundMonitoringEnabled = UserDefaults.standard.bool(forKey: "settings.backgroundMonitoring")
         aiClassificationEnabled = UserDefaults.standard.bool(forKey: "settings.aiClassification")
+        isHighSensitivityMode = DeviceCalibrationStore.isHighSensitivityMode
 
         voiceRecorder.highThreshold = highThreshold
         voiceRecorder.lowThreshold = lowThreshold
@@ -118,19 +135,21 @@ final class NoiseMonitorEngine {
 
     func resetStatistics() {
         currentDB = 0
+        lastDBFS = 0
         maxDB = 0
         minDB = 120
         averageDB = 0
         leq = 0
         history.removeAll()
         leqCalculator.reset()
-        slidingAverage = SlidingAverage(windowSize: 20)
+        slidingAverage = SlidingAverage(windowSize: 8)
         sampleCount = 0
         sessionSumDB = 0
         fftFrameAccumulator.removeAll()
     }
 
     func updateWeighting(_ type: WeightingType) {
+        guard !isHighSensitivityMode else { return }
         weightingType = type
         DeviceCalibrationStore.weightingType = type
         weightingFilter?.updateWeighting(type)
@@ -144,14 +163,22 @@ final class NoiseMonitorEngine {
         UserDefaults.standard.set(aiClassificationEnabled, forKey: "settings.aiClassification")
     }
 
+    private func restartPipeline() {
+        guard isMonitoring else { return }
+        audioEngine.inputNode.removeTap(onBus: 0)
+        setupAudioPipeline()
+    }
+
     private func setupAudioPipeline() {
         let inputNode = audioEngine.inputNode
         let format = inputNode.outputFormat(forBus: 0)
         let sampleRate = format.sampleRate
+        let weighting = effectiveWeighting
 
-        weightingFilter = AudioWeightingFilter(type: weightingType, sampleRate: sampleRate)
+        weightingFilter = AudioWeightingFilter(type: weighting, sampleRate: sampleRate)
         fftAnalyzer = FFTAnalyzer(bufferSize: 2048, sampleRate: sampleRate)
         voiceRecorder.configure(sampleRate: sampleRate)
+        noiseClassifier = nil
 
         if aiClassificationEnabled {
             let classifier = NoiseClassifierManager()
@@ -168,7 +195,11 @@ final class NoiseMonitorEngine {
         }
 
         inputNode.removeTap(onBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, time in
+        inputNode.installTap(
+            onBus: 0,
+            bufferSize: SPLCalculator.tapBufferSize,
+            format: format
+        ) { [weak self] buffer, time in
             self?.processingQueue.async {
                 self?.processBuffer(buffer, time: time)
             }
@@ -184,49 +215,60 @@ final class NoiseMonitorEngine {
             filteredScratch = [Float](repeating: 0, count: frameLength)
         }
 
-        weightingFilter?.process(
-            input: channelData,
-            output: &filteredScratch,
-            frameLength: frameLength
-        )
-
-        var rms: Float = 0
-        filteredScratch.withUnsafeBufferPointer { ptr in
-            vDSP_rmsqv(ptr.baseAddress!, 1, &rms, vDSP_Length(frameLength))
-        }
-        if rms < 0.000_01 { rms = 0.000_01 }
-
-        let dbfs = 20 * log10(rms)
-        let dbSPL = dbfs + DeviceCalibrationStore.totalOffset
-        let smoothed = slidingAverage.add(dbSPL)
-
-        leqCalculator.addSample(dbSPL: dbSPL)
-        sampleCount += 1
-        sessionSumDB += smoothed
-
-        if voiceActivatedEnabled {
-            let shouldRecord: Bool
-            if aiClassificationEnabled && !aiFilterLabels.isEmpty {
-                shouldRecord = cachedNoiseLabel.map { aiFilterLabels.contains($0) } ?? false
-            } else {
-                shouldRecord = true
+        if isHighSensitivityMode {
+            for i in 0..<frameLength {
+                filteredScratch[i] = channelData[i]
             }
-            if shouldRecord {
-                let format = buffer.format
-                filteredScratch.withUnsafeBufferPointer { ptr in
+        } else {
+            weightingFilter?.process(
+                input: channelData,
+                output: &filteredScratch,
+                frameLength: frameLength
+            )
+        }
+
+        let offset = DeviceCalibrationStore.totalOffset
+        var dbSPL: Float = 0
+        var dbfs: Float = 0
+        var smoothed: Float = 0
+
+        filteredScratch.withUnsafeBufferPointer { ptr in
+            guard let base = ptr.baseAddress else { return }
+            let measurement = SPLCalculator.spl(
+                from: base,
+                frameLength: frameLength,
+                calibrationOffset: offset
+            )
+            dbSPL = measurement.dbSPL
+            dbfs = measurement.dbfs
+            smoothed = slidingAverage.add(dbSPL)
+
+            if voiceActivatedEnabled {
+                let shouldRecord: Bool
+                if aiClassificationEnabled && !aiFilterLabels.isEmpty {
+                    shouldRecord = cachedNoiseLabel.map { aiFilterLabels.contains($0) } ?? false
+                } else {
+                    shouldRecord = true
+                }
+                if shouldRecord {
                     voiceRecorder.process(
-                        filteredSamples: ptr.baseAddress!,
+                        filteredSamples: base,
                         frameLength: frameLength,
                         dbSPL: dbSPL,
-                        format: format
+                        format: buffer.format
                     )
                 }
             }
         }
 
+        leqCalculator.addSample(dbSPL: dbSPL)
+        sampleCount += 1
+        sessionSumDB += smoothed
+
         noiseClassifier?.append(buffer: buffer, at: time)
 
         fftFrameAccumulator.append(contentsOf: filteredScratch.prefix(frameLength))
+
         let fftSize = 2048
         var spectrum: FFTSpectrum?
         if fftFrameAccumulator.count >= fftSize {
@@ -240,20 +282,21 @@ final class NoiseMonitorEngine {
         }
 
         let now = Date()
-        guard now.timeIntervalSince(lastUIUpdate) >= 0.05 else { return }
+        guard now.timeIntervalSince(lastUIUpdate) >= 0.02 else { return }
         lastUIUpdate = now
 
-        let snapshotDB = dbSPL
         let snapshotSmoothed = smoothed
         let snapshotLeq = leqCalculator.leq
-        let snapshotMax = max(maxDB, snapshotDB)
-        let snapshotMin = min(minDB, snapshotDB)
+        let snapshotMax = max(maxDB, snapshotSmoothed)
+        let snapshotMin = min(minDB, snapshotSmoothed)
         let snapshotAvg = sampleCount > 0 ? sessionSumDB / Float(sampleCount) : snapshotSmoothed
         let state = voiceRecorder.state
         let spectrumCopy = spectrum
+        let snapshotDBFS = dbfs
 
         Task { @MainActor in
-            self.currentDB = snapshotDB
+            self.lastDBFS = snapshotDBFS
+            self.currentDB = snapshotSmoothed
             self.maxDB = snapshotMax
             self.minDB = snapshotMin
             self.averageDB = snapshotAvg
@@ -262,7 +305,7 @@ final class NoiseMonitorEngine {
             if let spectrumCopy {
                 self.latestSpectrum = spectrumCopy
             }
-            self.history.append(snapshotDB)
+            self.history.append(snapshotSmoothed)
             if self.history.count > 300 {
                 self.history.removeFirst(self.history.count - 300)
             }

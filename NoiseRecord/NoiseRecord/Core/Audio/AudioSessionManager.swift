@@ -23,15 +23,20 @@ struct AudioSessionManager {
         }
     }
 
+    /// Strict measurement session: bypasses system AGC, noise suppression, and echo cancellation.
+    /// Never use `.voiceChat` / `.videoChat` categories here.
     static func configureForMeasurement(backgroundEnabled: Bool = false) throws {
         let session = AVAudioSession.sharedInstance()
-        var options: AVAudioSession.CategoryOptions = [.allowBluetooth]
+        var options: AVAudioSession.CategoryOptions = [
+            .allowBluetooth,
+            .defaultToSpeaker,
+        ]
         if backgroundEnabled {
             options.insert(.mixWithOthers)
         }
         do {
             try session.setCategory(.playAndRecord, mode: .measurement, options: options)
-            try session.setActive(true, options: .notifyOthersOnDeactivation)
+            try session.setActive(true)
         } catch {
             throw AudioSessionError.configurationFailed(error.localizedDescription)
         }

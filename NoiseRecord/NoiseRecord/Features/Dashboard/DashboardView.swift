@@ -13,6 +13,33 @@ struct DashboardView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
+                HStack(spacing: 12) {
+                    Button(engine.isMonitoring ? "停止监测" : "开始监测") {
+                        Task {
+                            if engine.isMonitoring {
+                                engine.stopMonitoring()
+                            } else {
+                                await engine.requestPermissionAndStart()
+                            }
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(engine.isMonitoring ? .red : .accentColor)
+
+                    Toggle("高灵敏", isOn: $engine.isHighSensitivityMode)
+                        .toggleStyle(.button)
+                }
+
+                if engine.isHighSensitivityMode {
+                    Label("Z计权 · 低频高灵敏", systemImage: "waveform.badge.magnifyingglass")
+                        .font(.caption.bold())
+                        .foregroundStyle(.orange)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Color.orange.opacity(0.12))
+                        .clipShape(Capsule())
+                }
+
                 NoiseLevelGauge(db: engine.currentDB)
 
                 HStack(spacing: 12) {
@@ -49,23 +76,12 @@ struct DashboardView: View {
                         .frame(height: 100)
                 }
 
-                Text("参考级测量，非认证声级计，仅供参考。")
+                Text("测量模式 · 偏移 \(String(format: "%.0f", DeviceCalibrationStore.totalOffset)) dB · 非认证声级计")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                     .multilineTextAlignment(.center)
 
                 HStack(spacing: 12) {
-                    Button(engine.isMonitoring ? "停止监测" : "开始监测") {
-                        Task {
-                            if engine.isMonitoring {
-                                engine.stopMonitoring()
-                            } else {
-                                await engine.requestPermissionAndStart()
-                            }
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-
                     Button("生成报告") {
                         shareReport = SilenceRatingReport(
                             leq: engine.leq,

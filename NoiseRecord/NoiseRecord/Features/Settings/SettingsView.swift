@@ -8,6 +8,12 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section {
+                Toggle("高灵敏低频模式 (Z计权)", isOn: $engine.isHighSensitivityMode)
+            } footer: {
+                Text("开启后绕过 A 计权，直接测量原始 PCM，可捕捉远距离低频噪声（空调、管道、远处车流）。")
+            }
+
+            Section {
                 Picker("计权", selection: Binding(
                     get: { engine.weightingType },
                     set: { engine.updateWeighting($0) }
@@ -17,17 +23,21 @@ struct SettingsView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+                .disabled(engine.isHighSensitivityMode)
             } header: {
                 Text("计权类型")
             } footer: {
-                Text("A 计权适合常规环境；C 计权适合低频共振；Z 计权为无滤波物理声压。")
+                Text(engine.isHighSensitivityMode
+                     ? "高灵敏模式下固定使用 Z 计权（物理原声）。"
+                     : "A 计权适合常规环境；C 计权适合低频共振；Z 计权为无滤波物理声压。")
             }
 
             Section {
                 LabeledContent("设备型号", value: DeviceCalibrationStore.deviceModelIdentifier)
-                LabeledContent("查找表偏移", value: String(format: "%.1f dB", DeviceCalibrationStore.lookupOffset))
-                LabeledContent("用户偏移", value: userOffsetText)
-                LabeledContent("当前总偏移", value: String(format: "%.1f dB", DeviceCalibrationStore.totalOffset))
+                LabeledContent("设备偏移", value: String(format: "%.1f dB", DeviceCalibrationStore.deviceOffset))
+                LabeledContent("用户微调", value: String(format: "%+.1f dB", DeviceCalibrationStore.userAdjustment))
+                LabeledContent("总偏移量", value: String(format: "%.1f dB", DeviceCalibrationStore.totalOffset))
+                LabeledContent("RMS 下限", value: String(format: "%.0e", SPLCalculator.rmsFloor))
 
                 VStack(alignment: .leading) {
                     Text("参考声级：\(Int(calibrationReference)) dB")
@@ -35,8 +45,10 @@ struct SettingsView: View {
                 }
 
                 Button("使用当前读数校准") {
-                    let measuredDBFS = engine.currentDB - DeviceCalibrationStore.totalOffset
-                    DeviceCalibrationStore.calibrate(referenceSPL: calibrationReference, measuredDBFS: measuredDBFS)
+                    DeviceCalibrationStore.calibrate(
+                        referenceSPL: calibrationReference,
+                        measuredDBFS: engine.lastDBFS
+                    )
                     showCalibrationAlert = true
                 }
                 .disabled(!engine.isMonitoring)
@@ -47,7 +59,7 @@ struct SettingsView: View {
             } header: {
                 Text("设备校准")
             } footer: {
-                Text("配合专业声级计（如 1kHz @ 94dB）进行一次性校准，可提升绝对读数准确性。")
+                Text("测量模式偏移基准 115–118 dB，安静房间本底应稳定在 30–40 dB。可配合专业声级计进一步微调。")
             }
         }
         .navigationTitle("设置")
@@ -56,11 +68,4 @@ struct SettingsView: View {
         }
     }
 
-    private var userOffsetText: String {
-        if let offset = DeviceCalibrationStore.userOffset {
-            String(format: "%.1f dB", offset)
-        } else {
-            "未设置"
-        }
-    }
 }
