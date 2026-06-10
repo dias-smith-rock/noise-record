@@ -4,8 +4,8 @@ import Foundation
 final class NoiseDataBridge: @unchecked Sendable {
     private let lock = NSLock()
 
-    private var _decibelString = "0.0 dBA"
-    private var _gpsString = "Lat: —, Lon: —"
+    private var _decibelString = String(localized: "overlay.decibel.default")
+    private var _gpsString = String(localized: "overlay.gps.unavailable")
     private var _weightingLabel = "dBA"
 
     var decibelString: String {
@@ -32,12 +32,12 @@ final class NoiseDataBridge: @unchecked Sendable {
         if let latitude, let longitude {
             _gpsString = String(format: "Lat: %.4f, Lon: %.4f", latitude, longitude)
         } else {
-            _gpsString = "Lat: —, Lon: —"
+            _gpsString = String(localized: "overlay.gps.unavailable")
         }
         lock.unlock()
     }
 
     var overlayDecibelText: String {
-        "Noise: \(decibelString)"
+        String(format: String(localized: "overlay.decibel.prefix"), decibelString)
     }
 }

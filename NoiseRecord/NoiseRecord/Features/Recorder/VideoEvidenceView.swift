@@ -107,7 +107,7 @@ struct VideoEvidenceView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ProTabHeader(title: "Video", theme: theme)
+            ProTabHeader(title: L10n.videoTitle, theme: theme)
 
             ScrollView {
                 VStack(spacing: 20) {
@@ -136,8 +136,8 @@ struct VideoEvidenceView: View {
         .onChange(of: coordinator.locationProvider.latitude) { _, _ in
             coordinator.syncLocation()
         }
-        .alert("Error", isPresented: .constant(coordinator.errorMessage != nil)) {
-            Button("OK") { coordinator.errorMessage = nil }
+        .alert(L10n.errorTitle, isPresented: .constant(coordinator.errorMessage != nil)) {
+            Button(L10n.ok) { coordinator.errorMessage = nil }
         } message: {
             Text(coordinator.errorMessage ?? "")
         }
@@ -158,7 +158,7 @@ struct VideoEvidenceView: View {
             .clipShape(RoundedRectangle(cornerRadius: 16))
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .strokeBorder(theme.accent.opacity(0.35), lineWidth: 1)
+                    .strokeBorder(theme.surfaceBorder, lineWidth: 1)
             )
 
             if previewZoomFactor > 1.05 {
@@ -191,7 +191,7 @@ struct VideoEvidenceView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(coordinator.recorder.dataBridge.overlayDecibelText)
                     .font(.caption.bold())
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(theme.accent)
                 Text(Date().formatted(date: .numeric, time: .standard))
                     .font(.caption2)
                     .foregroundStyle(.white.opacity(0.9))
@@ -208,24 +208,24 @@ struct VideoEvidenceView: View {
     private var controlSection: some View {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
-                ProMetricCard(title: "Current dB", value: String(format: "%.1f", engine.currentDB), theme: theme)
-                ProMetricCard(title: "Clip peak", value: String(format: "%.0f", coordinator.peakDB), theme: theme)
+                ProMetricCard(title: L10n.videoCurrentDb, value: String(format: "%.1f", engine.currentDB), theme: theme)
+                ProMetricCard(title: L10n.videoClipPeak, value: String(format: "%.0f", coordinator.peakDB), theme: theme)
                 ProMetricCard(
-                    title: "GPS",
-                    value: coordinator.locationProvider.latitude != nil ? "Located" : "Pending",
+                    title: L10n.videoGPS,
+                    value: coordinator.locationProvider.latitude != nil ? L10n.videoGpsLocated : L10n.videoGpsPending,
                     theme: theme
                 )
             }
 
             if !engine.isMonitoring || !engine.isHighSensitivityMode {
-                Text("Recording starts high-sensitivity monitoring automatically; the dB overlay stays in sync with live readings.")
+                Text(L10n.videoAutoMonitoringHint)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
 
             if let savedVideoURL {
-                Label("Saved: \(savedVideoURL.lastPathComponent)", systemImage: "checkmark.circle.fill")
+                Label(L10n.videoSaved(savedVideoURL.lastPathComponent), systemImage: "checkmark.circle.fill")
                     .font(.caption)
                     .foregroundStyle(theme.accent)
                     .multilineTextAlignment(.center)
@@ -243,7 +243,7 @@ struct VideoEvidenceView: View {
                 }
             } label: {
                 Label(
-                    coordinator.isRecording ? "Stop & Save" : "Start Recording",
+                    coordinator.isRecording ? L10n.videoStopAndSave : L10n.videoStartRecording,
                     systemImage: coordinator.isRecording ? "stop.circle.fill" : "video.circle.fill"
                 )
                 .font(.headline)
@@ -259,10 +259,10 @@ struct VideoEvidenceView: View {
     private var tipsSection: some View {
         ProCard(theme: theme) {
             VStack(alignment: .leading, spacing: 8) {
-                Label("Watermark is burned into the video", systemImage: "checkmark.seal.fill")
+                Label(L10n.videoWatermarkTitle, systemImage: "checkmark.seal.fill")
                     .font(.subheadline.bold())
                     .foregroundStyle(theme.accent)
-                Text("Pinch to zoom (up to 5×); double-tap toggles 1× / 2×. Each frame includes live dB, millisecond timestamp, and GPS.")
+                Text(L10n.videoWatermarkBody)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -277,7 +277,7 @@ struct VideoEvidenceView: View {
 
         let ready = await engine.ensureMonitoringForVideoEvidence()
         guard ready else {
-            coordinator.errorMessage = engine.errorMessage ?? "Unable to start noise monitoring. Check microphone permission."
+            coordinator.errorMessage = engine.errorMessage ?? L10n.videoMonitoringStartFailed
             return
         }
 

@@ -6,13 +6,7 @@ enum WeightingType: String, CaseIterable, Codable, Sendable {
     case c = "C"
     case z = "Z"
 
-    var displayName: String {
-        switch self {
-        case .a: "dBA (A-weighted)"
-        case .c: "dBC (C-weighted)"
-        case .z: "dBZ (Z-weighted)"
-        }
-    }
+    var displayName: String { localizedDisplayName }
 }
 
 struct DeviceCalibrationStore: Sendable {

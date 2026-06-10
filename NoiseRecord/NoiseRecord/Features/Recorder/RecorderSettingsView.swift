@@ -18,7 +18,7 @@ struct RecorderSettingsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ProTabHeader(title: "Voice Recording", theme: theme)
+            ProTabHeader(title: L10n.recorderTitle, theme: theme)
 
             ScrollView {
                 VStack(spacing: 20) {
@@ -26,8 +26,8 @@ struct RecorderSettingsView: View {
 
                 ProCard(theme: theme) {
                     ProToggleRow(
-                        title: "Voice-activated recording",
-                        subtitle: "Record when level exceeds the start threshold; stop after falling below the stop threshold and a short delay.",
+                        title: L10n.recorderVoiceTitle,
+                        subtitle: L10n.recorderVoiceSubtitle,
                         isOn: $engine.voiceActivatedEnabled,
                         theme: theme,
                         icon: "record.circle"
@@ -43,8 +43,8 @@ struct RecorderSettingsView: View {
 
                 ProCard(theme: theme) {
                     ProToggleRow(
-                        title: "Background monitoring",
-                        subtitle: "Automatically starts monitoring before backgrounding; voice recording continues in background. Uses more battery.",
+                        title: L10n.recorderBackgroundTitle,
+                        subtitle: L10n.recorderBackgroundSubtitle,
                         isOn: $engine.backgroundMonitoringEnabled,
                         theme: theme,
                         icon: "moon.fill"
@@ -73,17 +73,17 @@ struct RecorderSettingsView: View {
         VStack(spacing: 14) {
             HStack(spacing: 12) {
                 ProMetricCard(
-                    title: "Start",
+                    title: L10n.recorderMetricStart,
                     value: "\(Int(engine.highThreshold))",
                     theme: theme
                 )
                 ProMetricCard(
-                    title: "Stop",
+                    title: L10n.recorderMetricStop,
                     value: "\(Int(engine.lowThreshold))",
                     theme: theme
                 )
                 ProMetricCard(
-                    title: "Current dB",
+                    title: L10n.recorderMetricCurrentDb,
                     value: String(format: "%.0f", engine.currentDB),
                     theme: theme
                 )
@@ -92,7 +92,7 @@ struct RecorderSettingsView: View {
             if engine.voiceActivatedEnabled {
                 ProRecordingStatusBadge(state: engine.recordingState, theme: theme)
             } else {
-                Text("Voice recording is off")
+                Text(L10n.recorderStatusOff)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -103,13 +103,13 @@ struct RecorderSettingsView: View {
         ProCard(theme: theme) {
             VStack(alignment: .leading, spacing: 18) {
                 ProSectionHeader(
-                    title: "Thresholds",
-                    subtitle: "Set stop 5–10 dB below start to avoid rapid on/off",
+                    title: L10n.recorderThresholdsTitle,
+                    subtitle: L10n.recorderThresholdsSubtitle,
                     theme: theme
                 )
 
                 ProSliderRow(
-                    title: "Start threshold",
+                    title: L10n.recorderThresholdStart,
                     value: $engine.highThreshold,
                     range: 30...90,
                     step: 1,
@@ -118,7 +118,7 @@ struct RecorderSettingsView: View {
                 .onChange(of: engine.highThreshold) { _, _ in engine.persistSettings() }
 
                 ProSliderRow(
-                    title: "Stop threshold",
+                    title: L10n.recorderThresholdStop,
                     value: $engine.lowThreshold,
                     range: 20...80,
                     step: 1,
@@ -129,7 +129,7 @@ struct RecorderSettingsView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "info.circle")
                         .foregroundStyle(theme.accent)
-                    Text("Thresholds use dB readings in the current mode (\(measurementMode.segmentLabel)).")
+                    Text(L10n.recorderThresholdModeHint(measurementMode.segmentLabel))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -140,8 +140,8 @@ struct RecorderSettingsView: View {
     private var aiCard: some View {
         ProCard(theme: theme) {
             ProToggleRow(
-                title: "AI noise classification",
-                subtitle: "Detect construction, barking, traffic, and more; optionally record only selected types.",
+                title: L10n.recorderAiTitle,
+                subtitle: L10n.recorderAiSubtitle,
                 isOn: $engine.aiClassificationEnabled,
                 theme: theme,
                 icon: "waveform.badge.magnifyingglass"
@@ -160,8 +160,8 @@ struct RecorderSettingsView: View {
         ProCard(theme: theme) {
             VStack(alignment: .leading, spacing: 14) {
                 ProSectionHeader(
-                    title: "Record only these types",
-                    subtitle: "Leave empty to record all sounds above threshold",
+                    title: L10n.recorderAiFilterTitle,
+                    subtitle: L10n.recorderAiFilterSubtitle,
                     theme: theme
                 )
 
@@ -184,7 +184,7 @@ struct RecorderSettingsView: View {
     }
 
     private var footerNote: some View {
-        Text("Voice recordings are saved in the Files tab under Voice.")
+        Text(L10n.recorderFooter)
             .font(.caption2)
             .foregroundStyle(.tertiary)
             .multilineTextAlignment(.center)
@@ -200,21 +200,7 @@ struct RecorderSettingsView: View {
     }
 
     private func displayAILabel(_ label: String) -> String {
-        switch label {
-        case "speech": "Speech"
-        case "music": "Music"
-        case "dog": "Dog bark"
-        case "cat": "Cat"
-        case "car": "Car"
-        case "engine": "Engine"
-        case "drill": "Drill"
-        case "hammer": "Hammer"
-        case "alarm": "Alarm"
-        case "siren": "Siren"
-        case "applause": "Applause"
-        case "laughter": "Laughter"
-        default: label.capitalized
-        }
+        L10n.aiLabel(label)
     }
 }
 

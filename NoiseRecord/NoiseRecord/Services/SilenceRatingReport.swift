@@ -7,23 +7,8 @@ enum SilenceGrade: String, CaseIterable, Sendable {
     case c = "C"
     case d = "D"
 
-    var title: String {
-        switch self {
-        case .a: "Excellent silence"
-        case .b: "Good"
-        case .c: "Fair"
-        case .d: "Noisy"
-        }
-    }
-
-    var description: String {
-        switch self {
-        case .a: "Leq < 35 dB — suitable for sleep and recording"
-        case .b: "Leq 35–45 dB — good living environment"
-        case .c: "Leq 45–55 dB — noticeable ambient noise"
-        case .d: "Leq > 55 dB — investigate noise sources"
-        }
-    }
+    var title: String { localizedTitle }
+    var description: String { localizedDescription }
 
     static func from(leq: Float) -> SilenceGrade {
         switch leq {
@@ -58,20 +43,20 @@ struct SilenceRatingReport: Sendable {
 
     var summaryText: String {
         """
-        Silence Rating Report
-        Generated: \(formattedDate(generatedAt))
-        Device: \(deviceModel)
-        Weighting: \(weighting.displayName)
+        \(String(localized: "silenceReport.header"))
+        \(String(localized: "silenceReport.generated")) \(formattedDate(generatedAt))
+        \(String(localized: "silenceReport.device")) \(deviceModel)
+        \(String(localized: "silenceReport.weighting")) \(weighting.displayName)
 
-        Grade: \(grade.rawValue) - \(grade.title)
+        \(String(localized: "silenceReport.grade")) \(String(format: String(localized: "silenceReport.gradeLine"), grade.rawValue, grade.title))
         \(grade.description)
 
-        Leq: \(String(format: "%.1f", leq)) dB
-        Max: \(String(format: "%.1f", maxDB)) dB
-        Min: \(String(format: "%.1f", minDB)) dB
-        Avg: \(String(format: "%.1f", averageDB)) dB
+        \(String(localized: "silenceReport.leq")) \(String(format: "%.1f", leq)) dB
+        \(String(localized: "silenceReport.max")) \(String(format: "%.1f", maxDB)) dB
+        \(String(localized: "silenceReport.min")) \(String(format: "%.1f", minDB)) dB
+        \(String(localized: "silenceReport.avg")) \(String(format: "%.1f", averageDB)) dB
 
-        Disclaimer: Reference measurement from phone microphone; not a certified sound level meter.
+        \(String(localized: "silenceReport.disclaimer"))
         """
     }
 

@@ -35,10 +35,10 @@ enum NoiseRiskLevel: Sendable {
 
     var label: String {
         switch self {
-        case .quiet: "Quiet (e.g. whisper)"
-        case .moderate: "Moderate (e.g. conversation)"
-        case .loud: "Loud (e.g. busy street)"
-        case .dangerous: "Dangerous (hearing damage risk)"
+        case .quiet: L10n.noiseRiskQuiet
+        case .moderate: L10n.noiseRiskModerate
+        case .loud: L10n.noiseRiskLoud
+        case .dangerous: L10n.noiseRiskDangerous
         }
     }
 }
@@ -66,14 +66,13 @@ struct NoiseLevelGauge: View {
                         style: StrokeStyle(lineWidth: 16, lineCap: .round)
                     )
                     .rotationEffect(.degrees(-90))
-                    .shadow(color: mode.isHighSensitivity ? theme.accent.opacity(0.35) : .clear, radius: 8)
-                    .animation(.easeOut(duration: mode.isHighSensitivity ? 0.08 : 0.15), value: db)
+                    .animation(.easeOut(duration: 0.15), value: db)
 
                 VStack(spacing: 4) {
                     Text(String(format: "%.1f", db))
                         .font(.system(size: 48, weight: .bold, design: .rounded))
                         .monospacedDigit()
-                        .foregroundStyle(mode.isHighSensitivity ? theme.accent : .primary)
+                        .foregroundStyle(.primary)
                     Text(mode.technicalBadge)
                         .font(.caption.bold())
                         .foregroundStyle(theme.accent)
@@ -87,9 +86,9 @@ struct NoiseLevelGauge: View {
                 .multilineTextAlignment(.center)
 
             if mode.isHighSensitivity {
-                Text("Full-band scan · Readings above standard mode are normal")
+                Text(L10n.gaugeHighSensitivityHint)
                     .font(.caption2)
-                    .foregroundStyle(theme.secondaryAccent)
+                    .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
         }

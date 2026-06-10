@@ -23,7 +23,7 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ProTabHeader(title: "Settings", theme: theme)
+            ProTabHeader(title: L10n.settingsTitle, theme: theme)
 
             Form {
             Section {
@@ -31,14 +31,14 @@ struct SettingsView: View {
                     .listRowInsets(EdgeInsets(top: 12, leading: 0, bottom: 12, trailing: 0))
                     .listRowBackground(Color.clear)
             } header: {
-                Text("Measurement Mode")
+                Text(L10n.settingsMeasurementMode)
             } footer: {
                 Text(measurementMode.coreDescription)
             }
 
             if !engine.isHighSensitivityMode {
                 Section {
-                    Picker("A/C/Z weighting", selection: Binding(
+                    Picker(L10n.settingsWeightingPicker, selection: Binding(
                         get: { engine.weightingType },
                         set: { engine.updateWeighting($0) }
                     )) {
@@ -48,27 +48,27 @@ struct SettingsView: View {
                     }
                     .pickerStyle(.segmented)
                 } header: {
-                    Text("Advanced · Standard mode weighting")
+                    Text(L10n.settingsWeightingHeader)
                 } footer: {
-                    Text("Most users should keep the default A-weighting. Change only when comparing C/Z curves.")
+                    Text(L10n.settingsWeightingFooter)
                 }
             }
 
             Section {
-                LabeledContent("Current mode", value: measurementMode.userFacingTitle)
-                LabeledContent("Technical badge", value: measurementMode.technicalBadge)
-                LabeledContent("Device model", value: DeviceCalibrationStore.deviceModelIdentifier)
-                LabeledContent("Device offset", value: String(format: "%.1f dB", DeviceCalibrationStore.deviceOffset))
-                LabeledContent("User adjustment", value: String(format: "%+.1f dB", displayedUserAdjustment))
-                LabeledContent("Total offset", value: String(format: "%.1f dB", displayedTotalOffset))
-                LabeledContent("RMS floor", value: String(format: "%.0e", SPLCalculator.rmsFloor))
+                LabeledContent(L10n.settingsCurrentMode, value: measurementMode.userFacingTitle)
+                LabeledContent(L10n.settingsTechnicalBadge, value: measurementMode.technicalBadge)
+                LabeledContent(L10n.settingsDeviceModel, value: DeviceCalibrationStore.deviceModelIdentifier)
+                LabeledContent(L10n.settingsDeviceOffset, value: String(format: "%.1f dB", DeviceCalibrationStore.deviceOffset))
+                LabeledContent(L10n.settingsUserAdjustment, value: String(format: "%+.1f dB", displayedUserAdjustment))
+                LabeledContent(L10n.settingsTotalOffset, value: String(format: "%.1f dB", displayedTotalOffset))
+                LabeledContent(L10n.settingsRmsFloor, value: String(format: "%.0e", SPLCalculator.rmsFloor))
 
                 VStack(alignment: .leading) {
-                    Text("Reference level: \(Int(calibrationReference)) dB")
+                    Text(L10n.settingsReferenceLevel(Int(calibrationReference)))
                     Slider(value: $calibrationReference, in: 10...140, step: 1)
                 }
 
-                Button("Calibrate with current reading") {
+                Button(L10n.settingsCalibrateButton) {
                     let previousAdjustment = DeviceCalibrationStore.userAdjustment
                     DeviceCalibrationStore.calibrate(
                         referenceSPL: calibrationReference,
@@ -79,35 +79,29 @@ struct SettingsView: View {
                     let newAdjustment = displayedUserAdjustment
                     let delta = newAdjustment - previousAdjustment
                     if abs(delta) < 0.05 {
-                        calibrationAlertMessage = """
-                        Calibration saved. The adjustment was very small.
-
-                        User adjustment: \(formatSignedDB(newAdjustment))
-                        Total offset: \(formatDB(displayedTotalOffset))
-
-                        Keep monitoring and compare against your sound level meter.
-                        """
+                        calibrationAlertMessage = L10n.settingsCalibrationSavedSmall(
+                            adjustment: formatSignedDB(newAdjustment),
+                            totalOffset: formatDB(displayedTotalOffset)
+                        )
                     } else {
-                        calibrationAlertMessage = """
-                        Calibrated to reference level \(Int(calibrationReference)) dB.
-
-                        User adjustment: \(formatSignedDB(previousAdjustment)) → \(formatSignedDB(newAdjustment))
-                        Total offset: \(formatDB(displayedTotalOffset))
-
-                        Monitor readings will use the new baseline.
-                        """
+                        calibrationAlertMessage = L10n.settingsCalibrationSavedChanged(
+                            reference: Int(calibrationReference),
+                            previous: formatSignedDB(previousAdjustment),
+                            newValue: formatSignedDB(newAdjustment),
+                            totalOffset: formatDB(displayedTotalOffset)
+                        )
                     }
                     showCalibrationAlert = true
                 }
                 .disabled(!engine.isMonitoring)
 
-                Button("Reset calibration", role: .destructive) {
+                Button(L10n.settingsResetButton, role: .destructive) {
                     performResetCalibration()
                 }
             } header: {
-                Text("Device calibration")
+                Text(L10n.settingsCalibrationHeader)
             } footer: {
-                Text("Mode offset baseline is 115–118 dB; a quiet room should read about 30–40 dB. Fine-tune with a professional meter if needed.")
+                Text(L10n.settingsCalibrationFooter)
             }
             }
             .scrollContentBackground(.hidden)
@@ -117,13 +111,13 @@ struct SettingsView: View {
         .onAppear {
             refreshCalibrationDisplay()
         }
-        .alert("Calibration saved", isPresented: $showCalibrationAlert) {
-            Button("OK", role: .cancel) {}
+        .alert(L10n.settingsCalibrationSavedTitle, isPresented: $showCalibrationAlert) {
+            Button(L10n.ok, role: .cancel) {}
         } message: {
             Text(calibrationAlertMessage)
         }
         .alert(resetAlertTitle, isPresented: $showResetAlert) {
-            Button("OK", role: .cancel) {}
+            Button(L10n.ok, role: .cancel) {}
         } message: {
             Text(resetAlertMessage)
         }
@@ -136,25 +130,18 @@ struct SettingsView: View {
         refreshCalibrationDisplay()
 
         if abs(previousAdjustment) < 0.05 {
-            resetAlertTitle = "Already at factory default"
-            resetAlertMessage = """
-            No manual adjustment was set; nothing to reset.
-
-            User adjustment: 0 dB (no extra offset)
-            Total offset: \(formatDB(displayedTotalOffset))
-
-            A quiet room should read about 30–40 dB.
-            """
+            resetAlertTitle = L10n.settingsResetAlreadyDefaultTitle
+            resetAlertMessage = L10n.settingsResetAlreadyDefaultMessage(
+                totalOffset: formatDB(displayedTotalOffset)
+            )
         } else {
-            resetAlertTitle = "Factory calibration restored"
-            resetAlertMessage = """
-            Cleared your manual adjustment (\(formatSignedDB(previousAdjustment))).
-
-            Total offset: \(formatDB(previousTotal)) → \(formatDB(displayedTotalOffset))
-            User adjustment: \(formatSignedDB(previousAdjustment)) → 0 dB
-
-            Monitor readings return to factory defaults. Recalibrate with a meter if needed.
-            """
+            resetAlertTitle = L10n.settingsResetRestoredTitle
+            resetAlertMessage = L10n.settingsResetRestoredMessage(
+                previous: formatSignedDB(previousAdjustment),
+                previousTotal: formatDB(previousTotal),
+                newTotal: formatDB(displayedTotalOffset),
+                previousAdjustment: formatSignedDB(previousAdjustment)
+            )
         }
         showResetAlert = true
     }

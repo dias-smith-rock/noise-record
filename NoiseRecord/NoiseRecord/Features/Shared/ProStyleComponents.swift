@@ -6,12 +6,8 @@ struct ProPageBackground: View {
     let theme: ModeVisualTheme
 
     var body: some View {
-        LinearGradient(
-            colors: [theme.cardTint, Color(.systemBackground)],
-            startPoint: .top,
-            endPoint: .center
-        )
-        .ignoresSafeArea()
+        Color(.systemGroupedBackground)
+            .ignoresSafeArea()
     }
 }
 
@@ -28,7 +24,7 @@ struct ProSectionHeader: View {
             if let subtitle {
                 Text(subtitle)
                     .font(.caption)
-                    .foregroundStyle(theme.accent.opacity(0.85))
+                    .foregroundStyle(.secondary)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -45,7 +41,7 @@ struct ProCard<Content: View>: View {
             .background(theme.cardTint)
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .strokeBorder(theme.accent.opacity(0.22), lineWidth: 1)
+                    .strokeBorder(theme.surfaceBorder, lineWidth: 1)
             )
             .clipShape(RoundedRectangle(cornerRadius: 16))
     }
@@ -64,14 +60,14 @@ struct ProMetricCard: View {
             Text(value)
                 .font(.title3.bold())
                 .monospacedDigit()
-                .foregroundStyle(theme.accent.opacity(0.95))
+                .foregroundStyle(theme.accent)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
         .background(theme.cardTint)
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .strokeBorder(theme.accent.opacity(0.15), lineWidth: 1)
+                .strokeBorder(theme.surfaceBorder, lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
@@ -164,18 +160,8 @@ struct ProChip: View {
             .font(.caption.bold())
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .foregroundStyle(isSelected ? .white : theme.accent)
-            .background {
-                if isSelected {
-                    LinearGradient(
-                        colors: [theme.accent, theme.secondaryAccent],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                } else {
-                    theme.badgeBackground
-                }
-            }
+            .foregroundStyle(isSelected ? .white : .primary)
+            .background(isSelected ? theme.accent : Color(.tertiarySystemFill))
             .clipShape(Capsule())
     }
 }
@@ -198,7 +184,7 @@ struct ProRecordingStatusBadge: View {
         .padding(.vertical, 8)
         .background(theme.cardTint)
         .overlay(
-            Capsule().strokeBorder(theme.accent.opacity(0.25), lineWidth: 1)
+            Capsule().strokeBorder(theme.surfaceBorder, lineWidth: 1)
         )
         .clipShape(Capsule())
     }
@@ -212,11 +198,7 @@ struct ProRecordingStatusBadge: View {
     }
 
     private var statusText: String {
-        switch state {
-        case .idle: "Voice standby"
-        case .recording: "Auto-recording"
-        case .coolingDown: "Tail delay"
-        }
+        state.localizedStatusText
     }
 }
 
@@ -230,13 +212,7 @@ struct ProEmptyState: View {
         VStack(spacing: 16) {
             Image(systemName: systemImage)
                 .font(.system(size: 44))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [theme.accent, theme.secondaryAccent],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+                .foregroundStyle(theme.accent)
             Text(title)
                 .font(.title3.bold())
             Text(message)
@@ -249,7 +225,7 @@ struct ProEmptyState: View {
         .background(theme.cardTint)
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .strokeBorder(theme.accent.opacity(0.2), lineWidth: 1)
+                .strokeBorder(theme.surfaceBorder, lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }

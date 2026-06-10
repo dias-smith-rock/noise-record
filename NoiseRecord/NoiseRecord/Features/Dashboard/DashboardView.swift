@@ -21,7 +21,7 @@ struct DashboardView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ProTabHeader(title: "Noise Monitor", theme: theme)
+            ProTabHeader(title: L10n.dashboardTitle, theme: theme)
 
             ScrollView {
                 VStack(spacing: 20) {
@@ -30,20 +30,20 @@ struct DashboardView: View {
                     NoiseLevelGauge(db: engine.currentDB, mode: measurementMode)
 
                     HStack(spacing: 12) {
-                        StatCard(title: "Max", value: engine.maxDB, theme: theme)
-                        StatCard(title: "Min", value: engine.minDB, theme: theme)
-                        StatCard(title: "Avg", value: engine.averageDB, theme: theme)
-                        StatCard(title: "Leq", value: engine.leq, theme: theme)
+                        StatCard(title: L10n.dashboardMax, value: engine.maxDB, theme: theme)
+                        StatCard(title: L10n.dashboardMin, value: engine.minDB, theme: theme)
+                        StatCard(title: L10n.dashboardAvg, value: engine.averageDB, theme: theme)
+                        StatCard(title: L10n.dashboardLeq, value: engine.leq, theme: theme)
                     }
 
                     if engine.voiceActivatedEnabled {
-                        RecordingStatusBadge(state: engine.recordingState)
+                        ProRecordingStatusBadge(state: engine.recordingState, theme: theme)
                     }
 
                     if let label = engine.latestNoiseLabel, engine.aiClassificationEnabled {
                         HStack {
                             Image(systemName: "waveform.badge.magnifyingglass")
-                            Text("Detected: \(label) (\(Int(engine.latestNoiseConfidence * 100))%)")
+                            Text(L10n.dashboardDetected(label, confidence: Int(engine.latestNoiseConfidence * 100)))
                                 .font(.subheadline)
                         }
                         .foregroundStyle(.secondary)
@@ -51,10 +51,10 @@ struct DashboardView: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Text("Waveform")
+                            Text(L10n.dashboardWaveform)
                                 .font(.headline)
                             if measurementMode.isHighSensitivity {
-                                Text("Full-band")
+                                Text(L10n.dashboardFullBand)
                                     .font(.caption2.bold())
                                     .foregroundStyle(theme.accent)
                                     .padding(.horizontal, 8)
@@ -68,7 +68,7 @@ struct DashboardView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Spectrum")
+                        Text(L10n.dashboardSpectrum)
                             .font(.headline)
                         SpectrumView(spectrum: engine.latestSpectrum, mode: measurementMode)
                             .frame(height: 100)
@@ -80,7 +80,7 @@ struct DashboardView: View {
                         .multilineTextAlignment(.center)
 
                     HStack(spacing: 12) {
-                        Button("Report") {
+                        Button(L10n.dashboardReport) {
                             shareReport = SilenceRatingReport(
                                 leq: engine.leq,
                                 maxDB: engine.maxDB,
@@ -93,7 +93,7 @@ struct DashboardView: View {
                         .buttonStyle(.bordered)
                         .disabled(!engine.isMonitoring && engine.leq == 0)
 
-                        Button("Export CSV") {
+                        Button(L10n.dashboardExportCSV) {
                             exportCSV()
                         }
                         .buttonStyle(.bordered)
@@ -104,7 +104,7 @@ struct DashboardView: View {
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             ProFloatingActionButton(
-                title: engine.isMonitoring ? "Stop" : "Start",
+                title: engine.isMonitoring ? L10n.dashboardStop : L10n.dashboardStart,
                 systemImage: engine.isMonitoring ? "stop.circle.fill" : "play.circle.fill",
                 theme: theme,
                 isDestructive: engine.isMonitoring
@@ -136,23 +136,23 @@ struct DashboardView: View {
                 ShareSheet(items: [csvShareURL])
             }
         }
-        .alert("Error", isPresented: .constant(engine.errorMessage != nil)) {
-            Button("OK") { engine.errorMessage = nil }
+        .alert(L10n.errorTitle, isPresented: .constant(engine.errorMessage != nil)) {
+            Button(L10n.ok) { engine.errorMessage = nil }
         } message: {
             Text(engine.errorMessage ?? "")
         }
         .confirmationDialog(
-            "Keep recordings from this session?",
+            L10n.dashboardStopPromptTitle,
             isPresented: $showStopRecordingPrompt,
             titleVisibility: .visible
         ) {
-            Button("Keep") {
+            Button(L10n.dashboardStopPromptKeep) {
                 finishStopMonitoring(keepRecordings: true)
             }
-            Button("Discard", role: .destructive) {
+            Button(L10n.dashboardStopPromptDiscard, role: .destructive) {
                 finishStopMonitoring(keepRecordings: false)
             }
-            Button("Keep Monitoring", role: .cancel) {}
+            Button(L10n.dashboardStopPromptKeepMonitoring, role: .cancel) {}
         } message: {
             Text(stopRecordingPromptMessage)
         }
@@ -161,9 +161,9 @@ struct DashboardView: View {
     private var stopRecordingPromptMessage: String {
         let count = engine.currentSessionRecordingCount
         if count > 0 {
-            return "This session created \(count) voice-activated recording(s). Choosing Discard will delete them."
+            return L10n.dashboardStopPromptMultiple(count)
         }
-        return "A voice-activated recording is still in progress. Choosing Discard will delete it."
+        return L10n.dashboardStopPromptInProgress
     }
 
     private func handleStopMonitoringTapped() {
@@ -203,9 +203,9 @@ struct DashboardView: View {
 
     private var footerNote: String {
         if measurementMode.isHighSensitivity {
-            "High-sensitivity mode · Readings often exceed standard mode · Not a certified sound level meter"
+            L10n.dashboardFooterHighSensitivity
         } else {
-            "Standard hearing mode · Compare against residential noise guidelines · Not a certified sound level meter"
+            L10n.dashboardFooterStandard
         }
     }
 
@@ -271,38 +271,16 @@ private struct StatCard: View {
             Text(String(format: "%.0f", value))
                 .font(.title3.bold())
                 .monospacedDigit()
-                .foregroundStyle(theme.accent.opacity(0.9))
+                .foregroundStyle(theme.accent)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
         .background(theme.cardTint)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(theme.surfaceBorder, lineWidth: 1)
+        )
         .clipShape(RoundedRectangle(cornerRadius: 10))
-    }
-}
-
-private struct RecordingStatusBadge: View {
-    let state: RecordingState
-
-    var body: some View {
-        HStack {
-            Circle()
-                .fill(state == .recording ? .red : (state == .coolingDown ? .orange : .gray))
-                .frame(width: 10, height: 10)
-            Text(statusText)
-                .font(.subheadline)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(Capsule())
-    }
-
-    private var statusText: String {
-        switch state {
-        case .idle: "Voice standby"
-        case .recording: "Recording"
-        case .coolingDown: "Tail delay"
-        }
     }
 }
 
@@ -317,13 +295,13 @@ private struct ShareReportSheet: View {
                     .font(.body)
                     .padding()
             }
-            .navigationTitle("Silence Report")
+            .navigationTitle(L10n.silenceReportTitle)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") { dismiss() }
+                    Button(L10n.close) { dismiss() }
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    ShareLink(item: Image(uiImage: report.renderShareImage()), preview: SharePreview("Silence Report", image: Image(uiImage: report.renderShareImage())))
+                    ShareLink(item: Image(uiImage: report.renderShareImage()), preview: SharePreview(L10n.silenceReportSharePreview, image: Image(uiImage: report.renderShareImage())))
                 }
             }
         }

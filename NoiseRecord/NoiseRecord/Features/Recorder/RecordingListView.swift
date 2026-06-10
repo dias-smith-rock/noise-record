@@ -3,21 +3,38 @@ import AVKit
 import SwiftData
 import SwiftUI
 
-private enum RecordingListTab: String, CaseIterable, Identifiable {
-    case video = "Video"
-    case audio = "Voice"
+private enum RecordingListTab: CaseIterable, Identifiable {
+    case video
+    case audio
 
-    var id: String { rawValue }
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .video: L10n.filesTabVideo
+        case .audio: L10n.filesTabVoice
+        }
+    }
 }
 
-private enum RecordingSortOption: String, CaseIterable, Identifiable {
-    case dateDescending = "Date (newest)"
-    case dateAscending = "Date (oldest)"
-    case peakDescending = "Peak (high)"
-    case peakAscending = "Peak (low)"
-    case nameAscending = "Name (A–Z)"
+private enum RecordingSortOption: CaseIterable, Identifiable {
+    case dateDescending
+    case dateAscending
+    case peakDescending
+    case peakAscending
+    case nameAscending
 
-    var id: String { rawValue }
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .dateDescending: L10n.filesSortDateDesc
+        case .dateAscending: L10n.filesSortDateAsc
+        case .peakDescending: L10n.filesSortPeakDesc
+        case .peakAscending: L10n.filesSortPeakAsc
+        case .nameAscending: L10n.filesSortNameAsc
+        }
+    }
 }
 
 private enum RenameTarget: Identifiable {
@@ -96,9 +113,9 @@ struct RecordingListView: View {
         VStack(spacing: 0) {
             pageHeader
 
-            Picker("Type", selection: $selectedTab) {
+            Picker(L10n.filesPickerType, selection: $selectedTab) {
                 ForEach(RecordingListTab.allCases) { tab in
-                    Text(tab.rawValue).tag(tab)
+                    Text(tab.title).tag(tab)
                 }
             }
             .pickerStyle(.segmented)
@@ -138,57 +155,57 @@ struct RecordingListView: View {
                 }
             }
         }
-        .alert("Rename", isPresented: Binding(
+        .alert(L10n.filesRenameTitle, isPresented: Binding(
             get: { renameTarget != nil },
             set: { if !$0 { renameTarget = nil } }
         )) {
-            TextField("File name", text: $renameText)
-            Button("Cancel", role: .cancel) { renameTarget = nil }
-            Button("Save") { applyRename() }
+            TextField(L10n.filesRenamePlaceholder, text: $renameText)
+            Button(L10n.cancel, role: .cancel) { renameTarget = nil }
+            Button(L10n.save) { applyRename() }
         } message: {
-            Text("The original extension is kept if you omit it.")
+            Text(L10n.filesRenameMessage)
         }
         .confirmationDialog(
-            "Delete \(selectedCount) selected item(s)?",
+            L10n.filesDeleteConfirm(selectedCount),
             isPresented: $showDeleteConfirm,
             titleVisibility: .visible
         ) {
-            Button("Delete", role: .destructive) { deleteSelected() }
-            Button("Cancel", role: .cancel) {}
+            Button(L10n.delete, role: .destructive) { deleteSelected() }
+            Button(L10n.cancel, role: .cancel) {}
         }
         .task { repairStoredMediaPaths() }
-        .alert("Cannot Play", isPresented: Binding(
+        .alert(L10n.filesPlaybackErrorTitle, isPresented: Binding(
             get: { playbackErrorMessage != nil },
             set: { if !$0 { playbackErrorMessage = nil } }
         )) {
-            Button("OK", role: .cancel) { playbackErrorMessage = nil }
+            Button(L10n.ok, role: .cancel) { playbackErrorMessage = nil }
         } message: {
             Text(playbackErrorMessage ?? "")
         }
     }
 
     private var pageHeader: some View {
-        ProTabHeader(title: "Files", theme: theme) {
+        ProTabHeader(title: L10n.filesTitle, theme: theme) {
             if isSelectionMode {
                 ProTabHeaderTextButton(
-                    title: isAllSelectedInCurrentTab ? "Deselect All" : "Select All",
+                    title: isAllSelectedInCurrentTab ? L10n.filesDeselectAll : L10n.filesSelectAll,
                     theme: theme
                 ) {
                     toggleSelectAll()
                 }
-                ProTabHeaderTextButton(title: "Cancel", theme: theme) {
+                ProTabHeaderTextButton(title: L10n.cancel, theme: theme) {
                     exitSelectionMode()
                 }
             } else {
                 ProTabHeaderIconButton(systemImage: "arrow.up.arrow.down", theme: theme) {
-                    Picker("Sort", selection: $sortOption) {
+                    Picker(L10n.filesPickerSort, selection: $sortOption) {
                         ForEach(RecordingSortOption.allCases) { option in
-                            Text(option.rawValue).tag(option)
+                            Text(option.title).tag(option)
                         }
                     }
                 }
                 ProTabHeaderCapsuleButton(
-                    title: "Select",
+                    title: L10n.filesSelect,
                     theme: theme,
                     disabled: currentTabIsEmpty
                 ) {
@@ -202,7 +219,7 @@ struct RecordingListView: View {
         VStack(spacing: 0) {
             Divider()
             HStack(spacing: 20) {
-                Text("\(selectedCount) selected")
+                Text(L10n.filesSelectedCount(selectedCount))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
@@ -211,7 +228,7 @@ struct RecordingListView: View {
                 Button(role: .destructive) {
                     showDeleteConfirm = true
                 } label: {
-                    Label("Delete", systemImage: "trash")
+                    Label(L10n.delete, systemImage: "trash")
                         .font(.headline)
                 }
                 .buttonStyle(.borderedProminent)
@@ -229,8 +246,8 @@ struct RecordingListView: View {
         case .video:
             if sortedVideoSessions.isEmpty {
                 ProEmptyState(
-                    title: "No videos yet",
-                    message: "Record a video with dB overlay on the Video tab to see it here.",
+                    title: L10n.filesEmptyVideoTitle,
+                    message: L10n.filesEmptyVideoMessage,
                     systemImage: "video.slash",
                     theme: theme
                 )
@@ -260,8 +277,8 @@ struct RecordingListView: View {
         case .audio:
             if sortedAudioSessions.isEmpty {
                 ProEmptyState(
-                    title: "No recordings yet",
-                    message: "Enable voice-activated recording on the Voice tab; sounds above threshold are saved here.",
+                    title: L10n.filesEmptyAudioTitle,
+                    message: L10n.filesEmptyAudioMessage,
                     systemImage: "waveform",
                     theme: theme
                 )
@@ -299,18 +316,18 @@ struct RecordingListView: View {
         HStack(spacing: 12) {
             switch selectedTab {
             case .audio:
-                ProMetricCard(title: "Clips", value: "\(sessions.count)", theme: theme)
-                ProMetricCard(title: "Duration", value: formattedAudioTotalDuration, theme: theme)
+                ProMetricCard(title: L10n.filesSummaryClips, value: "\(sessions.count)", theme: theme)
+                ProMetricCard(title: L10n.filesSummaryDuration, value: formattedAudioTotalDuration, theme: theme)
                 ProMetricCard(
-                    title: "Peak",
+                    title: L10n.filesSummaryPeak,
                     value: sessions.isEmpty ? "—" : "\(Int(sessions.map(\.peakDB).max() ?? 0))",
                     theme: theme
                 )
             case .video:
-                ProMetricCard(title: "Videos", value: "\(videoSessions.count)", theme: theme)
-                ProMetricCard(title: "Duration", value: formattedVideoTotalDuration, theme: theme)
+                ProMetricCard(title: L10n.filesSummaryVideos, value: "\(videoSessions.count)", theme: theme)
+                ProMetricCard(title: L10n.filesSummaryDuration, value: formattedVideoTotalDuration, theme: theme)
                 ProMetricCard(
-                    title: "Peak",
+                    title: L10n.filesSummaryPeak,
                     value: videoSessions.isEmpty ? "—" : "\(Int(videoSessions.map(\.peakDB).max() ?? 0))",
                     theme: theme
                 )
@@ -352,7 +369,7 @@ struct RecordingListView: View {
     }
 
     private func videoBadges(for video: VideoEvidenceSession) -> [String] {
-        var badges = ["Peak \(Int(video.peakDB)) dB"]
+        var badges = [L10n.filesPeakBadge(Int(video.peakDB))]
         if let lat = video.latitude, let lon = video.longitude {
             badges.append(String(format: "%.4f, %.4f", lat, lon))
         }
@@ -360,7 +377,7 @@ struct RecordingListView: View {
     }
 
     private func audioBadges(for session: RecordingSession) -> [String] {
-        var badges = ["Peak \(Int(session.peakDB)) dB", "Avg \(Int(session.averageDB)) dB"]
+        var badges = [L10n.filesPeakBadge(Int(session.peakDB)), L10n.filesAvgBadge(Int(session.averageDB))]
         if let type = session.noiseType {
             badges.append(type)
         }
@@ -368,7 +385,10 @@ struct RecordingListView: View {
     }
 
     private func audioDetailLine(for session: RecordingSession) -> String {
-        "\(session.startedAt.formatted(date: .abbreviated, time: .shortened)) · \(Int(session.duration))s"
+        L10n.filesAudioDetailLine(
+            date: session.startedAt.formatted(date: .abbreviated, time: .shortened),
+            duration: Int(session.duration)
+        )
     }
 
     // MARK: - Playback
@@ -380,7 +400,7 @@ struct RecordingListView: View {
         }
         markVideoAsRead(session)
         guard session.fileExists else {
-            playbackErrorMessage = "Video file not found: \(session.fileName)"
+            playbackErrorMessage = L10n.filesVideoNotFound(session.fileName)
             return
         }
         audioPlayerController.stop(restoreSession: true)
@@ -411,7 +431,7 @@ struct RecordingListView: View {
         }
         markAudioAsRead(session)
         guard session.fileExists else {
-            playbackErrorMessage = "Audio file not found: \(session.fileName)"
+            playbackErrorMessage = L10n.filesAudioNotFound(session.fileName)
             return
         }
         audioPlayerController.togglePlayback(
@@ -508,7 +528,7 @@ struct RecordingListView: View {
 
     private func shareMedia(_ session: RecordingSession) {
         guard session.fileExists else {
-            playbackErrorMessage = "Audio file not found: \(session.fileName)"
+            playbackErrorMessage = L10n.filesAudioNotFound(session.fileName)
             return
         }
         SharePresenter.present(items: [session.fileURL])
@@ -516,7 +536,7 @@ struct RecordingListView: View {
 
     private func shareMedia(_ session: VideoEvidenceSession) {
         guard session.fileExists else {
-            playbackErrorMessage = "Video file not found: \(session.fileName)"
+            playbackErrorMessage = L10n.filesVideoNotFound(session.fileName)
             return
         }
         SharePresenter.present(items: [session.fileURL])
@@ -659,13 +679,7 @@ private struct MediaListCard: View {
                 Button(action: onPlay) {
                     Image(systemName: playIcon)
                         .font(.system(size: 36))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [theme.accent, theme.secondaryAccent],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
+                        .foregroundStyle(theme.accent)
                 }
                 .buttonStyle(.plain)
 
@@ -677,7 +691,7 @@ private struct MediaListCard: View {
                             .truncationMode(.middle)
 
                         if isNew {
-                            Text("New")
+                            Text(L10n.filesBadgeNew)
                                 .font(.caption2.bold())
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 6)
@@ -707,15 +721,15 @@ private struct MediaListCard: View {
                 if !isSelectionMode {
                     Menu {
                         Button(action: onShare) {
-                            Label("Share", systemImage: "square.and.arrow.up")
+                            Label(L10n.share, systemImage: "square.and.arrow.up")
                         }
                         Button {
                             onRename()
                         } label: {
-                            Label("Rename", systemImage: "pencil")
+                            Label(L10n.rename, systemImage: "pencil")
                         }
                         Button(role: .destructive, action: onDelete) {
-                            Label("Delete", systemImage: "trash")
+                            Label(L10n.delete, systemImage: "trash")
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
@@ -738,13 +752,13 @@ private struct MediaListCard: View {
         .contextMenu {
             if !isSelectionMode {
                 Button(action: onShare) {
-                    Label("Share", systemImage: "square.and.arrow.up")
+                    Label(L10n.share, systemImage: "square.and.arrow.up")
                 }
                 Button(action: onRename) {
-                    Label("Rename", systemImage: "pencil")
+                    Label(L10n.rename, systemImage: "pencil")
                 }
                 Button(role: .destructive, action: onDelete) {
-                    Label("Delete", systemImage: "trash")
+                    Label(L10n.delete, systemImage: "trash")
                 }
             }
         }
@@ -790,7 +804,7 @@ private struct VideoPlaybackSheet: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("Done", action: onDismiss)
+                        Button(L10n.done, action: onDismiss)
                     }
                 }
                 .onAppear {

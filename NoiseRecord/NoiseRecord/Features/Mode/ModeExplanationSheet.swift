@@ -13,7 +13,7 @@ struct ModeExplanationSheet: View {
                     modeHero
 
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("What does this mode do?")
+                        Text(L10n.modeGuideWhatDoesItDo)
                             .font(.headline)
                         Text(mode.coreDescription)
                             .font(.body)
@@ -22,7 +22,7 @@ struct ModeExplanationSheet: View {
                     }
 
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Details")
+                        Text(L10n.modeGuideDetails)
                             .font(.headline)
                         Text(mode.tooltipCopy)
                             .font(.body)
@@ -34,7 +34,7 @@ struct ModeExplanationSheet: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14))
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Label("Why do the two modes read so differently?", systemImage: "questionmark.circle")
+                        Label(L10n.modeGuideWhyDifferent, systemImage: "questionmark.circle")
                             .font(.subheadline.bold())
                         Text(mode.comparisonHint)
                             .font(.subheadline)
@@ -49,11 +49,11 @@ struct ModeExplanationSheet: View {
                 }
                 .padding()
             }
-            .navigationTitle("Mode Guide")
+            .navigationTitle(L10n.modeGuideTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Got it") { dismiss() }
+                    Button(L10n.gotIt) { dismiss() }
                 }
             }
         }
@@ -86,19 +86,19 @@ struct ModeExplanationSheet: View {
 
     private var modeComparisonCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Which mode should I use?")
+            Text(L10n.modeGuideWhichMode)
                 .font(.headline)
 
             comparisonRow(
                 mode: .standard,
                 icon: "ear.fill",
-                summary: "Daily noise, neighbor disputes, noise standards"
+                summary: L10n.modeGuideStandardSummary
             )
             Divider()
             comparisonRow(
                 mode: .highSensitivity,
                 icon: "waveform.badge.magnifyingglass",
-                summary: "Hidden low-frequency noise, machine faults, night evidence"
+                summary: L10n.modeGuideHighSensitivitySummary
             )
         }
         .padding()

@@ -25,7 +25,7 @@ struct ModeSwitchView: View {
         .background(theme.cardTint)
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .strokeBorder(theme.accent.opacity(0.25), lineWidth: 1)
+                .strokeBorder(theme.surfaceBorder, lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .animation(.easeInOut(duration: 0.28), value: mode)
@@ -37,7 +37,7 @@ struct ModeSwitchView: View {
     private var headerRow: some View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Measurement Mode")
+                Text(L10n.modeSwitchTitle)
                     .font(.subheadline.bold())
                 Text(mode.userFacingTitle)
                     .font(.caption)
@@ -53,7 +53,7 @@ struct ModeSwitchView: View {
                 Image(systemName: "info.circle")
                     .font(.title3)
                     .foregroundStyle(theme.accent)
-                    .accessibilityLabel("View mode explanation")
+                    .accessibilityLabel(L10n.modeSwitchAccessibility)
             }
             .buttonStyle(.plain)
         }
@@ -93,17 +93,7 @@ struct ModeSwitchView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
             .foregroundStyle(isSelected ? .white : .primary)
-            .background {
-                if isSelected {
-                    LinearGradient(
-                        colors: [itemTheme.accent, itemTheme.secondaryAccent],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                } else {
-                    Color.clear
-                }
-            }
+            .background(isSelected ? itemTheme.accent : Color.clear)
             .clipShape(RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(.plain)
@@ -122,7 +112,7 @@ struct ModeSwitchView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
-                Button("Learn about the two modes") {
+                Button(L10n.modeSwitchLearnMore) {
                     explanationMode = mode
                     showExplanation = true
                 }

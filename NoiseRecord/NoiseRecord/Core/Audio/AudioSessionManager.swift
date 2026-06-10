@@ -8,11 +8,11 @@ enum AudioSessionError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .permissionDenied:
-            "Microphone access was denied. Enable it in Settings."
+            L10n.errorMicPermissionDenied
         case .configurationFailed(let message):
-            "Audio session configuration failed: \(message)"
+            L10n.errorAudioConfigurationFailed(message)
         case .activationFailed:
-            "Audio session activation failed. Return to the app and try again. If background monitoring is on, check microphone permission."
+            L10n.errorAudioActivationFailed
         }
     }
 
