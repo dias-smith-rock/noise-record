@@ -65,7 +65,7 @@ struct SettingsView: View {
 
                 VStack(alignment: .leading) {
                     Text("Reference level: \(Int(calibrationReference)) dB")
-                    Slider(value: $calibrationReference, in: 60...110, step: 1)
+                    Slider(value: $calibrationReference, in: 10...140, step: 1)
                 }
 
                 Button("Calibrate with current reading") {
