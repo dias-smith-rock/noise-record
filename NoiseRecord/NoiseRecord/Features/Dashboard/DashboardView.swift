@@ -10,43 +10,28 @@ struct DashboardView: View {
     @State private var csvShareURL: URL?
     @State private var showCSVShare = false
 
+    private var measurementMode: AcousticMeasurementMode {
+        AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
+    }
+
+    private var theme: ModeVisualTheme {
+        .theme(for: measurementMode)
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                HStack(spacing: 12) {
-                    Button(engine.isMonitoring ? "停止监测" : "开始监测") {
-                        Task {
-                            if engine.isMonitoring {
-                                engine.stopMonitoring()
-                            } else {
-                                await engine.requestPermissionAndStart()
-                            }
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(engine.isMonitoring ? .red : .accentColor)
+                monitoringBar
 
-                    Toggle("高灵敏", isOn: $engine.isHighSensitivityMode)
-                        .toggleStyle(.button)
-                }
+                EngineModeSwitchView(engine: engine)
 
-                if engine.isHighSensitivityMode {
-                    Label("Z计权 · 低频高灵敏", systemImage: "waveform.badge.magnifyingglass")
-                        .font(.caption.bold())
-                        .foregroundStyle(.orange)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(Color.orange.opacity(0.12))
-                        .clipShape(Capsule())
-                }
-
-                NoiseLevelGauge(db: engine.currentDB)
+                NoiseLevelGauge(db: engine.currentDB, mode: measurementMode)
 
                 HStack(spacing: 12) {
-                    StatCard(title: "最大", value: engine.maxDB)
-                    StatCard(title: "最小", value: engine.minDB)
-                    StatCard(title: "平均", value: engine.averageDB)
-                    StatCard(title: "Leq", value: engine.leq)
+                    StatCard(title: "最大", value: engine.maxDB, theme: theme)
+                    StatCard(title: "最小", value: engine.minDB, theme: theme)
+                    StatCard(title: "平均", value: engine.averageDB, theme: theme)
+                    StatCard(title: "Leq", value: engine.leq, theme: theme)
                 }
 
                 if engine.voiceActivatedEnabled {
@@ -63,20 +48,31 @@ struct DashboardView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("时域波形")
-                        .font(.headline)
-                    WaveformView(samples: engine.history)
+                    HStack {
+                        Text("时域波形")
+                            .font(.headline)
+                        if measurementMode.isHighSensitivity {
+                            Text("全频扫描")
+                                .font(.caption2.bold())
+                                .foregroundStyle(theme.accent)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
+                                .background(theme.badgeBackground)
+                                .clipShape(Capsule())
+                        }
+                    }
+                    WaveformView(samples: engine.history, mode: measurementMode)
                         .frame(height: 120)
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("频谱分析")
                         .font(.headline)
-                    SpectrumView(spectrum: engine.latestSpectrum)
+                    SpectrumView(spectrum: engine.latestSpectrum, mode: measurementMode)
                         .frame(height: 100)
                 }
 
-                Text("测量模式 · 偏移 \(String(format: "%.0f", DeviceCalibrationStore.totalOffset)) dB · 非认证声级计")
+                Text(footerNote)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                     .multilineTextAlignment(.center)
@@ -88,7 +84,7 @@ struct DashboardView: View {
                             maxDB: engine.maxDB,
                             minDB: engine.minDB,
                             averageDB: engine.averageDB,
-                            weighting: engine.weightingType
+                            weighting: engine.effectiveWeighting
                         )
                         showReportSheet = true
                     }
@@ -103,6 +99,17 @@ struct DashboardView: View {
             }
             .padding()
         }
+        .background(
+            LinearGradient(
+                colors: [
+                    theme.cardTint,
+                    Color(.systemBackground),
+                ],
+                startPoint: .top,
+                endPoint: .center
+            )
+            .ignoresSafeArea()
+        )
         .navigationTitle("噪音监测")
         .onChange(of: engine.currentDB) { _, _ in
             persistSampleIfNeeded()
@@ -124,6 +131,36 @@ struct DashboardView: View {
         }
     }
 
+    private var footerNote: String {
+        if measurementMode.isHighSensitivity {
+            "全频高灵敏模式 · 读数通常高于标准听感 · 非认证声级计"
+        } else {
+            "标准听感模式 · 可对照国家住宅噪音标准 · 非认证声级计"
+        }
+    }
+
+    private var monitoringBar: some View {
+        Button {
+            Task {
+                if engine.isMonitoring {
+                    engine.stopMonitoring()
+                } else {
+                    await engine.requestPermissionAndStart()
+                }
+            }
+        } label: {
+            Label(
+                engine.isMonitoring ? "停止监测" : "开始监测",
+                systemImage: engine.isMonitoring ? "stop.circle.fill" : "play.circle.fill"
+            )
+            .font(.headline)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(engine.isMonitoring ? .red : theme.accent)
+    }
+
     private func persistSampleIfNeeded() {
         let now = Date()
         guard now.timeIntervalSince(lastSampleTime) >= 1 else { return }
@@ -135,7 +172,7 @@ struct DashboardView: View {
             dbMin: engine.minDB,
             dbAvg: engine.averageDB,
             leq: engine.leq,
-            weighting: engine.weightingType.rawValue,
+            weighting: engine.effectiveWeighting.rawValue,
             noiseType: engine.latestNoiseLabel
         )
         modelContext.insert(sample)
@@ -176,6 +213,7 @@ private struct ShareSheet: UIViewControllerRepresentable {
 private struct StatCard: View {
     let title: String
     let value: Float
+    var theme: ModeVisualTheme = .theme(for: .standard)
 
     var body: some View {
         VStack(spacing: 4) {
@@ -185,10 +223,11 @@ private struct StatCard: View {
             Text(String(format: "%.0f", value))
                 .font(.title3.bold())
                 .monospacedDigit()
+                .foregroundStyle(theme.accent.opacity(0.9))
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
-        .background(Color(.secondarySystemBackground))
+        .background(theme.cardTint)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 }

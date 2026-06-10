@@ -22,7 +22,7 @@ struct ContentView: View {
             }
 
             NavigationStack {
-                RecordingListView()
+                RecordingListView(engine: engine)
             }
             .tabItem {
                 Label("录音", systemImage: "list.bullet")
