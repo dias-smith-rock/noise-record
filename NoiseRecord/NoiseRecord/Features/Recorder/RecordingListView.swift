@@ -59,7 +59,7 @@ struct RecordingListView: View {
     @State private var presentedVideoURL: URL?
     @State private var presentedVideoTitle: String?
 
-    @State private var shareURL: URL?
+    @State private var shareItems: [Any] = []
     @State private var showShare = false
     @State private var renameTarget: RenameTarget?
     @State private var renameText = ""
@@ -86,6 +86,14 @@ struct RecordingListView: View {
         selectedTab == .audio ? selectedAudioIDs.count : selectedVideoIDs.count
     }
 
+    private var currentTabItemCount: Int {
+        selectedTab == .audio ? sortedAudioSessions.count : sortedVideoSessions.count
+    }
+
+    private var isAllSelectedInCurrentTab: Bool {
+        currentTabItemCount > 0 && selectedCount == currentTabItemCount
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             Picker("类型", selection: $selectedTab) {
@@ -107,14 +115,16 @@ struct RecordingListView: View {
                 }
                 .padding()
             }
+
+            if isSelectionMode {
+                selectionActionBar
+            }
         }
         .proTabBackground(theme: theme)
         .navigationTitle("记录文件")
         .toolbar { toolbarContent }
         .sheet(isPresented: $showShare) {
-            if let shareURL {
-                ProShareSheet(items: [shareURL])
-            }
+            ProShareSheet(items: shareItems)
         }
         .fullScreenCover(isPresented: Binding(
             get: { presentedVideoURL != nil },
@@ -163,55 +173,60 @@ struct RecordingListView: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
-        ToolbarItem(placement: .primaryAction) {
-            Menu {
-                Picker("排序", selection: $sortOption) {
-                    ForEach(RecordingSortOption.allCases) { option in
-                        Text(option.rawValue).tag(option)
-                    }
+        if isSelectionMode {
+            ToolbarItem(placement: .primaryAction) {
+                Button(isAllSelectedInCurrentTab ? "取消全选" : "全选") {
+                    toggleSelectAll()
                 }
-            } label: {
-                Label("排序", systemImage: "arrow.up.arrow.down")
-                    .foregroundStyle(theme.accent)
+                .foregroundStyle(theme.accent)
             }
-        }
 
-        ToolbarItem(placement: .topBarTrailing) {
-            if isSelectionMode {
+            ToolbarItem(placement: .topBarTrailing) {
                 Button("取消") { exitSelectionMode() }
-            } else {
+            }
+        } else {
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    Picker("排序", selection: $sortOption) {
+                        ForEach(RecordingSortOption.allCases) { option in
+                            Text(option.rawValue).tag(option)
+                        }
+                    }
+                } label: {
+                    Label("排序", systemImage: "arrow.up.arrow.down")
+                        .foregroundStyle(theme.accent)
+                }
+            }
+
+            ToolbarItem(placement: .topBarTrailing) {
                 Button("选择") { isSelectionMode = true }
                     .disabled(currentTabIsEmpty)
             }
         }
+    }
 
-        if isSelectionMode {
-            ToolbarItem(placement: .bottomBar) {
-                HStack {
-                    Text("已选 \(selectedCount) 项")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Button(role: .destructive) {
-                        showDeleteConfirm = true
-                    } label: {
-                        Label("删除", systemImage: "trash")
-                    }
-                    .disabled(selectedCount == 0)
-                }
-            }
-        }
+    private var selectionActionBar: some View {
+        VStack(spacing: 0) {
+            Divider()
+            HStack(spacing: 20) {
+                Text("已选 \(selectedCount) 项")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
 
-        if selectedTab == .audio, !sessions.isEmpty, !isSelectionMode {
-            ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    shareURL = CSVExporter.exportRecordingSessions(sessions)
-                    showShare = true
+                Spacer()
+
+                Button(role: .destructive) {
+                    showDeleteConfirm = true
                 } label: {
-                    Label("导出", systemImage: "square.and.arrow.up")
-                        .foregroundStyle(theme.accent)
+                    Label("删除", systemImage: "trash")
+                        .font(.headline)
                 }
+                .buttonStyle(.borderedProminent)
+                .disabled(selectedCount == 0)
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(.ultraThinMaterial)
         }
     }
 
@@ -239,6 +254,7 @@ struct RecordingListView: View {
                             isSelectionMode: isSelectionMode,
                             isSelected: selectedVideoIDs.contains(video.id),
                             onPlay: { playVideo(video) },
+                            onShare: { shareMedia(video) },
                             onDelete: { deleteVideo(video) },
                             onRename: { beginRename(.video(video)) },
                             onToggleSelection: { toggleVideoSelection(video.id) }
@@ -269,6 +285,7 @@ struct RecordingListView: View {
                             isSelectionMode: isSelectionMode,
                             isSelected: selectedAudioIDs.contains(session.id),
                             onPlay: { toggleAudioPlayback(session) },
+                            onShare: { shareMedia(session) },
                             onDelete: { deleteAudio(session) },
                             onRename: { beginRename(.audio(session)) },
                             onToggleSelection: { toggleAudioSelection(session.id) }
@@ -463,6 +480,41 @@ struct RecordingListView: View {
         selectedVideoIDs.removeAll()
     }
 
+    private func toggleSelectAll() {
+        switch selectedTab {
+        case .audio:
+            if isAllSelectedInCurrentTab {
+                selectedAudioIDs.removeAll()
+            } else {
+                selectedAudioIDs = Set(sortedAudioSessions.map(\.id))
+            }
+        case .video:
+            if isAllSelectedInCurrentTab {
+                selectedVideoIDs.removeAll()
+            } else {
+                selectedVideoIDs = Set(sortedVideoSessions.map(\.id))
+            }
+        }
+    }
+
+    private func shareMedia(_ session: RecordingSession) {
+        guard session.fileExists else {
+            playbackErrorMessage = "找不到音频文件：\(session.fileName)"
+            return
+        }
+        shareItems = [session.fileURL]
+        showShare = true
+    }
+
+    private func shareMedia(_ session: VideoEvidenceSession) {
+        guard session.fileExists else {
+            playbackErrorMessage = "找不到视频文件：\(session.fileName)"
+            return
+        }
+        shareItems = [session.fileURL]
+        showShare = true
+    }
+
     // MARK: - Delete
 
     private func deleteAudio(_ session: RecordingSession) {
@@ -579,6 +631,7 @@ private struct MediaListCard: View {
     let isSelectionMode: Bool
     let isSelected: Bool
     let onPlay: () -> Void
+    let onShare: () -> Void
     let onDelete: () -> Void
     let onRename: () -> Void
     let onToggleSelection: () -> Void
@@ -633,6 +686,9 @@ private struct MediaListCard: View {
 
                 if !isSelectionMode {
                     Menu {
+                        Button(action: onShare) {
+                            Label("分享", systemImage: "square.and.arrow.up")
+                        }
                         Button {
                             onRename()
                         } label: {
@@ -659,6 +715,9 @@ private struct MediaListCard: View {
         }
         .contextMenu {
             if !isSelectionMode {
+                Button(action: onShare) {
+                    Label("分享", systemImage: "square.and.arrow.up")
+                }
                 Button(action: onRename) {
                     Label("重命名", systemImage: "pencil")
                 }
