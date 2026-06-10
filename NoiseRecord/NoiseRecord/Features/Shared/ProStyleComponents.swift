@@ -255,18 +255,112 @@ struct ProEmptyState: View {
     }
 }
 
-struct ProShareSheet: UIViewControllerRepresentable {
-    let items: [Any]
+// MARK: - Tab header
 
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: items, applicationActivities: nil)
+struct ProTabHeader<Trailing: View>: View {
+    let title: String
+    var theme: ModeVisualTheme
+    @ViewBuilder var trailing: () -> Trailing
+
+    init(
+        title: String,
+        theme: ModeVisualTheme,
+        @ViewBuilder trailing: @escaping () -> Trailing
+    ) {
+        self.title = title
+        self.theme = theme
+        self.trailing = trailing
     }
 
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(title)
+                .font(.title3.bold())
+                .lineLimit(1)
+
+            Spacer(minLength: 8)
+
+            trailing()
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .padding(.bottom, 4)
+    }
+}
+
+extension ProTabHeader where Trailing == EmptyView {
+    init(title: String, theme: ModeVisualTheme) {
+        self.init(title: title, theme: theme) { EmptyView() }
+    }
+}
+
+struct ProTabHeaderIconButton<MenuContent: View>: View {
+    let systemImage: String
+    let theme: ModeVisualTheme
+    @ViewBuilder var menuContent: () -> MenuContent
+
+    var body: some View {
+        Menu {
+            menuContent()
+        } label: {
+            Image(systemName: systemImage)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(theme.accent)
+                .frame(width: 36, height: 36)
+                .background(theme.badgeBackground)
+                .clipShape(Circle())
+        }
+    }
+}
+
+struct ProTabHeaderCapsuleButton: View {
+    let title: String
+    let theme: ModeVisualTheme
+    var systemImage: String?
+    var isProminent: Bool = false
+    var prominentColor: Color = .red
+    var disabled: Bool = false
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                if let systemImage {
+                    Image(systemName: systemImage)
+                }
+                Text(title)
+            }
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(isProminent ? .white : theme.accent)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(isProminent ? prominentColor : theme.badgeBackground)
+            .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .disabled(disabled)
+        .opacity(disabled ? 0.45 : 1)
+    }
+}
+
+struct ProTabHeaderTextButton: View {
+    let title: String
+    var theme: ModeVisualTheme?
+    let action: () -> Void
+
+    var body: some View {
+        Button(title, action: action)
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(theme?.accent ?? .primary)
+    }
 }
 
 extension View {
     func proTabBackground(theme: ModeVisualTheme) -> some View {
         background(ProPageBackground(theme: theme))
+    }
+
+    func proTabNavigationChrome() -> some View {
+        toolbar(.hidden, for: .navigationBar)
     }
 }

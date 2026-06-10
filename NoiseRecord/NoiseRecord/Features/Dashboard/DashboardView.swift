@@ -19,11 +19,28 @@ struct DashboardView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                monitoringBar
+        VStack(spacing: 0) {
+            ProTabHeader(title: "噪音监测", theme: theme) {
+                ProTabHeaderCapsuleButton(
+                    title: engine.isMonitoring ? "停止" : "开始",
+                    theme: theme,
+                    systemImage: engine.isMonitoring ? "stop.circle.fill" : "play.circle.fill",
+                    isProminent: engine.isMonitoring,
+                    prominentColor: .red
+                ) {
+                    Task {
+                        if engine.isMonitoring {
+                            engine.stopMonitoring()
+                        } else {
+                            await engine.requestPermissionAndStart()
+                        }
+                    }
+                }
+            }
 
-                EngineModeSwitchView(engine: engine)
+            ScrollView {
+                VStack(spacing: 20) {
+                    EngineModeSwitchView(engine: engine)
 
                 NoiseLevelGauge(db: engine.currentDB, mode: measurementMode)
 
@@ -96,21 +113,12 @@ struct DashboardView: View {
                     }
                     .buttonStyle(.bordered)
                 }
+                }
+                .padding()
             }
-            .padding()
         }
-        .background(
-            LinearGradient(
-                colors: [
-                    theme.cardTint,
-                    Color(.systemBackground),
-                ],
-                startPoint: .top,
-                endPoint: .center
-            )
-            .ignoresSafeArea()
-        )
-        .navigationTitle("噪音监测")
+        .proTabBackground(theme: theme)
+        .proTabNavigationChrome()
         .onChange(of: engine.currentDB) { _, _ in
             persistSampleIfNeeded()
         }
@@ -137,28 +145,6 @@ struct DashboardView: View {
         } else {
             "标准听感模式 · 可对照国家住宅噪音标准 · 非认证声级计"
         }
-    }
-
-    private var monitoringBar: some View {
-        Button {
-            Task {
-                if engine.isMonitoring {
-                    engine.stopMonitoring()
-                } else {
-                    await engine.requestPermissionAndStart()
-                }
-            }
-        } label: {
-            Label(
-                engine.isMonitoring ? "停止监测" : "开始监测",
-                systemImage: engine.isMonitoring ? "stop.circle.fill" : "play.circle.fill"
-            )
-            .font(.headline)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-        }
-        .buttonStyle(.borderedProminent)
-        .tint(engine.isMonitoring ? .red : theme.accent)
     }
 
     private func persistSampleIfNeeded() {

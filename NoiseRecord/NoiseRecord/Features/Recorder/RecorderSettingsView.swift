@@ -17,9 +17,12 @@ struct RecorderSettingsView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                statusHero
+        VStack(spacing: 0) {
+            ProTabHeader(title: "声控录音", theme: theme)
+
+            ScrollView {
+                VStack(spacing: 20) {
+                    statusHero
 
                 ProCard(theme: theme) {
                     ProToggleRow(
@@ -58,11 +61,12 @@ struct RecorderSettingsView: View {
                 }
 
                 footerNote
+                }
+                .padding()
             }
-            .padding()
         }
         .proTabBackground(theme: theme)
-        .navigationTitle("声控录音")
+        .proTabNavigationChrome()
     }
 
     private var statusHero: some View {

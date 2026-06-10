@@ -59,8 +59,6 @@ struct RecordingListView: View {
     @State private var presentedVideoURL: URL?
     @State private var presentedVideoTitle: String?
 
-    @State private var shareItems: [Any] = []
-    @State private var showShare = false
     @State private var renameTarget: RenameTarget?
     @State private var renameText = ""
     @State private var showDeleteConfirm = false
@@ -96,14 +94,16 @@ struct RecordingListView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            pageHeader
+
             Picker("类型", selection: $selectedTab) {
                 ForEach(RecordingListTab.allCases) { tab in
                     Text(tab.rawValue).tag(tab)
                 }
             }
             .pickerStyle(.segmented)
-            .padding(.horizontal)
-            .padding(.top, 8)
+            .padding(.horizontal, 16)
+            .padding(.top, 10)
             .onChange(of: selectedTab) { _, _ in
                 exitSelectionMode()
             }
@@ -121,11 +121,7 @@ struct RecordingListView: View {
             }
         }
         .proTabBackground(theme: theme)
-        .navigationTitle("记录文件")
-        .toolbar { toolbarContent }
-        .sheet(isPresented: $showShare) {
-            ProShareSheet(items: shareItems)
-        }
+        .proTabNavigationChrome()
         .fullScreenCover(isPresented: Binding(
             get: { presentedVideoURL != nil },
             set: { if !$0 { dismissVideoPlayer() } }
@@ -171,36 +167,33 @@ struct RecordingListView: View {
         }
     }
 
-    @ToolbarContentBuilder
-    private var toolbarContent: some ToolbarContent {
-        if isSelectionMode {
-            ToolbarItem(placement: .primaryAction) {
-                Button(isAllSelectedInCurrentTab ? "取消全选" : "全选") {
+    private var pageHeader: some View {
+        ProTabHeader(title: "记录文件", theme: theme) {
+            if isSelectionMode {
+                ProTabHeaderTextButton(
+                    title: isAllSelectedInCurrentTab ? "取消全选" : "全选",
+                    theme: theme
+                ) {
                     toggleSelectAll()
                 }
-                .foregroundStyle(theme.accent)
-            }
-
-            ToolbarItem(placement: .topBarTrailing) {
-                Button("取消") { exitSelectionMode() }
-            }
-        } else {
-            ToolbarItem(placement: .primaryAction) {
-                Menu {
+                ProTabHeaderTextButton(title: "取消", theme: theme) {
+                    exitSelectionMode()
+                }
+            } else {
+                ProTabHeaderIconButton(systemImage: "arrow.up.arrow.down", theme: theme) {
                     Picker("排序", selection: $sortOption) {
                         ForEach(RecordingSortOption.allCases) { option in
                             Text(option.rawValue).tag(option)
                         }
                     }
-                } label: {
-                    Label("排序", systemImage: "arrow.up.arrow.down")
-                        .foregroundStyle(theme.accent)
                 }
-            }
-
-            ToolbarItem(placement: .topBarTrailing) {
-                Button("选择") { isSelectionMode = true }
-                    .disabled(currentTabIsEmpty)
+                ProTabHeaderCapsuleButton(
+                    title: "选择",
+                    theme: theme,
+                    disabled: currentTabIsEmpty
+                ) {
+                    isSelectionMode = true
+                }
             }
         }
     }
@@ -502,8 +495,7 @@ struct RecordingListView: View {
             playbackErrorMessage = "找不到音频文件：\(session.fileName)"
             return
         }
-        shareItems = [session.fileURL]
-        showShare = true
+        SharePresenter.present(items: [session.fileURL])
     }
 
     private func shareMedia(_ session: VideoEvidenceSession) {
@@ -511,8 +503,7 @@ struct RecordingListView: View {
             playbackErrorMessage = "找不到视频文件：\(session.fileName)"
             return
         }
-        shareItems = [session.fileURL]
-        showShare = true
+        SharePresenter.present(items: [session.fileURL])
     }
 
     // MARK: - Delete

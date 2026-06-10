@@ -89,16 +89,20 @@ struct VideoEvidenceView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                previewSection
-                controlSection
-                tipsSection
+        VStack(spacing: 0) {
+            ProTabHeader(title: "录像", theme: theme)
+
+            ScrollView {
+                VStack(spacing: 20) {
+                    previewSection
+                    controlSection
+                    tipsSection
+                }
+                .padding()
             }
-            .padding()
         }
         .proTabBackground(theme: theme)
-        .navigationTitle("录像")
+        .proTabNavigationChrome()
         .task {
             await coordinator.configure()
         }

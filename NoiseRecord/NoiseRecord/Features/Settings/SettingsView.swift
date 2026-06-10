@@ -17,8 +17,15 @@ struct SettingsView: View {
         AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
     }
 
+    private var theme: ModeVisualTheme {
+        .theme(for: measurementMode)
+    }
+
     var body: some View {
-        Form {
+        VStack(spacing: 0) {
+            ProTabHeader(title: "设置", theme: theme)
+
+            Form {
             Section {
                 EngineModeSwitchView(engine: engine, showsInlineHint: false)
                     .listRowInsets(EdgeInsets(top: 12, leading: 0, bottom: 12, trailing: 0))
@@ -102,8 +109,11 @@ struct SettingsView: View {
             } footer: {
                 Text("测量模式偏移基准 115–118 dB，安静房间本底应稳定在 30–40 dB。可配合专业声级计进一步微调。")
             }
+            }
+            .scrollContentBackground(.hidden)
         }
-        .navigationTitle("设置")
+        .proTabBackground(theme: theme)
+        .proTabNavigationChrome()
         .onAppear {
             refreshCalibrationDisplay()
         }
