@@ -1,61 +1,62 @@
-//
-//  ContentView.swift
-//  NoiseRecord
-//
-//  Created by Rock on 10/6/2026.
-//
-
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct ContentView: View {
+    @State private var engine = NoiseMonitorEngine()
     @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
 
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
-                }
-                .onDelete(perform: deleteItems)
+        TabView {
+            NavigationStack {
+                DashboardView(engine: engine)
             }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
+            .tabItem {
+                Label("监测", systemImage: "waveform")
             }
-        } detail: {
-            Text("Select an item")
+
+            NavigationStack {
+                RecorderSettingsView(engine: engine)
+            }
+            .tabItem {
+                Label("声控", systemImage: "record.circle")
+            }
+
+            NavigationStack {
+                RecordingListView()
+            }
+            .tabItem {
+                Label("录音", systemImage: "list.bullet")
+            }
+
+            NavigationStack {
+                SettingsView(engine: engine)
+            }
+            .tabItem {
+                Label("设置", systemImage: "gearshape")
+            }
+        }
+        .onAppear {
+            engine.onRecordingFinished = { event in
+                saveRecording(event)
+            }
         }
     }
 
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
-            }
-        }
+    private func saveRecording(_ event: RecordingFinishedEvent) {
+        let session = RecordingSession(
+            fileName: event.fileURL.lastPathComponent,
+            filePath: event.fileURL.path,
+            startedAt: event.startedAt,
+            endedAt: event.endedAt,
+            peakDB: event.peakDB,
+            averageDB: event.averageDB,
+            noiseType: event.noiseType
+        )
+        modelContext.insert(session)
     }
 }
 
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+        .modelContainer(for: [RecordingSession.self, MeasurementSample.self], inMemory: true)
 }

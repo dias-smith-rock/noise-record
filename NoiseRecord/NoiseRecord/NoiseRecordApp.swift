@@ -1,18 +1,12 @@
-//
-//  NoiseRecordApp.swift
-//  NoiseRecord
-//
-//  Created by Rock on 10/6/2026.
-//
-
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 @main
 struct NoiseRecordApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            RecordingSession.self,
+            MeasurementSample.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
