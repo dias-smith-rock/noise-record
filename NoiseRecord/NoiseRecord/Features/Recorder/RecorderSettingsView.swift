@@ -18,7 +18,7 @@ struct RecorderSettingsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ProTabHeader(title: "声控录音", theme: theme)
+            ProTabHeader(title: "Voice Recording", theme: theme)
 
             ScrollView {
                 VStack(spacing: 20) {
@@ -26,8 +26,8 @@ struct RecorderSettingsView: View {
 
                 ProCard(theme: theme) {
                     ProToggleRow(
-                        title: "启用声控录音",
-                        subtitle: "超过开启阈值自动录音，低于停止阈值并延迟后结束。",
+                        title: "Voice-activated recording",
+                        subtitle: "Record when level exceeds the start threshold; stop after falling below the stop threshold and a short delay.",
                         isOn: $engine.voiceActivatedEnabled,
                         theme: theme,
                         icon: "record.circle"
@@ -43,8 +43,8 @@ struct RecorderSettingsView: View {
 
                 ProCard(theme: theme) {
                     ProToggleRow(
-                        title: "后台持续监测",
-                        subtitle: "退到后台前将自动开始监测，后台仍可声控录音，会增加电量消耗。",
+                        title: "Background monitoring",
+                        subtitle: "Automatically starts monitoring before backgrounding; voice recording continues in background. Uses more battery.",
                         isOn: $engine.backgroundMonitoringEnabled,
                         theme: theme,
                         icon: "moon.fill"
@@ -73,17 +73,17 @@ struct RecorderSettingsView: View {
         VStack(spacing: 14) {
             HStack(spacing: 12) {
                 ProMetricCard(
-                    title: "开启阈值",
+                    title: "Start",
                     value: "\(Int(engine.highThreshold))",
                     theme: theme
                 )
                 ProMetricCard(
-                    title: "停止阈值",
+                    title: "Stop",
                     value: "\(Int(engine.lowThreshold))",
                     theme: theme
                 )
                 ProMetricCard(
-                    title: "当前分贝",
+                    title: "Current dB",
                     value: String(format: "%.0f", engine.currentDB),
                     theme: theme
                 )
@@ -92,7 +92,7 @@ struct RecorderSettingsView: View {
             if engine.voiceActivatedEnabled {
                 ProRecordingStatusBadge(state: engine.recordingState, theme: theme)
             } else {
-                Text("声控录音未启用")
+                Text("Voice recording is off")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -103,13 +103,13 @@ struct RecorderSettingsView: View {
         ProCard(theme: theme) {
             VStack(alignment: .leading, spacing: 18) {
                 ProSectionHeader(
-                    title: "阈值设置",
-                    subtitle: "建议停止阈值比开启阈值低 5–10 dB，避免频繁开关",
+                    title: "Thresholds",
+                    subtitle: "Set stop 5–10 dB below start to avoid rapid on/off",
                     theme: theme
                 )
 
                 ProSliderRow(
-                    title: "开启阈值",
+                    title: "Start threshold",
                     value: $engine.highThreshold,
                     range: 30...90,
                     step: 1,
@@ -118,7 +118,7 @@ struct RecorderSettingsView: View {
                 .onChange(of: engine.highThreshold) { _, _ in engine.persistSettings() }
 
                 ProSliderRow(
-                    title: "停止阈值",
+                    title: "Stop threshold",
                     value: $engine.lowThreshold,
                     range: 20...80,
                     step: 1,
@@ -129,7 +129,7 @@ struct RecorderSettingsView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "info.circle")
                         .foregroundStyle(theme.accent)
-                    Text("阈值基于当前测量模式（\(measurementMode.segmentLabel)）的分贝读数。")
+                    Text("Thresholds use dB readings in the current mode (\(measurementMode.segmentLabel)).")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -140,8 +140,8 @@ struct RecorderSettingsView: View {
     private var aiCard: some View {
         ProCard(theme: theme) {
             ProToggleRow(
-                title: "AI 噪音分类",
-                subtitle: "识别施工、犬吠、交通等声音，可仅录制目标噪音。",
+                title: "AI noise classification",
+                subtitle: "Detect construction, barking, traffic, and more; optionally record only selected types.",
                 isOn: $engine.aiClassificationEnabled,
                 theme: theme,
                 icon: "waveform.badge.magnifyingglass"
@@ -160,8 +160,8 @@ struct RecorderSettingsView: View {
         ProCard(theme: theme) {
             VStack(alignment: .leading, spacing: 14) {
                 ProSectionHeader(
-                    title: "仅录制以下类型",
-                    subtitle: "不选择则录制全部超阈值声音",
+                    title: "Record only these types",
+                    subtitle: "Leave empty to record all sounds above threshold",
                     theme: theme
                 )
 
@@ -171,7 +171,7 @@ struct RecorderSettingsView: View {
                             toggleAILabel(label)
                         } label: {
                             ProChip(
-                                text: localizedAILabel(label),
+                                text: displayAILabel(label),
                                 theme: theme,
                                 isSelected: engine.aiFilterLabels.contains(label)
                             )
@@ -184,7 +184,7 @@ struct RecorderSettingsView: View {
     }
 
     private var footerNote: some View {
-        Text("声控录音文件保存在「录音」标签页，支持播放与 CSV 导出。")
+        Text("Voice recordings are saved in the Files tab under Voice.")
             .font(.caption2)
             .foregroundStyle(.tertiary)
             .multilineTextAlignment(.center)
@@ -199,21 +199,21 @@ struct RecorderSettingsView: View {
         }
     }
 
-    private func localizedAILabel(_ label: String) -> String {
+    private func displayAILabel(_ label: String) -> String {
         switch label {
-        case "speech": "说话"
-        case "music": "音乐"
-        case "dog": "犬吠"
-        case "cat": "猫叫"
-        case "car": "汽车"
-        case "engine": "引擎"
-        case "drill": "电钻"
-        case "hammer": "敲击"
-        case "alarm": "警报"
-        case "siren": "鸣笛"
-        case "applause": "掌声"
-        case "laughter": "笑声"
-        default: label
+        case "speech": "Speech"
+        case "music": "Music"
+        case "dog": "Dog bark"
+        case "cat": "Cat"
+        case "car": "Car"
+        case "engine": "Engine"
+        case "drill": "Drill"
+        case "hammer": "Hammer"
+        case "alarm": "Alarm"
+        case "siren": "Siren"
+        case "applause": "Applause"
+        case "laughter": "Laughter"
+        default: label.capitalized
         }
     }
 }
@@ -251,7 +251,7 @@ private struct FlowLayout: Layout {
                 y += rowHeight + spacing
                 rowHeight = 0
             }
-            frames.append(CGRect(origin: CGPoint(x: x, y: y), size: size))
+            frames.append(CGRect(x: x, y: y, width: size.width, height: size.height))
             rowHeight = max(rowHeight, size.height)
             x += size.width + spacing
         }

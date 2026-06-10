@@ -4,18 +4,18 @@ import SwiftData
 import SwiftUI
 
 private enum RecordingListTab: String, CaseIterable, Identifiable {
-    case video = "录像"
-    case audio = "声控录音"
+    case video = "Video"
+    case audio = "Voice"
 
     var id: String { rawValue }
 }
 
 private enum RecordingSortOption: String, CaseIterable, Identifiable {
-    case dateDescending = "时间（新→旧）"
-    case dateAscending = "时间（旧→新）"
-    case peakDescending = "峰值（高→低）"
-    case peakAscending = "峰值（低→高）"
-    case nameAscending = "名称（A→Z）"
+    case dateDescending = "Date (newest)"
+    case dateAscending = "Date (oldest)"
+    case peakDescending = "Peak (high)"
+    case peakAscending = "Peak (low)"
+    case nameAscending = "Name (A–Z)"
 
     var id: String { rawValue }
 }
@@ -96,7 +96,7 @@ struct RecordingListView: View {
         VStack(spacing: 0) {
             pageHeader
 
-            Picker("类型", selection: $selectedTab) {
+            Picker("Type", selection: $selectedTab) {
                 ForEach(RecordingListTab.allCases) { tab in
                     Text(tab.rawValue).tag(tab)
                 }
@@ -138,57 +138,57 @@ struct RecordingListView: View {
                 }
             }
         }
-        .alert("重命名", isPresented: Binding(
+        .alert("Rename", isPresented: Binding(
             get: { renameTarget != nil },
             set: { if !$0 { renameTarget = nil } }
         )) {
-            TextField("文件名", text: $renameText)
-            Button("取消", role: .cancel) { renameTarget = nil }
-            Button("保存") { applyRename() }
+            TextField("File name", text: $renameText)
+            Button("Cancel", role: .cancel) { renameTarget = nil }
+            Button("Save") { applyRename() }
         } message: {
-            Text("不含扩展名时将自动保留原格式。")
+            Text("The original extension is kept if you omit it.")
         }
         .confirmationDialog(
-            "删除选中的 \(selectedCount) 项？",
+            "Delete \(selectedCount) selected item(s)?",
             isPresented: $showDeleteConfirm,
             titleVisibility: .visible
         ) {
-            Button("删除", role: .destructive) { deleteSelected() }
-            Button("取消", role: .cancel) {}
+            Button("Delete", role: .destructive) { deleteSelected() }
+            Button("Cancel", role: .cancel) {}
         }
         .task { repairStoredMediaPaths() }
-        .alert("无法播放", isPresented: Binding(
+        .alert("Cannot Play", isPresented: Binding(
             get: { playbackErrorMessage != nil },
             set: { if !$0 { playbackErrorMessage = nil } }
         )) {
-            Button("确定", role: .cancel) { playbackErrorMessage = nil }
+            Button("OK", role: .cancel) { playbackErrorMessage = nil }
         } message: {
             Text(playbackErrorMessage ?? "")
         }
     }
 
     private var pageHeader: some View {
-        ProTabHeader(title: "记录文件", theme: theme) {
+        ProTabHeader(title: "Files", theme: theme) {
             if isSelectionMode {
                 ProTabHeaderTextButton(
-                    title: isAllSelectedInCurrentTab ? "取消全选" : "全选",
+                    title: isAllSelectedInCurrentTab ? "Deselect All" : "Select All",
                     theme: theme
                 ) {
                     toggleSelectAll()
                 }
-                ProTabHeaderTextButton(title: "取消", theme: theme) {
+                ProTabHeaderTextButton(title: "Cancel", theme: theme) {
                     exitSelectionMode()
                 }
             } else {
                 ProTabHeaderIconButton(systemImage: "arrow.up.arrow.down", theme: theme) {
-                    Picker("排序", selection: $sortOption) {
+                    Picker("Sort", selection: $sortOption) {
                         ForEach(RecordingSortOption.allCases) { option in
                             Text(option.rawValue).tag(option)
                         }
                     }
                 }
                 ProTabHeaderCapsuleButton(
-                    title: "选择",
+                    title: "Select",
                     theme: theme,
                     disabled: currentTabIsEmpty
                 ) {
@@ -202,7 +202,7 @@ struct RecordingListView: View {
         VStack(spacing: 0) {
             Divider()
             HStack(spacing: 20) {
-                Text("已选 \(selectedCount) 项")
+                Text("\(selectedCount) selected")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
@@ -211,7 +211,7 @@ struct RecordingListView: View {
                 Button(role: .destructive) {
                     showDeleteConfirm = true
                 } label: {
-                    Label("删除", systemImage: "trash")
+                    Label("Delete", systemImage: "trash")
                         .font(.headline)
                 }
                 .buttonStyle(.borderedProminent)
@@ -229,8 +229,8 @@ struct RecordingListView: View {
         case .video:
             if sortedVideoSessions.isEmpty {
                 ProEmptyState(
-                    title: "暂无录像",
-                    message: "在「录像」页录制带分贝水印的视频后，将显示在此。",
+                    title: "No videos yet",
+                    message: "Record a video with dB overlay on the Video tab to see it here.",
                     systemImage: "video.slash",
                     theme: theme
                 )
@@ -260,8 +260,8 @@ struct RecordingListView: View {
         case .audio:
             if sortedAudioSessions.isEmpty {
                 ProEmptyState(
-                    title: "暂无录音",
-                    message: "在「声控」页启用声控录音后，超过阈值的声音将自动保存在此。",
+                    title: "No recordings yet",
+                    message: "Enable voice-activated recording on the Voice tab; sounds above threshold are saved here.",
                     systemImage: "waveform",
                     theme: theme
                 )
@@ -299,18 +299,18 @@ struct RecordingListView: View {
         HStack(spacing: 12) {
             switch selectedTab {
             case .audio:
-                ProMetricCard(title: "录音数", value: "\(sessions.count)", theme: theme)
-                ProMetricCard(title: "总时长", value: formattedAudioTotalDuration, theme: theme)
+                ProMetricCard(title: "Clips", value: "\(sessions.count)", theme: theme)
+                ProMetricCard(title: "Duration", value: formattedAudioTotalDuration, theme: theme)
                 ProMetricCard(
-                    title: "最高峰值",
+                    title: "Peak",
                     value: sessions.isEmpty ? "—" : "\(Int(sessions.map(\.peakDB).max() ?? 0))",
                     theme: theme
                 )
             case .video:
-                ProMetricCard(title: "录像数", value: "\(videoSessions.count)", theme: theme)
-                ProMetricCard(title: "总时长", value: formattedVideoTotalDuration, theme: theme)
+                ProMetricCard(title: "Videos", value: "\(videoSessions.count)", theme: theme)
+                ProMetricCard(title: "Duration", value: formattedVideoTotalDuration, theme: theme)
                 ProMetricCard(
-                    title: "最高峰值",
+                    title: "Peak",
                     value: videoSessions.isEmpty ? "—" : "\(Int(videoSessions.map(\.peakDB).max() ?? 0))",
                     theme: theme
                 )
@@ -352,7 +352,7 @@ struct RecordingListView: View {
     }
 
     private func videoBadges(for video: VideoEvidenceSession) -> [String] {
-        var badges = ["峰值 \(Int(video.peakDB)) dB"]
+        var badges = ["Peak \(Int(video.peakDB)) dB"]
         if let lat = video.latitude, let lon = video.longitude {
             badges.append(String(format: "%.4f, %.4f", lat, lon))
         }
@@ -360,7 +360,7 @@ struct RecordingListView: View {
     }
 
     private func audioBadges(for session: RecordingSession) -> [String] {
-        var badges = ["峰值 \(Int(session.peakDB)) dB", "均值 \(Int(session.averageDB)) dB"]
+        var badges = ["Peak \(Int(session.peakDB)) dB", "Avg \(Int(session.averageDB)) dB"]
         if let type = session.noiseType {
             badges.append(type)
         }
@@ -380,7 +380,7 @@ struct RecordingListView: View {
         }
         markVideoAsRead(session)
         guard session.fileExists else {
-            playbackErrorMessage = "找不到视频文件：\(session.fileName)"
+            playbackErrorMessage = "Video file not found: \(session.fileName)"
             return
         }
         audioPlayerController.stop(restoreSession: true)
@@ -411,7 +411,7 @@ struct RecordingListView: View {
         }
         markAudioAsRead(session)
         guard session.fileExists else {
-            playbackErrorMessage = "找不到音频文件：\(session.fileName)"
+            playbackErrorMessage = "Audio file not found: \(session.fileName)"
             return
         }
         audioPlayerController.togglePlayback(
@@ -508,7 +508,7 @@ struct RecordingListView: View {
 
     private func shareMedia(_ session: RecordingSession) {
         guard session.fileExists else {
-            playbackErrorMessage = "找不到音频文件：\(session.fileName)"
+            playbackErrorMessage = "Audio file not found: \(session.fileName)"
             return
         }
         SharePresenter.present(items: [session.fileURL])
@@ -516,7 +516,7 @@ struct RecordingListView: View {
 
     private func shareMedia(_ session: VideoEvidenceSession) {
         guard session.fileExists else {
-            playbackErrorMessage = "找不到视频文件：\(session.fileName)"
+            playbackErrorMessage = "Video file not found: \(session.fileName)"
             return
         }
         SharePresenter.present(items: [session.fileURL])
@@ -707,15 +707,15 @@ private struct MediaListCard: View {
                 if !isSelectionMode {
                     Menu {
                         Button(action: onShare) {
-                            Label("分享", systemImage: "square.and.arrow.up")
+                            Label("Share", systemImage: "square.and.arrow.up")
                         }
                         Button {
                             onRename()
                         } label: {
-                            Label("重命名", systemImage: "pencil")
+                            Label("Rename", systemImage: "pencil")
                         }
                         Button(role: .destructive, action: onDelete) {
-                            Label("删除", systemImage: "trash")
+                            Label("Delete", systemImage: "trash")
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
@@ -738,13 +738,13 @@ private struct MediaListCard: View {
         .contextMenu {
             if !isSelectionMode {
                 Button(action: onShare) {
-                    Label("分享", systemImage: "square.and.arrow.up")
+                    Label("Share", systemImage: "square.and.arrow.up")
                 }
                 Button(action: onRename) {
-                    Label("重命名", systemImage: "pencil")
+                    Label("Rename", systemImage: "pencil")
                 }
                 Button(role: .destructive, action: onDelete) {
-                    Label("删除", systemImage: "trash")
+                    Label("Delete", systemImage: "trash")
                 }
             }
         }
@@ -790,7 +790,7 @@ private struct VideoPlaybackSheet: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("完成", action: onDismiss)
+                        Button("Done", action: onDismiss)
                     }
                 }
                 .onAppear {

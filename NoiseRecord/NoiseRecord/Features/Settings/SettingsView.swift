@@ -23,7 +23,7 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ProTabHeader(title: "设置", theme: theme)
+            ProTabHeader(title: "Settings", theme: theme)
 
             Form {
             Section {
@@ -31,14 +31,14 @@ struct SettingsView: View {
                     .listRowInsets(EdgeInsets(top: 12, leading: 0, bottom: 12, trailing: 0))
                     .listRowBackground(Color.clear)
             } header: {
-                Text("测量模式")
+                Text("Measurement Mode")
             } footer: {
                 Text(measurementMode.coreDescription)
             }
 
             if !engine.isHighSensitivityMode {
                 Section {
-                    Picker("A/C/Z 计权", selection: Binding(
+                    Picker("A/C/Z weighting", selection: Binding(
                         get: { engine.weightingType },
                         set: { engine.updateWeighting($0) }
                     )) {
@@ -48,27 +48,27 @@ struct SettingsView: View {
                     }
                     .pickerStyle(.segmented)
                 } header: {
-                    Text("高级 · 标准模式计权")
+                    Text("Advanced · Standard mode weighting")
                 } footer: {
-                    Text("一般用户保持默认 A 计权即可。仅在需要对比 C/Z 计权时使用。")
+                    Text("Most users should keep the default A-weighting. Change only when comparing C/Z curves.")
                 }
             }
 
             Section {
-                LabeledContent("当前模式", value: measurementMode.userFacingTitle)
-                LabeledContent("技术底标", value: measurementMode.technicalBadge)
-                LabeledContent("设备型号", value: DeviceCalibrationStore.deviceModelIdentifier)
-                LabeledContent("设备偏移", value: String(format: "%.1f dB", DeviceCalibrationStore.deviceOffset))
-                LabeledContent("用户微调", value: String(format: "%+.1f dB", displayedUserAdjustment))
-                LabeledContent("总偏移量", value: String(format: "%.1f dB", displayedTotalOffset))
-                LabeledContent("RMS 下限", value: String(format: "%.0e", SPLCalculator.rmsFloor))
+                LabeledContent("Current mode", value: measurementMode.userFacingTitle)
+                LabeledContent("Technical badge", value: measurementMode.technicalBadge)
+                LabeledContent("Device model", value: DeviceCalibrationStore.deviceModelIdentifier)
+                LabeledContent("Device offset", value: String(format: "%.1f dB", DeviceCalibrationStore.deviceOffset))
+                LabeledContent("User adjustment", value: String(format: "%+.1f dB", displayedUserAdjustment))
+                LabeledContent("Total offset", value: String(format: "%.1f dB", displayedTotalOffset))
+                LabeledContent("RMS floor", value: String(format: "%.0e", SPLCalculator.rmsFloor))
 
                 VStack(alignment: .leading) {
-                    Text("参考声级：\(Int(calibrationReference)) dB")
+                    Text("Reference level: \(Int(calibrationReference)) dB")
                     Slider(value: $calibrationReference, in: 60...110, step: 1)
                 }
 
-                Button("使用当前读数校准") {
+                Button("Calibrate with current reading") {
                     let previousAdjustment = DeviceCalibrationStore.userAdjustment
                     DeviceCalibrationStore.calibrate(
                         referenceSPL: calibrationReference,
@@ -80,34 +80,34 @@ struct SettingsView: View {
                     let delta = newAdjustment - previousAdjustment
                     if abs(delta) < 0.05 {
                         calibrationAlertMessage = """
-                        校准已完成，读数微调幅度很小。
+                        Calibration saved. The adjustment was very small.
 
-                        用户微调：\(formatSignedDB(newAdjustment))
-                        总偏移量：\(formatDB(displayedTotalOffset))
+                        User adjustment: \(formatSignedDB(newAdjustment))
+                        Total offset: \(formatDB(displayedTotalOffset))
 
-                        请继续在监测页观察读数是否符合您的声级计。
+                        Keep monitoring and compare against your sound level meter.
                         """
                     } else {
                         calibrationAlertMessage = """
-                        已根据 \(Int(calibrationReference)) dB 的参考声级完成校准。
+                        Calibrated to reference level \(Int(calibrationReference)) dB.
 
-                        用户微调：\(formatSignedDB(previousAdjustment)) → \(formatSignedDB(newAdjustment))
-                        总偏移量：\(formatDB(displayedTotalOffset))
+                        User adjustment: \(formatSignedDB(previousAdjustment)) → \(formatSignedDB(newAdjustment))
+                        Total offset: \(formatDB(displayedTotalOffset))
 
-                        之后监测页显示的分贝值会按新基准计算。
+                        Monitor readings will use the new baseline.
                         """
                     }
                     showCalibrationAlert = true
                 }
                 .disabled(!engine.isMonitoring)
 
-                Button("重置校准", role: .destructive) {
+                Button("Reset calibration", role: .destructive) {
                     performResetCalibration()
                 }
             } header: {
-                Text("设备校准")
+                Text("Device calibration")
             } footer: {
-                Text("测量模式偏移基准 115–118 dB，安静房间本底应稳定在 30–40 dB。可配合专业声级计进一步微调。")
+                Text("Mode offset baseline is 115–118 dB; a quiet room should read about 30–40 dB. Fine-tune with a professional meter if needed.")
             }
             }
             .scrollContentBackground(.hidden)
@@ -117,13 +117,13 @@ struct SettingsView: View {
         .onAppear {
             refreshCalibrationDisplay()
         }
-        .alert("校准已保存", isPresented: $showCalibrationAlert) {
-            Button("好的", role: .cancel) {}
+        .alert("Calibration saved", isPresented: $showCalibrationAlert) {
+            Button("OK", role: .cancel) {}
         } message: {
             Text(calibrationAlertMessage)
         }
         .alert(resetAlertTitle, isPresented: $showResetAlert) {
-            Button("好的", role: .cancel) {}
+            Button("OK", role: .cancel) {}
         } message: {
             Text(resetAlertMessage)
         }
@@ -136,24 +136,24 @@ struct SettingsView: View {
         refreshCalibrationDisplay()
 
         if abs(previousAdjustment) < 0.05 {
-            resetAlertTitle = "当前已是出厂默认"
+            resetAlertTitle = "Already at factory default"
             resetAlertMessage = """
-            您还没有做过手动微调，无需重置。
+            No manual adjustment was set; nothing to reset.
 
-            用户微调：0 dB（无额外调整）
-            总偏移量：\(formatDB(displayedTotalOffset))
+            User adjustment: 0 dB (no extra offset)
+            Total offset: \(formatDB(displayedTotalOffset))
 
-            安静房间的分贝读数一般会在 30–40 dB 左右。
+            A quiet room should read about 30–40 dB.
             """
         } else {
-            resetAlertTitle = "已恢复出厂校准"
+            resetAlertTitle = "Factory calibration restored"
             resetAlertMessage = """
-            已清除您之前设置的手动微调（\(formatSignedDB(previousAdjustment))）。
+            Cleared your manual adjustment (\(formatSignedDB(previousAdjustment))).
 
-            总偏移量：\(formatDB(previousTotal)) → \(formatDB(displayedTotalOffset))
-            用户微调：\(formatSignedDB(previousAdjustment)) → 0 dB
+            Total offset: \(formatDB(previousTotal)) → \(formatDB(displayedTotalOffset))
+            User adjustment: \(formatSignedDB(previousAdjustment)) → 0 dB
 
-            监测页的分贝读数会回到出厂默认水平。若读数仍不准，可重新用声级计校准。
+            Monitor readings return to factory defaults. Recalibrate with a meter if needed.
             """
         }
         showResetAlert = true

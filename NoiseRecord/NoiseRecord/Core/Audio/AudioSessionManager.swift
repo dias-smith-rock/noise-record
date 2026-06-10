@@ -8,11 +8,11 @@ enum AudioSessionError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .permissionDenied:
-            "麦克风权限被拒绝，请在设置中开启。"
+            "Microphone access was denied. Enable it in Settings."
         case .configurationFailed(let message):
-            "音频会话配置失败：\(message)"
+            "Audio session configuration failed: \(message)"
         case .activationFailed:
-            "音频会话激活失败。请回到应用前台后重试；若已开启后台监测，请确认麦克风权限正常。"
+            "Audio session activation failed. Return to the app and try again. If background monitoring is on, check microphone permission."
         }
     }
 

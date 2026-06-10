@@ -13,7 +13,7 @@ struct ModeExplanationSheet: View {
                     modeHero
 
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("这个模式是做什么的？")
+                        Text("What does this mode do?")
                             .font(.headline)
                         Text(mode.coreDescription)
                             .font(.body)
@@ -22,7 +22,7 @@ struct ModeExplanationSheet: View {
                     }
 
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("详细说明")
+                        Text("Details")
                             .font(.headline)
                         Text(mode.tooltipCopy)
                             .font(.body)
@@ -34,7 +34,7 @@ struct ModeExplanationSheet: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14))
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Label("为什么两个模式数值差很多？", systemImage: "questionmark.circle")
+                        Label("Why do the two modes read so differently?", systemImage: "questionmark.circle")
                             .font(.subheadline.bold())
                         Text(mode.comparisonHint)
                             .font(.subheadline)
@@ -49,11 +49,11 @@ struct ModeExplanationSheet: View {
                 }
                 .padding()
             }
-            .navigationTitle("模式说明")
+            .navigationTitle("Mode Guide")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("知道了") { dismiss() }
+                    Button("Got it") { dismiss() }
                 }
             }
         }
@@ -86,19 +86,19 @@ struct ModeExplanationSheet: View {
 
     private var modeComparisonCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("两种模式怎么选？")
+            Text("Which mode should I use?")
                 .font(.headline)
 
             comparisonRow(
                 mode: .standard,
                 icon: "ear.fill",
-                summary: "日常噪音、邻里纠纷、对照国家标准"
+                summary: "Daily noise, neighbor disputes, noise standards"
             )
             Divider()
             comparisonRow(
                 mode: .highSensitivity,
                 icon: "waveform.badge.magnifyingglass",
-                summary: "隐性低频、机器异响、深夜取证"
+                summary: "Hidden low-frequency noise, machine faults, night evidence"
             )
         }
         .padding()

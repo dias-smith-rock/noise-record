@@ -37,7 +37,7 @@ struct ModeSwitchView: View {
     private var headerRow: some View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("测量模式")
+                Text("Measurement Mode")
                     .font(.subheadline.bold())
                 Text(mode.userFacingTitle)
                     .font(.caption)
@@ -53,7 +53,7 @@ struct ModeSwitchView: View {
                 Image(systemName: "info.circle")
                     .font(.title3)
                     .foregroundStyle(theme.accent)
-                    .accessibilityLabel("查看模式说明")
+                    .accessibilityLabel("View mode explanation")
             }
             .buttonStyle(.plain)
         }
@@ -122,7 +122,7 @@ struct ModeSwitchView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
-                Button("了解两种模式的区别") {
+                Button("Learn about the two modes") {
                     explanationMode = mode
                     showExplanation = true
                 }

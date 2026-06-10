@@ -21,7 +21,7 @@ struct DashboardView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ProTabHeader(title: "噪音监测", theme: theme)
+            ProTabHeader(title: "Noise Monitor", theme: theme)
 
             ScrollView {
                 VStack(spacing: 20) {
@@ -30,9 +30,9 @@ struct DashboardView: View {
                     NoiseLevelGauge(db: engine.currentDB, mode: measurementMode)
 
                     HStack(spacing: 12) {
-                        StatCard(title: "最大", value: engine.maxDB, theme: theme)
-                        StatCard(title: "最小", value: engine.minDB, theme: theme)
-                        StatCard(title: "平均", value: engine.averageDB, theme: theme)
+                        StatCard(title: "Max", value: engine.maxDB, theme: theme)
+                        StatCard(title: "Min", value: engine.minDB, theme: theme)
+                        StatCard(title: "Avg", value: engine.averageDB, theme: theme)
                         StatCard(title: "Leq", value: engine.leq, theme: theme)
                     }
 
@@ -43,7 +43,7 @@ struct DashboardView: View {
                     if let label = engine.latestNoiseLabel, engine.aiClassificationEnabled {
                         HStack {
                             Image(systemName: "waveform.badge.magnifyingglass")
-                            Text("识别：\(label) (\(Int(engine.latestNoiseConfidence * 100))%)")
+                            Text("Detected: \(label) (\(Int(engine.latestNoiseConfidence * 100))%)")
                                 .font(.subheadline)
                         }
                         .foregroundStyle(.secondary)
@@ -51,10 +51,10 @@ struct DashboardView: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Text("时域波形")
+                            Text("Waveform")
                                 .font(.headline)
                             if measurementMode.isHighSensitivity {
-                                Text("全频扫描")
+                                Text("Full-band")
                                     .font(.caption2.bold())
                                     .foregroundStyle(theme.accent)
                                     .padding(.horizontal, 8)
@@ -68,7 +68,7 @@ struct DashboardView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("频谱分析")
+                        Text("Spectrum")
                             .font(.headline)
                         SpectrumView(spectrum: engine.latestSpectrum, mode: measurementMode)
                             .frame(height: 100)
@@ -80,7 +80,7 @@ struct DashboardView: View {
                         .multilineTextAlignment(.center)
 
                     HStack(spacing: 12) {
-                        Button("生成报告") {
+                        Button("Report") {
                             shareReport = SilenceRatingReport(
                                 leq: engine.leq,
                                 maxDB: engine.maxDB,
@@ -93,7 +93,7 @@ struct DashboardView: View {
                         .buttonStyle(.bordered)
                         .disabled(!engine.isMonitoring && engine.leq == 0)
 
-                        Button("导出 CSV") {
+                        Button("Export CSV") {
                             exportCSV()
                         }
                         .buttonStyle(.bordered)
@@ -104,7 +104,7 @@ struct DashboardView: View {
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             ProFloatingActionButton(
-                title: engine.isMonitoring ? "停止监测" : "开始监测",
+                title: engine.isMonitoring ? "Stop" : "Start",
                 systemImage: engine.isMonitoring ? "stop.circle.fill" : "play.circle.fill",
                 theme: theme,
                 isDestructive: engine.isMonitoring
@@ -136,23 +136,23 @@ struct DashboardView: View {
                 ShareSheet(items: [csvShareURL])
             }
         }
-        .alert("错误", isPresented: .constant(engine.errorMessage != nil)) {
-            Button("确定") { engine.errorMessage = nil }
+        .alert("Error", isPresented: .constant(engine.errorMessage != nil)) {
+            Button("OK") { engine.errorMessage = nil }
         } message: {
             Text(engine.errorMessage ?? "")
         }
         .confirmationDialog(
-            "是否保留本次录音？",
+            "Keep recordings from this session?",
             isPresented: $showStopRecordingPrompt,
             titleVisibility: .visible
         ) {
-            Button("保留录音") {
+            Button("Keep") {
                 finishStopMonitoring(keepRecordings: true)
             }
-            Button("不保留", role: .destructive) {
+            Button("Discard", role: .destructive) {
                 finishStopMonitoring(keepRecordings: false)
             }
-            Button("继续监测", role: .cancel) {}
+            Button("Keep Monitoring", role: .cancel) {}
         } message: {
             Text(stopRecordingPromptMessage)
         }
@@ -161,9 +161,9 @@ struct DashboardView: View {
     private var stopRecordingPromptMessage: String {
         let count = engine.currentSessionRecordingCount
         if count > 0 {
-            return "本次监测已产生 \(count) 条声控录音。选择「不保留」将删除这些文件。"
+            return "This session created \(count) voice-activated recording(s). Choosing Discard will delete them."
         }
-        return "当前仍有进行中的声控录音。选择「不保留」将丢弃本次录音文件。"
+        return "A voice-activated recording is still in progress. Choosing Discard will delete it."
     }
 
     private func handleStopMonitoringTapped() {
@@ -203,9 +203,9 @@ struct DashboardView: View {
 
     private var footerNote: String {
         if measurementMode.isHighSensitivity {
-            "全频高灵敏模式 · 读数通常高于标准听感 · 非认证声级计"
+            "High-sensitivity mode · Readings often exceed standard mode · Not a certified sound level meter"
         } else {
-            "标准听感模式 · 可对照国家住宅噪音标准 · 非认证声级计"
+            "Standard hearing mode · Compare against residential noise guidelines · Not a certified sound level meter"
         }
     }
 
@@ -299,9 +299,9 @@ private struct RecordingStatusBadge: View {
 
     private var statusText: String {
         switch state {
-        case .idle: "声控待机"
-        case .recording: "正在录音"
-        case .coolingDown: "尾音延迟中"
+        case .idle: "Voice standby"
+        case .recording: "Recording"
+        case .coolingDown: "Tail delay"
         }
     }
 }
@@ -317,13 +317,13 @@ private struct ShareReportSheet: View {
                     .font(.body)
                     .padding()
             }
-            .navigationTitle("静音评级报告")
+            .navigationTitle("Silence Report")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("关闭") { dismiss() }
+                    Button("Close") { dismiss() }
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    ShareLink(item: Image(uiImage: report.renderShareImage()), preview: SharePreview("静音报告", image: Image(uiImage: report.renderShareImage())))
+                    ShareLink(item: Image(uiImage: report.renderShareImage()), preview: SharePreview("Silence Report", image: Image(uiImage: report.renderShareImage())))
                 }
             }
         }

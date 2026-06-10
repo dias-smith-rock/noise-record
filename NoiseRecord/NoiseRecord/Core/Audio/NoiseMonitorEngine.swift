@@ -165,7 +165,7 @@ final class NoiseMonitorEngine {
             try audioEngine.start()
             isMonitoring = true
         } catch {
-            errorMessage = "音频引擎启动失败：\(error.localizedDescription)"
+            errorMessage = "Audio engine failed to start: \(error.localizedDescription)"
         }
     }
 

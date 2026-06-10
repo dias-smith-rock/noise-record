@@ -107,7 +107,7 @@ struct VideoEvidenceView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ProTabHeader(title: "录像", theme: theme)
+            ProTabHeader(title: "Video", theme: theme)
 
             ScrollView {
                 VStack(spacing: 20) {
@@ -136,8 +136,8 @@ struct VideoEvidenceView: View {
         .onChange(of: coordinator.locationProvider.latitude) { _, _ in
             coordinator.syncLocation()
         }
-        .alert("错误", isPresented: .constant(coordinator.errorMessage != nil)) {
-            Button("确定") { coordinator.errorMessage = nil }
+        .alert("Error", isPresented: .constant(coordinator.errorMessage != nil)) {
+            Button("OK") { coordinator.errorMessage = nil }
         } message: {
             Text(coordinator.errorMessage ?? "")
         }
@@ -208,24 +208,24 @@ struct VideoEvidenceView: View {
     private var controlSection: some View {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
-                ProMetricCard(title: "当前分贝", value: String(format: "%.1f", engine.currentDB), theme: theme)
-                ProMetricCard(title: "录像峰值", value: String(format: "%.0f", coordinator.peakDB), theme: theme)
+                ProMetricCard(title: "Current dB", value: String(format: "%.1f", engine.currentDB), theme: theme)
+                ProMetricCard(title: "Clip peak", value: String(format: "%.0f", coordinator.peakDB), theme: theme)
                 ProMetricCard(
                     title: "GPS",
-                    value: coordinator.locationProvider.latitude != nil ? "已定位" : "待授权",
+                    value: coordinator.locationProvider.latitude != nil ? "Located" : "Pending",
                     theme: theme
                 )
             }
 
             if !engine.isMonitoring || !engine.isHighSensitivityMode {
-                Text("开始录像时将自动开启高灵敏噪音监测，分贝水印与实时算法同步。")
+                Text("Recording starts high-sensitivity monitoring automatically; the dB overlay stays in sync with live readings.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
 
             if let savedVideoURL {
-                Label("已保存：\(savedVideoURL.lastPathComponent)", systemImage: "checkmark.circle.fill")
+                Label("Saved: \(savedVideoURL.lastPathComponent)", systemImage: "checkmark.circle.fill")
                     .font(.caption)
                     .foregroundStyle(theme.accent)
                     .multilineTextAlignment(.center)
@@ -243,7 +243,7 @@ struct VideoEvidenceView: View {
                 }
             } label: {
                 Label(
-                    coordinator.isRecording ? "停止录像并保存" : "开始录像",
+                    coordinator.isRecording ? "Stop & Save" : "Start Recording",
                     systemImage: coordinator.isRecording ? "stop.circle.fill" : "video.circle.fill"
                 )
                 .font(.headline)
@@ -259,10 +259,10 @@ struct VideoEvidenceView: View {
     private var tipsSection: some View {
         ProCard(theme: theme) {
             VStack(alignment: .leading, spacing: 8) {
-                Label("水印已硬烧录进视频", systemImage: "checkmark.seal.fill")
+                Label("Watermark is burned into the video", systemImage: "checkmark.seal.fill")
                     .font(.subheadline.bold())
                     .foregroundStyle(theme.accent)
-                Text("双指捏合可缩放画面（最高 5x），双击在 1x / 2x 间切换。每帧画面叠加实时分贝、毫秒级时间戳、GPS 坐标。")
+                Text("Pinch to zoom (up to 5×); double-tap toggles 1× / 2×. Each frame includes live dB, millisecond timestamp, and GPS.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -277,7 +277,7 @@ struct VideoEvidenceView: View {
 
         let ready = await engine.ensureMonitoringForVideoEvidence()
         guard ready else {
-            coordinator.errorMessage = engine.errorMessage ?? "无法启动噪音监测，请检查麦克风权限。"
+            coordinator.errorMessage = engine.errorMessage ?? "Unable to start noise monitoring. Check microphone permission."
             return
         }
 

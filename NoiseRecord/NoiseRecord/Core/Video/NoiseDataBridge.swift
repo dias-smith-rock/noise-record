@@ -38,6 +38,6 @@ final class NoiseDataBridge: @unchecked Sendable {
     }
 
     var overlayDecibelText: String {
-        "当前噪音: \(decibelString)"
+        "Noise: \(decibelString)"
     }
 }

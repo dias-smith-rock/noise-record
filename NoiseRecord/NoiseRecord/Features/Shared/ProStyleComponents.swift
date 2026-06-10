@@ -213,9 +213,9 @@ struct ProRecordingStatusBadge: View {
 
     private var statusText: String {
         switch state {
-        case .idle: "声控待机中"
-        case .recording: "正在自动录音"
-        case .coolingDown: "尾音延迟中"
+        case .idle: "Voice standby"
+        case .recording: "Auto-recording"
+        case .coolingDown: "Tail delay"
         }
     }
 }

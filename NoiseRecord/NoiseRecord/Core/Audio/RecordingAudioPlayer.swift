@@ -31,10 +31,10 @@ final class RecordingAudioPlayer: NSObject, AVAudioPlayerDelegate {
             player.delegate = self
             player.volume = 1.0
             guard player.prepareToPlay() else {
-                throw AudioSessionError.configurationFailed("无法准备音频文件。")
+                throw AudioSessionError.configurationFailed("Unable to prepare audio file.")
             }
             guard player.play() else {
-                throw AudioSessionError.configurationFailed("音频播放启动失败。")
+                throw AudioSessionError.configurationFailed("Audio playback failed to start.")
             }
             self.player = player
             playingID = session.id

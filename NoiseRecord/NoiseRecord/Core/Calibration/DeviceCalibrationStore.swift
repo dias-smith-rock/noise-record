@@ -8,9 +8,9 @@ enum WeightingType: String, CaseIterable, Codable, Sendable {
 
     var displayName: String {
         switch self {
-        case .a: "dBA (A计权)"
-        case .c: "dBC (C计权)"
-        case .z: "dBZ (Z计权)"
+        case .a: "dBA (A-weighted)"
+        case .c: "dBC (C-weighted)"
+        case .z: "dBZ (Z-weighted)"
         }
     }
 }

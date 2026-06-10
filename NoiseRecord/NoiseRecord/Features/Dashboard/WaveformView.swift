@@ -121,7 +121,7 @@ struct SpectrumView: View {
                     }
                 }
             } else {
-                Text("频谱数据加载中…")
+                Text("Loading spectrum…")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)

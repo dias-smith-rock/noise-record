@@ -13,11 +13,11 @@ enum VideoNoiseRecorderError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .cameraUnavailable: "无法访问后置摄像头。"
-        case .microphoneUnavailable: "无法访问麦克风。"
-        case .writerSetupFailed(let msg): "视频写入器初始化失败：\(msg)"
-        case .notRecording: "当前未在录像。"
-        case .finishFailed(let msg): "结束录像失败：\(msg)"
+        case .cameraUnavailable: "Unable to access the rear camera."
+        case .microphoneUnavailable: "Unable to access the microphone."
+        case .writerSetupFailed(let msg): "Video writer setup failed: \(msg)"
+        case .notRecording: "Not currently recording."
+        case .finishFailed(let msg): "Failed to finish recording: \(msg)"
         }
     }
 }
@@ -275,12 +275,12 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         )
 
         guard writer.canAdd(videoInput), writer.canAdd(audioInput) else {
-            throw VideoNoiseRecorderError.writerSetupFailed("无法添加写入轨道。")
+            throw VideoNoiseRecorderError.writerSetupFailed("Unable to add writer track.")
         }
         writer.add(videoInput)
         writer.add(audioInput)
         guard writer.startWriting() else {
-            throw VideoNoiseRecorderError.writerSetupFailed(writer.error?.localizedDescription ?? "未知错误")
+            throw VideoNoiseRecorderError.writerSetupFailed(writer.error?.localizedDescription ?? "Unknown error")
         }
 
         assetWriter = writer

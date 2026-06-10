@@ -9,19 +9,19 @@ enum SilenceGrade: String, CaseIterable, Sendable {
 
     var title: String {
         switch self {
-        case .a: "极佳静音"
-        case .b: "良好"
-        case .c: "一般"
-        case .d: "嘈杂"
+        case .a: "Excellent silence"
+        case .b: "Good"
+        case .c: "Fair"
+        case .d: "Noisy"
         }
     }
 
     var description: String {
         switch self {
-        case .a: "Leq < 35 dB，适合睡眠与录音"
-        case .b: "Leq 35–45 dB，居住环境良好"
-        case .c: "Leq 45–55 dB，有明显环境噪声"
-        case .d: "Leq > 55 dB，建议排查噪声源"
+        case .a: "Leq < 35 dB — suitable for sleep and recording"
+        case .b: "Leq 35–45 dB — good living environment"
+        case .c: "Leq 45–55 dB — noticeable ambient noise"
+        case .d: "Leq > 55 dB — investigate noise sources"
         }
     }
 
@@ -58,20 +58,20 @@ struct SilenceRatingReport: Sendable {
 
     var summaryText: String {
         """
-        静音评级报告
-        生成时间：\(formattedDate(generatedAt))
-        设备：\(deviceModel)
-        计权：\(weighting.displayName)
+        Silence Rating Report
+        Generated: \(formattedDate(generatedAt))
+        Device: \(deviceModel)
+        Weighting: \(weighting.displayName)
 
-        评级：\(grade.rawValue) - \(grade.title)
+        Grade: \(grade.rawValue) - \(grade.title)
         \(grade.description)
 
-        Leq：\(String(format: "%.1f", leq)) dB
-        最大：\(String(format: "%.1f", maxDB)) dB
-        最小：\(String(format: "%.1f", minDB)) dB
-        平均：\(String(format: "%.1f", averageDB)) dB
+        Leq: \(String(format: "%.1f", leq)) dB
+        Max: \(String(format: "%.1f", maxDB)) dB
+        Min: \(String(format: "%.1f", minDB)) dB
+        Avg: \(String(format: "%.1f", averageDB)) dB
 
-        免责声明：本报告基于手机麦克风参考级测量，非认证声级计，仅供参考。
+        Disclaimer: Reference measurement from phone microphone; not a certified sound level meter.
         """
     }
 

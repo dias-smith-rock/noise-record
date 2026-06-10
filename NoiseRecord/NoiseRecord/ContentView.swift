@@ -12,35 +12,35 @@ struct ContentView: View {
                 DashboardView(engine: engine)
             }
             .tabItem {
-                Label("监测", systemImage: "waveform")
+                Label("Monitor", systemImage: "waveform")
             }
 
             NavigationStack {
                 RecorderSettingsView(engine: engine)
             }
             .tabItem {
-                Label("声控", systemImage: "record.circle")
+                Label("Voice", systemImage: "record.circle")
             }
 
             NavigationStack {
                 VideoEvidenceView(engine: engine)
             }
             .tabItem {
-                Label("录像", systemImage: "video.fill")
+                Label("Video", systemImage: "video.fill")
             }
 
             NavigationStack {
                 RecordingListView(engine: engine)
             }
             .tabItem {
-                Label("文件", systemImage: "list.bullet")
+                Label("Files", systemImage: "list.bullet")
             }
 
             NavigationStack {
                 SettingsView(engine: engine)
             }
             .tabItem {
-                Label("设置", systemImage: "gearshape")
+                Label("Settings", systemImage: "gearshape")
             }
         }
         .onAppear {

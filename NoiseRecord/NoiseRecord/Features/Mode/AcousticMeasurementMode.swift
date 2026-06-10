@@ -15,27 +15,27 @@ enum AcousticMeasurementMode: String, CaseIterable, Identifiable, Sendable {
         self = isHighSensitivity ? .highSensitivity : .standard
     }
 
-    // MARK: - Product copy (do not paraphrase)
+    // MARK: - Product copy
 
     var userFacingTitle: String {
         switch self {
-        case .standard: "人耳听感模式"
-        case .highSensitivity: "全频/低频侦测"
+        case .standard: "Human Hearing Mode"
+        case .highSensitivity: "Full-Band / Low-Frequency"
         }
     }
 
     var userFacingSubtitle: String {
         switch self {
-        case .standard: "日常听感评估"
-        case .highSensitivity: "物理声压"
+        case .standard: "Everyday listening assessment"
+        case .highSensitivity: "Physical sound pressure"
         }
     }
 
     /// Segmented control short label.
     var segmentLabel: String {
         switch self {
-        case .standard: "标准听感"
-        case .highSensitivity: "全频高灵敏"
+        case .standard: "Standard"
+        case .highSensitivity: "High Sensitivity"
         }
     }
 
@@ -49,35 +49,34 @@ enum AcousticMeasurementMode: String, CaseIterable, Identifiable, Sendable {
     var coreDescription: String {
         switch self {
         case .standard:
-            "模拟人类耳朵对声音的真实感受。自动过滤掉人耳不敏感的极高频和极低频声音。"
+            "Simulates how the human ear perceives sound, filtering frequencies we are less sensitive to."
         case .highSensitivity:
-            "关闭一切人耳滤镜与手机系统降噪，100% 捕捉空气中全部的物理声波能量。"
+            "Disables hearing-weighted filters and system noise suppression to capture full physical sound energy."
         }
     }
 
-    /// Full tooltip copy — verbatim per product spec.
     var tooltipCopy: String {
         switch self {
         case .standard:
-            "【标准听感】最贴近您主观听觉的模式。适合用来测量日常谈话、电视噪音、商场嘈杂度或邻里大喊大叫。国家住宅噪音标准（如夜间不得超过 45 分贝）均基于此模式测算。"
+            "[Standard] Closest to subjective hearing. Best for everyday speech, TV noise, mall crowds, or neighbor disputes. Residential noise standards (e.g. 45 dB at night) are based on this mode."
         case .highSensitivity:
-            "【全频高灵敏】捕获空气中真实的物理能量。在看似安静的深夜房间里，该模式会敏锐捕捉到隔壁空调外机共振、冰箱压缩机嗡嗡声、建筑管道风噪等‘隐形低频杀手’。数据通常高于普通模式，是您寻找隐性噪音源、机器异响检测和维权取证的终极利器。"
+            "[High Sensitivity] Captures true physical energy in the air. In a quiet room at night it can pick up AC units, fridge compressors, and pipe rumble you may not notice. Readings are usually higher—ideal for hidden noise sources, machine faults, and evidence."
         }
     }
 
     var tooltipHeadline: String {
         switch self {
-        case .standard: "【标准听感】"
-        case .highSensitivity: "【全频高灵敏】"
+        case .standard: "[Standard]"
+        case .highSensitivity: "[High Sensitivity]"
         }
     }
 
     var comparisonHint: String {
         switch self {
         case .standard:
-            "读数更贴近您「听起来有多吵」的主观感受，适合对照国家噪音标准。"
+            "Readings match how loud it sounds to you—useful for comparing against noise standards."
         case .highSensitivity:
-            "读数通常高于标准模式，这是正常现象——它在测量您「听不见但确实存在」的物理声波。"
+            "Readings are often higher than standard mode—that is normal; it measures sound you may not hear but is still there."
         }
     }
 }

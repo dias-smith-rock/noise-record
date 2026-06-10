@@ -35,10 +35,10 @@ enum NoiseRiskLevel: Sendable {
 
     var label: String {
         switch self {
-        case .quiet: "安静（如悄悄话）"
-        case .moderate: "适中（如普通谈话）"
-        case .loud: "偏吵（如繁忙马路）"
-        case .dangerous: "危险（长期有损听力）"
+        case .quiet: "Quiet (e.g. whisper)"
+        case .moderate: "Moderate (e.g. conversation)"
+        case .loud: "Loud (e.g. busy street)"
+        case .dangerous: "Dangerous (hearing damage risk)"
         }
     }
 }
@@ -87,7 +87,7 @@ struct NoiseLevelGauge: View {
                 .multilineTextAlignment(.center)
 
             if mode.isHighSensitivity {
-                Text("全频扫描中 · 读数高于标准模式属正常现象")
+                Text("Full-band scan · Readings above standard mode are normal")
                     .font(.caption2)
                     .foregroundStyle(theme.secondaryAccent)
                     .multilineTextAlignment(.center)

@@ -256,9 +256,9 @@
 				DEVELOPMENT_TEAM = 34878H47P6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSCameraUsageDescription = "需要使用摄像头录制带分贝水印的取证视频。";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "需要在取证视频中叠加 GPS 坐标以增强证据效力。";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "需要访问麦克风以测量环境噪音并进行声控录音。";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is required to record evidence video with decibel overlays.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Location is used to embed GPS coordinates in evidence video.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone access is required to measure noise and record voice-activated audio.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UIBackgroundModes = audio;
@@ -293,9 +293,9 @@
 				DEVELOPMENT_TEAM = 34878H47P6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSCameraUsageDescription = "需要使用摄像头录制带分贝水印的取证视频。";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "需要在取证视频中叠加 GPS 坐标以增强证据效力。";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "需要访问麦克风以测量环境噪音并进行声控录音。";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is required to record evidence video with decibel overlays.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Location is used to embed GPS coordinates in evidence video.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone access is required to measure noise and record voice-activated audio.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UIBackgroundModes = audio;
