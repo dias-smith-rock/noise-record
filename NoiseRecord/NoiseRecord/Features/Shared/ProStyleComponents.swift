@@ -355,6 +355,34 @@ struct ProTabHeaderTextButton: View {
     }
 }
 
+struct ProFloatingActionButton: View {
+    let title: String
+    let systemImage: String
+    let theme: ModeVisualTheme
+    var isDestructive: Bool = false
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: systemImage)
+                    .font(.title2.weight(.semibold))
+                Text(title)
+                    .font(.headline)
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 28)
+            .padding(.vertical, 16)
+            .background(
+                Capsule()
+                    .fill(isDestructive ? Color.red : theme.accent)
+                    .shadow(color: .black.opacity(0.28), radius: 14, y: 8)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 extension View {
     func proTabBackground(theme: ModeVisualTheme) -> some View {
         background(ProPageBackground(theme: theme))

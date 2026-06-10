@@ -32,6 +32,8 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
     private let writerQueue = DispatchQueue(label: "com.noiseapp.writerQueue")
 
     private var videoOutput: AVCaptureVideoDataOutput?
+    private var videoDevice: AVCaptureDevice?
+    private let maxUserZoomFactor: CGFloat = 5.0
 
     private var assetWriter: AVAssetWriter?
     private var videoWriterInput: AVAssetWriterInput?
@@ -88,6 +90,49 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
 
     var captureSessionForPreview: AVCaptureSession { captureSession }
 
+    var currentZoomFactor: CGFloat {
+        sessionQueue.sync {
+            videoDevice?.videoZoomFactor ?? 1.0
+        }
+    }
+
+    var allowedZoomRange: ClosedRange<CGFloat> {
+        sessionQueue.sync {
+            guard let device = videoDevice else { return 1.0 ... 1.0 }
+            let maxZoom = min(device.maxAvailableVideoZoomFactor, maxUserZoomFactor)
+            return device.minAvailableVideoZoomFactor ... maxZoom
+        }
+    }
+
+    func setZoomFactor(_ factor: CGFloat, completion: ((CGFloat) -> Void)? = nil) {
+        sessionQueue.async { [weak self] in
+            guard let self else { return }
+            let applied = self.applyZoomLocked(factor)
+            if let completion {
+                DispatchQueue.main.async {
+                    completion(applied)
+                }
+            }
+        }
+    }
+
+    private func applyZoomLocked(_ factor: CGFloat) -> CGFloat {
+        guard let device = videoDevice else { return 1.0 }
+        let maxZoom = min(device.maxAvailableVideoZoomFactor, maxUserZoomFactor)
+        let clamped = max(device.minAvailableVideoZoomFactor, min(factor, maxZoom))
+        do {
+            try device.lockForConfiguration()
+            if device.isRampingVideoZoom {
+                device.cancelVideoZoomRamp()
+            }
+            device.videoZoomFactor = clamped
+            device.unlockForConfiguration()
+            return clamped
+        } catch {
+            return device.videoZoomFactor
+        }
+    }
+
     private func setupCaptureSessionLocked() throws {
         captureSession.beginConfiguration()
         defer { captureSession.commitConfiguration() }
@@ -97,10 +142,11 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
 
         captureSession.sessionPreset = .hd1920x1080
 
-        guard let videoDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
+        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
             throw VideoNoiseRecorderError.cameraUnavailable
         }
-        let videoInput = try AVCaptureDeviceInput(device: videoDevice)
+        videoDevice = device
+        let videoInput = try AVCaptureDeviceInput(device: device)
         guard captureSession.canAddInput(videoInput) else { throw VideoNoiseRecorderError.cameraUnavailable }
         captureSession.addInput(videoInput)
 

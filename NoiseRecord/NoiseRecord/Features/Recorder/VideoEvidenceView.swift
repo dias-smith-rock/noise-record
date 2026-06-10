@@ -79,6 +79,7 @@ struct VideoEvidenceView: View {
     @State private var player: AVPlayer?
     @State private var isPreparingRecording = false
     @State private var savedVideoURL: URL?
+    @State private var previewZoomFactor: CGFloat = 1.0
 
     private var measurementMode: AcousticMeasurementMode {
         AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
@@ -124,13 +125,34 @@ struct VideoEvidenceView: View {
 
     private var previewSection: some View {
         ZStack(alignment: .bottomLeading) {
-            CameraPreviewView(session: coordinator.recorder.captureSessionForPreview)
-                .frame(height: 420)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .strokeBorder(theme.accent.opacity(0.35), lineWidth: 1)
-                )
+            CameraPreviewView(
+                session: coordinator.recorder.captureSessionForPreview,
+                currentZoom: { coordinator.recorder.currentZoomFactor },
+                onZoomChange: { factor in
+                    coordinator.recorder.setZoomFactor(factor) { applied in
+                        previewZoomFactor = applied
+                    }
+                }
+            )
+            .frame(height: 420)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(theme.accent.opacity(0.35), lineWidth: 1)
+            )
+
+            if previewZoomFactor > 1.05 {
+                Text(String(format: "%.1fx", previewZoomFactor))
+                    .font(.caption.bold())
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(.black.opacity(0.55))
+                    .clipShape(Capsule())
+                    .padding(12)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                    .allowsHitTesting(false)
+            }
 
             if coordinator.isRecording {
                 HStack(spacing: 8) {
@@ -220,7 +242,7 @@ struct VideoEvidenceView: View {
                 Label("水印已硬烧录进视频", systemImage: "checkmark.seal.fill")
                     .font(.subheadline.bold())
                     .foregroundStyle(theme.accent)
-                Text("每帧画面左下角叠加：实时分贝、毫秒级时间戳、GPS 坐标。输出为 H.264 + AAC 的 .mp4 文件，保存在 Documents/VideoEvidence。")
+                Text("双指捏合可缩放画面（最高 5x），双击在 1x / 2x 间切换。每帧画面叠加实时分贝、毫秒级时间戳、GPS 坐标。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

@@ -20,102 +20,105 @@ struct DashboardView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ProTabHeader(title: "噪音监测", theme: theme) {
-                ProTabHeaderCapsuleButton(
-                    title: engine.isMonitoring ? "停止" : "开始",
-                    theme: theme,
-                    systemImage: engine.isMonitoring ? "stop.circle.fill" : "play.circle.fill",
-                    isProminent: engine.isMonitoring,
-                    prominentColor: .red
-                ) {
-                    Task {
-                        if engine.isMonitoring {
-                            engine.stopMonitoring()
-                        } else {
-                            await engine.requestPermissionAndStart()
-                        }
-                    }
-                }
-            }
+            ProTabHeader(title: "噪音监测", theme: theme)
 
             ScrollView {
                 VStack(spacing: 20) {
                     EngineModeSwitchView(engine: engine)
 
-                NoiseLevelGauge(db: engine.currentDB, mode: measurementMode)
+                    NoiseLevelGauge(db: engine.currentDB, mode: measurementMode)
 
-                HStack(spacing: 12) {
-                    StatCard(title: "最大", value: engine.maxDB, theme: theme)
-                    StatCard(title: "最小", value: engine.minDB, theme: theme)
-                    StatCard(title: "平均", value: engine.averageDB, theme: theme)
-                    StatCard(title: "Leq", value: engine.leq, theme: theme)
-                }
-
-                if engine.voiceActivatedEnabled {
-                    RecordingStatusBadge(state: engine.recordingState)
-                }
-
-                if let label = engine.latestNoiseLabel, engine.aiClassificationEnabled {
-                    HStack {
-                        Image(systemName: "waveform.badge.magnifyingglass")
-                        Text("识别：\(label) (\(Int(engine.latestNoiseConfidence * 100))%)")
-                            .font(.subheadline)
+                    HStack(spacing: 12) {
+                        StatCard(title: "最大", value: engine.maxDB, theme: theme)
+                        StatCard(title: "最小", value: engine.minDB, theme: theme)
+                        StatCard(title: "平均", value: engine.averageDB, theme: theme)
+                        StatCard(title: "Leq", value: engine.leq, theme: theme)
                     }
-                    .foregroundStyle(.secondary)
-                }
 
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("时域波形")
-                            .font(.headline)
-                        if measurementMode.isHighSensitivity {
-                            Text("全频扫描")
-                                .font(.caption2.bold())
-                                .foregroundStyle(theme.accent)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 3)
-                                .background(theme.badgeBackground)
-                                .clipShape(Capsule())
+                    if engine.voiceActivatedEnabled {
+                        RecordingStatusBadge(state: engine.recordingState)
+                    }
+
+                    if let label = engine.latestNoiseLabel, engine.aiClassificationEnabled {
+                        HStack {
+                            Image(systemName: "waveform.badge.magnifyingglass")
+                            Text("识别：\(label) (\(Int(engine.latestNoiseConfidence * 100))%)")
+                                .font(.subheadline)
                         }
+                        .foregroundStyle(.secondary)
                     }
-                    WaveformView(samples: engine.history, mode: measurementMode)
-                        .frame(height: 120)
-                }
 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("频谱分析")
-                        .font(.headline)
-                    SpectrumView(spectrum: engine.latestSpectrum, mode: measurementMode)
-                        .frame(height: 100)
-                }
-
-                Text(footerNote)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                    .multilineTextAlignment(.center)
-
-                HStack(spacing: 12) {
-                    Button("生成报告") {
-                        shareReport = SilenceRatingReport(
-                            leq: engine.leq,
-                            maxDB: engine.maxDB,
-                            minDB: engine.minDB,
-                            averageDB: engine.averageDB,
-                            weighting: engine.effectiveWeighting
-                        )
-                        showReportSheet = true
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("时域波形")
+                                .font(.headline)
+                            if measurementMode.isHighSensitivity {
+                                Text("全频扫描")
+                                    .font(.caption2.bold())
+                                    .foregroundStyle(theme.accent)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 3)
+                                    .background(theme.badgeBackground)
+                                    .clipShape(Capsule())
+                            }
+                        }
+                        WaveformView(samples: engine.history, mode: measurementMode)
+                            .frame(height: 120)
                     }
-                    .buttonStyle(.bordered)
-                    .disabled(!engine.isMonitoring && engine.leq == 0)
 
-                    Button("导出 CSV") {
-                        exportCSV()
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("频谱分析")
+                            .font(.headline)
+                        SpectrumView(spectrum: engine.latestSpectrum, mode: measurementMode)
+                            .frame(height: 100)
                     }
-                    .buttonStyle(.bordered)
-                }
+
+                    Text(footerNote)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .multilineTextAlignment(.center)
+
+                    HStack(spacing: 12) {
+                        Button("生成报告") {
+                            shareReport = SilenceRatingReport(
+                                leq: engine.leq,
+                                maxDB: engine.maxDB,
+                                minDB: engine.minDB,
+                                averageDB: engine.averageDB,
+                                weighting: engine.effectiveWeighting
+                            )
+                            showReportSheet = true
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(!engine.isMonitoring && engine.leq == 0)
+
+                        Button("导出 CSV") {
+                            exportCSV()
+                        }
+                        .buttonStyle(.bordered)
+                    }
                 }
                 .padding()
             }
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            ProFloatingActionButton(
+                title: engine.isMonitoring ? "停止监测" : "开始监测",
+                systemImage: engine.isMonitoring ? "stop.circle.fill" : "play.circle.fill",
+                theme: theme,
+                isDestructive: engine.isMonitoring
+            ) {
+                Task {
+                    if engine.isMonitoring {
+                        engine.stopMonitoring()
+                    } else {
+                        await engine.requestPermissionAndStart()
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 8)
+            .padding(.bottom, 4)
         }
         .proTabBackground(theme: theme)
         .proTabNavigationChrome()
