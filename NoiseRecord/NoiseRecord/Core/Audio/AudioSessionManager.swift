@@ -36,9 +36,40 @@ struct AudioSessionManager {
         }
         do {
             try session.setCategory(.playAndRecord, mode: .measurement, options: options)
+            try session.overrideOutputAudioPort(.none)
             try session.setActive(true)
         } catch {
             throw AudioSessionError.configurationFailed(error.localizedDescription)
         }
+    }
+
+    /// Routes playback to the loudspeaker. Keeps `playAndRecord` when the mic engine is active.
+    static func configureForPlayback(
+        coexistingWithMonitoring: Bool,
+        backgroundEnabled: Bool = false
+    ) throws {
+        let session = AVAudioSession.sharedInstance()
+        do {
+            if coexistingWithMonitoring {
+                try session.setCategory(
+                    .playAndRecord,
+                    mode: .default,
+                    options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers]
+                )
+            } else {
+                // `defaultToSpeaker` is only valid with `playAndRecord`.
+                try session.setCategory(.playback, mode: .default)
+            }
+            try session.setActive(true)
+            // Non-fatal: simulator or some routes may reject speaker override.
+            try? session.overrideOutputAudioPort(.speaker)
+        } catch {
+            throw AudioSessionError.configurationFailed(error.localizedDescription)
+        }
+    }
+
+    static func restoreMeasurementIfMonitoring(_ isMonitoring: Bool, backgroundEnabled: Bool = false) {
+        guard isMonitoring else { return }
+        try? configureForMeasurement(backgroundEnabled: backgroundEnabled)
     }
 }

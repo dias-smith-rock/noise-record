@@ -55,8 +55,7 @@ struct RecordingListView: View {
     @State private var selectedAudioIDs: Set<UUID> = []
     @State private var selectedVideoIDs: Set<UUID> = []
 
-    @State private var audioPlayer: AVAudioPlayer?
-    @State private var playingAudioID: UUID?
+    @State private var audioPlayerController = RecordingAudioPlayer()
     @State private var presentedVideoURL: URL?
     @State private var presentedVideoTitle: String?
 
@@ -123,9 +122,12 @@ struct RecordingListView: View {
             if let url = presentedVideoURL {
                 VideoPlaybackSheet(
                     url: url,
-                    title: presentedVideoTitle ?? url.lastPathComponent
+                    title: presentedVideoTitle ?? url.lastPathComponent,
+                    coexistingWithMonitoring: engine.isMonitoring,
+                    backgroundMonitoringEnabled: engine.backgroundMonitoringEnabled
                 ) {
                     dismissVideoPlayer()
+                    restoreMonitoringAudioSession()
                 }
             }
         }
@@ -251,8 +253,8 @@ struct RecordingListView: View {
                             subtitle: nil,
                             detailLine: audioDetailLine(for: session),
                             badges: audioBadges(for: session),
-                            isPlaying: playingAudioID == session.id,
-                            playIcon: playingAudioID == session.id ? "stop.circle.fill" : "play.circle.fill",
+                            isPlaying: audioPlayerController.playingID == session.id,
+                            playIcon: audioPlayerController.playingID == session.id ? "stop.circle.fill" : "play.circle.fill",
                             theme: theme,
                             isSelectionMode: isSelectionMode,
                             isSelected: selectedAudioIDs.contains(session.id),
@@ -354,6 +356,11 @@ struct RecordingListView: View {
             toggleVideoSelection(session.id)
             return
         }
+        audioPlayerController.stop(restoreSession: true)
+        try? AudioSessionManager.configureForPlayback(
+            coexistingWithMonitoring: engine.isMonitoring,
+            backgroundEnabled: engine.backgroundMonitoringEnabled
+        )
         presentedVideoURL = session.fileURL
         presentedVideoTitle = session.fileName
     }
@@ -363,22 +370,24 @@ struct RecordingListView: View {
         presentedVideoTitle = nil
     }
 
+    private func restoreMonitoringAudioSession() {
+        AudioSessionManager.restoreMeasurementIfMonitoring(
+            engine.isMonitoring,
+            backgroundEnabled: engine.backgroundMonitoringEnabled
+        )
+    }
+
     private func toggleAudioPlayback(_ session: RecordingSession) {
         guard !isSelectionMode else {
             toggleAudioSelection(session.id)
             return
         }
-        if playingAudioID == session.id {
-            audioPlayer?.stop()
-            playingAudioID = nil
-            return
-        }
-        do {
-            audioPlayer = try AVAudioPlayer(contentsOf: session.fileURL)
-            audioPlayer?.play()
-            playingAudioID = session.id
-        } catch {
-            playingAudioID = nil
+        audioPlayerController.togglePlayback(
+            for: session,
+            coexistingWithMonitoring: engine.isMonitoring,
+            backgroundMonitoringEnabled: engine.backgroundMonitoringEnabled
+        ) {
+            restoreMonitoringAudioSession()
         }
     }
 
@@ -409,10 +418,7 @@ struct RecordingListView: View {
     // MARK: - Delete
 
     private func deleteAudio(_ session: RecordingSession) {
-        if playingAudioID == session.id {
-            audioPlayer?.stop()
-            playingAudioID = nil
-        }
+        audioPlayerController.stopIfPlaying(id: session.id)
         try? FileManager.default.removeItem(at: session.fileURL)
         modelContext.delete(session)
         selectedAudioIDs.remove(session.id)
@@ -641,6 +647,8 @@ private struct FlowBadgeRow: View {
 private struct VideoPlaybackSheet: View {
     let url: URL
     let title: String
+    let coexistingWithMonitoring: Bool
+    let backgroundMonitoringEnabled: Bool
     let onDismiss: () -> Void
 
     @State private var player: AVPlayer?
@@ -657,9 +665,15 @@ private struct VideoPlaybackSheet: View {
                     }
                 }
                 .onAppear {
+                    try? AudioSessionManager.configureForPlayback(
+                        coexistingWithMonitoring: coexistingWithMonitoring,
+                        backgroundEnabled: backgroundMonitoringEnabled
+                    )
                     let item = AVPlayerItem(url: url)
-                    player = AVPlayer(playerItem: item)
-                    player?.play()
+                    let avPlayer = AVPlayer(playerItem: item)
+                    avPlayer.volume = 1.0
+                    player = avPlayer
+                    avPlayer.play()
                 }
                 .onDisappear {
                     player?.pause()
