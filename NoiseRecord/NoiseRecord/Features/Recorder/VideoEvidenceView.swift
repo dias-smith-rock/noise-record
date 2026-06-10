@@ -98,7 +98,7 @@ struct VideoEvidenceView: View {
             .padding()
         }
         .proTabBackground(theme: theme)
-        .navigationTitle("录像取证")
+        .navigationTitle("录像")
         .task {
             await coordinator.configure()
         }
@@ -197,7 +197,7 @@ struct VideoEvidenceView: View {
                 }
             } label: {
                 Label(
-                    coordinator.isRecording ? "停止录像并保存" : "开始录像取证",
+                    coordinator.isRecording ? "停止录像并保存" : "开始录像",
                     systemImage: coordinator.isRecording ? "stop.circle.fill" : "video.circle.fill"
                 )
                 .font(.headline)

@@ -25,7 +25,7 @@ struct ContentView: View {
                 VideoEvidenceView(engine: engine)
             }
             .tabItem {
-                Label("取证", systemImage: "video.fill")
+                Label("录像", systemImage: "video.fill")
             }
 
             NavigationStack {
