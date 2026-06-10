@@ -37,7 +37,21 @@ final class VideoEvidenceSession {
         self.fileHash = Self.hashFile(at: filePath)
     }
 
-    var fileURL: URL { URL(fileURLWithPath: filePath) }
+    var fileURL: URL {
+        EvidenceFileResolver.resolveURL(
+            storedPath: filePath,
+            fileName: fileName,
+            folder: .videoEvidence
+        )
+    }
+
+    var fileExists: Bool {
+        EvidenceFileResolver.fileExists(
+            storedPath: filePath,
+            fileName: fileName,
+            folder: .videoEvidence
+        )
+    }
 
     var duration: TimeInterval { endedAt.timeIntervalSince(startedAt) }
 

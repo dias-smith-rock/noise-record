@@ -64,6 +64,7 @@ struct RecordingListView: View {
     @State private var renameTarget: RenameTarget?
     @State private var renameText = ""
     @State private var showDeleteConfirm = false
+    @State private var playbackErrorMessage: String?
 
     private var measurementMode: AcousticMeasurementMode {
         AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
@@ -108,7 +109,7 @@ struct RecordingListView: View {
             }
         }
         .proTabBackground(theme: theme)
-        .navigationTitle("录音记录")
+        .navigationTitle("记录文件")
         .toolbar { toolbarContent }
         .sheet(isPresented: $showShare) {
             if let shareURL {
@@ -148,6 +149,15 @@ struct RecordingListView: View {
         ) {
             Button("删除", role: .destructive) { deleteSelected() }
             Button("取消", role: .cancel) {}
+        }
+        .task { repairStoredMediaPaths() }
+        .alert("无法播放", isPresented: Binding(
+            get: { playbackErrorMessage != nil },
+            set: { if !$0 { playbackErrorMessage = nil } }
+        )) {
+            Button("确定", role: .cancel) { playbackErrorMessage = nil }
+        } message: {
+            Text(playbackErrorMessage ?? "")
         }
     }
 
@@ -356,6 +366,10 @@ struct RecordingListView: View {
             toggleVideoSelection(session.id)
             return
         }
+        guard session.fileExists else {
+            playbackErrorMessage = "找不到视频文件：\(session.fileName)"
+            return
+        }
         audioPlayerController.stop(restoreSession: true)
         try? AudioSessionManager.configureForPlayback(
             coexistingWithMonitoring: engine.isMonitoring,
@@ -382,12 +396,46 @@ struct RecordingListView: View {
             toggleAudioSelection(session.id)
             return
         }
+        guard session.fileExists else {
+            playbackErrorMessage = "找不到音频文件：\(session.fileName)"
+            return
+        }
         audioPlayerController.togglePlayback(
             for: session,
             coexistingWithMonitoring: engine.isMonitoring,
             backgroundMonitoringEnabled: engine.backgroundMonitoringEnabled
         ) {
             restoreMonitoringAudioSession()
+        }
+    }
+
+    private func repairStoredMediaPaths() {
+        var didRepair = false
+
+        for session in sessions {
+            if let repaired = EvidenceFileResolver.repairedRelativePath(
+                storedPath: session.filePath,
+                fileName: session.fileName,
+                folder: .recordings
+            ) {
+                session.filePath = repaired
+                didRepair = true
+            }
+        }
+
+        for session in videoSessions {
+            if let repaired = EvidenceFileResolver.repairedRelativePath(
+                storedPath: session.filePath,
+                fileName: session.fileName,
+                folder: .videoEvidence
+            ) {
+                session.filePath = repaired
+                didRepair = true
+            }
+        }
+
+        if didRepair {
+            try? modelContext.save()
         }
     }
 
@@ -466,7 +514,7 @@ struct RecordingListView: View {
                 extension: target.fileExtension.isEmpty ? "m4a" : target.fileExtension
             ) { url in
                 session.fileName = url.lastPathComponent
-                session.filePath = url.path
+                session.filePath = EvidenceFileResolver.makeRelativePath(from: url)
                 session.fileHash = RecordingSession.hashFile(at: url.path)
             }
         case .video(let session):
@@ -476,7 +524,7 @@ struct RecordingListView: View {
                 extension: target.fileExtension.isEmpty ? "mp4" : target.fileExtension
             ) { url in
                 session.fileName = url.lastPathComponent
-                session.filePath = url.path
+                session.filePath = EvidenceFileResolver.makeRelativePath(from: url)
                 session.fileHash = VideoEvidenceSession.hashFile(at: url.path)
             }
         }

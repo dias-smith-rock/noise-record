@@ -52,7 +52,7 @@ struct ContentView: View {
     private func saveRecording(_ event: RecordingFinishedEvent) {
         let session = RecordingSession(
             fileName: event.fileURL.lastPathComponent,
-            filePath: event.fileURL.path,
+            filePath: EvidenceFileResolver.makeRelativePath(from: event.fileURL),
             startedAt: event.startedAt,
             endedAt: event.endedAt,
             peakDB: event.peakDB,
@@ -60,6 +60,7 @@ struct ContentView: View {
             noiseType: event.noiseType
         )
         modelContext.insert(session)
+        try? modelContext.save()
     }
 }
 

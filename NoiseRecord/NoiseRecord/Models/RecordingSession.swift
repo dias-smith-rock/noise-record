@@ -35,7 +35,19 @@ final class RecordingSession {
     }
 
     var fileURL: URL {
-        URL(fileURLWithPath: filePath)
+        EvidenceFileResolver.resolveURL(
+            storedPath: filePath,
+            fileName: fileName,
+            folder: .recordings
+        )
+    }
+
+    var fileExists: Bool {
+        EvidenceFileResolver.fileExists(
+            storedPath: filePath,
+            fileName: fileName,
+            folder: .recordings
+        )
     }
 
     var duration: TimeInterval {

@@ -246,7 +246,7 @@ struct VideoEvidenceView: View {
             let started = coordinator.recordingStartedAt ?? Date()
             let session = VideoEvidenceSession(
                 fileName: url.lastPathComponent,
-                filePath: url.path,
+                filePath: EvidenceFileResolver.makeRelativePath(from: url),
                 startedAt: started,
                 endedAt: Date(),
                 peakDB: coordinator.peakDB,
