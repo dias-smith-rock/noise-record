@@ -7,6 +7,7 @@ struct NoiseRecordApp: App {
         let schema = Schema([
             RecordingSession.self,
             MeasurementSample.self,
+            VideoEvidenceSession.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 

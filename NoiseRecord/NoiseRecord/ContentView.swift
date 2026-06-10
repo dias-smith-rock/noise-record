@@ -22,6 +22,13 @@ struct ContentView: View {
             }
 
             NavigationStack {
+                VideoEvidenceView(engine: engine)
+            }
+            .tabItem {
+                Label("取证", systemImage: "video.fill")
+            }
+
+            NavigationStack {
                 RecordingListView(engine: engine)
             }
             .tabItem {
@@ -58,5 +65,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: [RecordingSession.self, MeasurementSample.self], inMemory: true)
+        .modelContainer(for: [RecordingSession.self, MeasurementSample.self, VideoEvidenceSession.self], inMemory: true)
 }

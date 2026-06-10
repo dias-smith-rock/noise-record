@@ -101,6 +101,28 @@ final class NoiseMonitorEngine {
         startMonitoring()
     }
 
+    /// Ensures high-sensitivity monitoring is running for video evidence overlay.
+    @discardableResult
+    func ensureMonitoringForVideoEvidence() async -> Bool {
+        if !permissionGranted {
+            permissionGranted = await AudioSessionManager.requestPermission()
+            guard permissionGranted else {
+                errorMessage = AudioSessionError.permissionDenied.localizedDescription
+                return false
+            }
+        }
+
+        if !isHighSensitivityMode {
+            isHighSensitivityMode = true
+        }
+
+        if !isMonitoring {
+            startMonitoring()
+        }
+
+        return isMonitoring
+    }
+
     func startMonitoring() {
         guard !isMonitoring else { return }
         errorMessage = nil

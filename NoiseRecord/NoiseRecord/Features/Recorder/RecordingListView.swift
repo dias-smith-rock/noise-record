@@ -1,13 +1,17 @@
 import AVFoundation
+import AVKit
 import SwiftData
 import SwiftUI
 
 struct RecordingListView: View {
     @Bindable var engine: NoiseMonitorEngine
     @Query(sort: \RecordingSession.startedAt, order: .reverse) private var sessions: [RecordingSession]
+    @Query(sort: \VideoEvidenceSession.startedAt, order: .reverse) private var videoSessions: [VideoEvidenceSession]
     @Environment(\.modelContext) private var modelContext
     @State private var player: AVAudioPlayer?
     @State private var playingID: UUID?
+    @State private var playingVideoID: UUID?
+    @State private var videoPlayer: AVPlayer?
     @State private var shareURL: URL?
     @State private var showShare = false
 
@@ -23,6 +27,27 @@ struct RecordingListView: View {
         ScrollView {
             VStack(spacing: 20) {
                 summaryBar
+
+                if !videoSessions.isEmpty {
+                    ProSectionHeader(title: "录像取证", subtitle: "带硬烧录分贝水印的 MP4", theme: theme)
+                    VStack(spacing: 12) {
+                        ForEach(videoSessions) { video in
+                            VideoEvidenceCard(
+                                session: video,
+                                isPlaying: playingVideoID == video.id,
+                                theme: theme,
+                                onPlay: { toggleVideoPlayback(video) },
+                                onDelete: { deleteVideo(video) }
+                            )
+                        }
+                    }
+                }
+
+                ProSectionHeader(
+                    title: "声控录音",
+                    subtitle: sessions.isEmpty ? nil : "共 \(sessions.count) 条",
+                    theme: theme
+                )
 
                 if sessions.isEmpty {
                     ProEmptyState(
@@ -120,6 +145,82 @@ struct RecordingListView: View {
         }
         try? FileManager.default.removeItem(at: session.fileURL)
         modelContext.delete(session)
+    }
+
+    private func toggleVideoPlayback(_ session: VideoEvidenceSession) {
+        if playingVideoID == session.id {
+            videoPlayer?.pause()
+            playingVideoID = nil
+            return
+        }
+        videoPlayer = AVPlayer(url: session.fileURL)
+        videoPlayer?.play()
+        playingVideoID = session.id
+    }
+
+    private func deleteVideo(_ session: VideoEvidenceSession) {
+        if playingVideoID == session.id {
+            videoPlayer?.pause()
+            playingVideoID = nil
+        }
+        try? FileManager.default.removeItem(at: session.fileURL)
+        modelContext.delete(session)
+    }
+}
+
+private struct VideoEvidenceCard: View {
+    let session: VideoEvidenceSession
+    let isPlaying: Bool
+    let theme: ModeVisualTheme
+    let onPlay: () -> Void
+    let onDelete: () -> Void
+
+    var body: some View {
+        ProCard(theme: theme) {
+            HStack(alignment: .top, spacing: 12) {
+                Button(action: onPlay) {
+                    Image(systemName: isPlaying ? "stop.circle.fill" : "play.rectangle.fill")
+                        .font(.system(size: 36))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [theme.accent, theme.secondaryAccent],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                }
+                .buttonStyle(.plain)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(session.fileName)
+                        .font(.subheadline.bold())
+                        .lineLimit(2)
+                    Text(session.startedAt.formatted(date: .abbreviated, time: .standard))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    HStack(spacing: 8) {
+                        Text("峰值 \(Int(session.peakDB)) dB")
+                            .font(.caption2.bold())
+                            .foregroundStyle(theme.accent)
+                        if let lat = session.latitude, let lon = session.longitude {
+                            Text(String(format: "%.4f, %.4f", lat, lon))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                }
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            Button(role: .destructive, action: onDelete) {
+                Image(systemName: "trash")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(8)
+            }
+            .buttonStyle(.plain)
+        }
     }
 }
 
