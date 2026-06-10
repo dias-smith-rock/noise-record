@@ -49,7 +49,15 @@ final class NoiseMonitorEngine {
         didSet { voiceRecorder.lowThreshold = lowThreshold }
     }
     var voiceActivatedEnabled = false
-    var backgroundMonitoringEnabled = false
+    var backgroundMonitoringEnabled = false {
+        didSet {
+            guard backgroundMonitoringEnabled != oldValue else { return }
+            persistSettings()
+            if isMonitoring {
+                try? reconfigureAudioSessionForCurrentState()
+            }
+        }
+    }
     var aiClassificationEnabled = false
     var aiFilterLabels: Set<String> = []
 
@@ -67,8 +75,20 @@ final class NoiseMonitorEngine {
     private var sampleCount = 0
     private var lastUIUpdate = Date.distantPast
     private var cachedNoiseLabel: String?
+    private var interruptionObserver: NSObjectProtocol?
+    private var mediaResetObserver: NSObjectProtocol?
+    private(set) var currentSessionRecordingIDs: [UUID] = []
+    var isDiscardingSessionRecordings = false
 
     var onRecordingFinished: ((RecordingFinishedEvent) -> Void)?
+
+    var shouldPromptForRecordingsOnStop: Bool {
+        voiceActivatedEnabled && (!currentSessionRecordingIDs.isEmpty || recordingState != .idle)
+    }
+
+    var currentSessionRecordingCount: Int {
+        currentSessionRecordingIDs.count
+    }
 
     /// Effective weighting applied to the audio pipeline.
     var effectiveWeighting: WeightingType {
@@ -90,6 +110,8 @@ final class NoiseMonitorEngine {
                 self?.onRecordingFinished?(event)
             }
         }
+
+        installAudioSessionObservers()
     }
 
     func requestPermissionAndStart() async {
@@ -128,21 +150,65 @@ final class NoiseMonitorEngine {
         errorMessage = nil
 
         do {
-            try AudioSessionManager.configureForMeasurement(backgroundEnabled: backgroundMonitoringEnabled)
+            try reconfigureAudioSessionForCurrentState()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = AudioSessionError.wrap(error).localizedDescription
             return
         }
 
         resetStatistics()
+        beginMonitoringSession()
         setupAudioPipeline()
 
         do {
+            audioEngine.prepare()
             try audioEngine.start()
             isMonitoring = true
         } catch {
             errorMessage = "音频引擎启动失败：\(error.localizedDescription)"
         }
+    }
+
+    func noteRecordingSaved(id: UUID) {
+        guard isMonitoring else { return }
+        currentSessionRecordingIDs.append(id)
+    }
+
+    func beginMonitoringSession() {
+        currentSessionRecordingIDs.removeAll()
+        isDiscardingSessionRecordings = false
+    }
+
+    func clearMonitoringSessionTracking() {
+        currentSessionRecordingIDs.removeAll()
+        isDiscardingSessionRecordings = false
+    }
+
+    /// Starts monitoring while the app is still foreground-eligible so background audio can continue.
+    func prepareForBackgroundIfNeeded() {
+        guard backgroundMonitoringEnabled else { return }
+        guard !isMonitoring else {
+            try? reconfigureAudioSessionForCurrentState()
+            return
+        }
+
+        if permissionGranted {
+            startMonitoring()
+        } else {
+            Task { await requestPermissionAndStart() }
+        }
+    }
+
+    func handleDidEnterBackground() {
+        guard backgroundMonitoringEnabled else { return }
+        if !isMonitoring, permissionGranted {
+            startMonitoring()
+        }
+        keepAliveInBackgroundIfNeeded()
+    }
+
+    func handleDidBecomeActive() {
+        resumeMonitoringIfNeededAfterForeground()
     }
 
     func stopMonitoring() {
@@ -189,6 +255,82 @@ final class NoiseMonitorEngine {
         guard isMonitoring else { return }
         audioEngine.inputNode.removeTap(onBus: 0)
         setupAudioPipeline()
+    }
+
+    /// Restores the mic pipeline after another feature (e.g. camera preview) used the audio session.
+    func restoreMonitoringAfterExternalSession() {
+        guard isMonitoring else { return }
+        recoverMonitoringPipeline(showErrorOnFailure: false)
+    }
+
+    @discardableResult
+    private func reconfigureAudioSessionForCurrentState() throws -> Bool {
+        try BackgroundAudioSession.activateForMeasurement(
+            backgroundEnabled: backgroundMonitoringEnabled,
+            skipSessionActivation: audioEngine.isRunning
+        )
+        return true
+    }
+
+    private func keepAliveInBackgroundIfNeeded() {
+        guard backgroundMonitoringEnabled, isMonitoring else { return }
+        recoverMonitoringPipeline(showErrorOnFailure: false)
+    }
+
+    private func resumeMonitoringIfNeededAfterForeground() {
+        guard isMonitoring else { return }
+        recoverMonitoringPipeline(showErrorOnFailure: true)
+    }
+
+    private func recoverMonitoringPipeline(showErrorOnFailure: Bool) {
+        do {
+            try reconfigureAudioSessionForCurrentState()
+            guard !audioEngine.isRunning else { return }
+            setupAudioPipeline()
+            audioEngine.prepare()
+            try audioEngine.start()
+        } catch {
+            guard showErrorOnFailure, !audioEngine.isRunning else { return }
+            errorMessage = AudioSessionError.wrap(error).localizedDescription
+        }
+    }
+
+    private func installAudioSessionObservers() {
+        let center = NotificationCenter.default
+
+        interruptionObserver = center.addObserver(
+            forName: AVAudioSession.interruptionNotification,
+            object: AVAudioSession.sharedInstance(),
+            queue: nil
+        ) { [weak self] notification in
+            Task { @MainActor in
+                self?.handleAudioInterruption(notification)
+            }
+        }
+
+        mediaResetObserver = center.addObserver(
+            forName: AVAudioSession.mediaServicesWereResetNotification,
+            object: AVAudioSession.sharedInstance(),
+            queue: nil
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.resumeMonitoringIfNeededAfterForeground()
+            }
+        }
+    }
+
+    private func handleAudioInterruption(_ notification: Notification) {
+        guard let type = BackgroundAudioSession.interruptionType(in: notification) else { return }
+
+        switch type {
+        case .began:
+            break
+        case .ended:
+            guard BackgroundAudioSession.shouldResumeAfterInterruption(notification) else { return }
+            resumeMonitoringIfNeededAfterForeground()
+        @unknown default:
+            break
+        }
     }
 
     private func setupAudioPipeline() {

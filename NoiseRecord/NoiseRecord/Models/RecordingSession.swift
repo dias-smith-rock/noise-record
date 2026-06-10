@@ -13,6 +13,7 @@ final class RecordingSession {
     var averageDB: Float
     var noiseType: String?
     var fileHash: String?
+    var isNew: Bool = false
 
     init(
         fileName: String,
@@ -32,6 +33,7 @@ final class RecordingSession {
         self.averageDB = averageDB
         self.noiseType = noiseType
         self.fileHash = Self.hashFile(at: filePath)
+        self.isNew = true
     }
 
     var fileURL: URL {

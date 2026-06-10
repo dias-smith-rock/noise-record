@@ -239,6 +239,7 @@ struct RecordingListView: View {
                     ForEach(sortedVideoSessions) { video in
                         MediaListCard(
                             fileName: video.fileName,
+                            isNew: video.isNew,
                             subtitle: video.startedAt.formatted(date: .abbreviated, time: .standard),
                             badges: videoBadges(for: video),
                             isPlaying: false,
@@ -269,6 +270,7 @@ struct RecordingListView: View {
                     ForEach(sortedAudioSessions) { session in
                         MediaListCard(
                             fileName: session.fileName,
+                            isNew: session.isNew,
                             subtitle: nil,
                             detailLine: audioDetailLine(for: session),
                             badges: audioBadges(for: session),
@@ -376,6 +378,7 @@ struct RecordingListView: View {
             toggleVideoSelection(session.id)
             return
         }
+        markVideoAsRead(session)
         guard session.fileExists else {
             playbackErrorMessage = "找不到视频文件：\(session.fileName)"
             return
@@ -406,6 +409,7 @@ struct RecordingListView: View {
             toggleAudioSelection(session.id)
             return
         }
+        markAudioAsRead(session)
         guard session.fileExists else {
             playbackErrorMessage = "找不到音频文件：\(session.fileName)"
             return
@@ -417,6 +421,18 @@ struct RecordingListView: View {
         ) {
             restoreMonitoringAudioSession()
         }
+    }
+
+    private func markAudioAsRead(_ session: RecordingSession) {
+        guard session.isNew else { return }
+        session.isNew = false
+        try? modelContext.save()
+    }
+
+    private func markVideoAsRead(_ session: VideoEvidenceSession) {
+        guard session.isNew else { return }
+        session.isNew = false
+        try? modelContext.save()
     }
 
     private func repairStoredMediaPaths() {
@@ -613,6 +629,7 @@ struct RecordingListView: View {
 
 private struct MediaListCard: View {
     let fileName: String
+    var isNew: Bool = false
     let subtitle: String?
     var detailLine: String?
     let badges: [String]
@@ -653,11 +670,23 @@ private struct MediaListCard: View {
                 .buttonStyle(.plain)
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(fileName)
-                        .font(.subheadline.bold())
-                        .lineLimit(2)
-                        .truncationMode(.middle)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    HStack(spacing: 6) {
+                        Text(fileName)
+                            .font(.subheadline.bold())
+                            .lineLimit(2)
+                            .truncationMode(.middle)
+
+                        if isNew {
+                            Text("New")
+                                .font(.caption2.bold())
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(theme.accent)
+                                .clipShape(Capsule())
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                     if let subtitle {
                         Text(subtitle)
@@ -702,6 +731,8 @@ private struct MediaListCard: View {
         .onTapGesture {
             if isSelectionMode {
                 onToggleSelection()
+            } else {
+                onPlay()
             }
         }
         .contextMenu {

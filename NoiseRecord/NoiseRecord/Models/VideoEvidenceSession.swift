@@ -14,6 +14,7 @@ final class VideoEvidenceSession {
     var latitude: Double?
     var longitude: Double?
     var fileHash: String?
+    var isNew: Bool = false
 
     init(
         fileName: String,
@@ -35,6 +36,7 @@ final class VideoEvidenceSession {
         self.latitude = latitude
         self.longitude = longitude
         self.fileHash = Self.hashFile(at: filePath)
+        self.isNew = true
     }
 
     var fileURL: URL {

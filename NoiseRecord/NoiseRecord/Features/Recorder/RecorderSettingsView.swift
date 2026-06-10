@@ -44,7 +44,7 @@ struct RecorderSettingsView: View {
                 ProCard(theme: theme) {
                     ProToggleRow(
                         title: "后台持续监测",
-                        subtitle: "App 退到后台仍可监测与录音，会增加电量消耗。",
+                        subtitle: "退到后台前将自动开始监测，后台仍可声控录音，会增加电量消耗。",
                         isOn: $engine.backgroundMonitoringEnabled,
                         theme: theme,
                         icon: "moon.fill"

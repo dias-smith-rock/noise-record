@@ -4,6 +4,7 @@ import SwiftUI
 struct ContentView: View {
     @State private var engine = NoiseMonitorEngine()
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         TabView {
@@ -47,9 +48,26 @@ struct ContentView: View {
                 saveRecording(event)
             }
         }
+        .onChange(of: scenePhase) { _, phase in
+            switch phase {
+            case .inactive:
+                engine.prepareForBackgroundIfNeeded()
+            case .background:
+                engine.handleDidEnterBackground()
+            case .active:
+                engine.handleDidBecomeActive()
+            @unknown default:
+                break
+            }
+        }
     }
 
     private func saveRecording(_ event: RecordingFinishedEvent) {
+        if engine.isDiscardingSessionRecordings {
+            try? FileManager.default.removeItem(at: event.fileURL)
+            return
+        }
+
         let session = RecordingSession(
             fileName: event.fileURL.lastPathComponent,
             filePath: EvidenceFileResolver.makeRelativePath(from: event.fileURL),
@@ -60,6 +78,7 @@ struct ContentView: View {
             noiseType: event.noiseType
         )
         modelContext.insert(session)
+        engine.noteRecordingSaved(id: session.id)
         try? modelContext.save()
     }
 }

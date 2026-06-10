@@ -15,9 +15,12 @@ final class VideoEvidenceCoordinator {
     var peakDB: Float = 0
     var sessionPeakDB: Float = 0
 
-    func configure() async {
+    func configure(backgroundMonitoringEnabled: Bool, isMonitoring: Bool) async {
         do {
-            try await configureAudioSessionForVideo()
+            try configureAudioSessionForVideo(
+                backgroundMonitoringEnabled: backgroundMonitoringEnabled,
+                isMonitoring: isMonitoring
+            )
             try recorder.configureSession()
             recorder.startSession()
             locationProvider.requestPermission()
@@ -65,10 +68,23 @@ final class VideoEvidenceCoordinator {
         recorder.stopSession()
     }
 
-    private func configureAudioSessionForVideo() async throws {
-        let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.playAndRecord, mode: .measurement, options: [.defaultToSpeaker, .allowBluetooth])
-        try session.setActive(true)
+    private func configureAudioSessionForVideo(
+        backgroundMonitoringEnabled: Bool,
+        isMonitoring: Bool
+    ) throws {
+        if isMonitoring {
+            try BackgroundAudioSession.activateForMeasurement(
+                backgroundEnabled: backgroundMonitoringEnabled
+            )
+        } else {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(
+                .playAndRecord,
+                mode: .measurement,
+                options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers]
+            )
+            try session.setActive(true)
+        }
     }
 }
 
@@ -105,10 +121,14 @@ struct VideoEvidenceView: View {
         .proTabBackground(theme: theme)
         .proTabNavigationChrome()
         .task {
-            await coordinator.configure()
+            await coordinator.configure(
+                backgroundMonitoringEnabled: engine.backgroundMonitoringEnabled,
+                isMonitoring: engine.isMonitoring
+            )
         }
         .onDisappear {
             coordinator.teardown()
+            engine.restoreMonitoringAfterExternalSession()
         }
         .onChange(of: engine.currentDB) { _, _ in
             coordinator.syncNoise(from: engine)

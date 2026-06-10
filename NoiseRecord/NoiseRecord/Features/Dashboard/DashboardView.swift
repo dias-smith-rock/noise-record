@@ -9,6 +9,7 @@ struct DashboardView: View {
     @State private var showReportSheet = false
     @State private var csvShareURL: URL?
     @State private var showCSVShare = false
+    @State private var showStopRecordingPrompt = false
 
     private var measurementMode: AcousticMeasurementMode {
         AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
@@ -110,7 +111,7 @@ struct DashboardView: View {
             ) {
                 Task {
                     if engine.isMonitoring {
-                        engine.stopMonitoring()
+                        handleStopMonitoringTapped()
                     } else {
                         await engine.requestPermissionAndStart()
                     }
@@ -140,6 +141,64 @@ struct DashboardView: View {
         } message: {
             Text(engine.errorMessage ?? "")
         }
+        .confirmationDialog(
+            "是否保留本次录音？",
+            isPresented: $showStopRecordingPrompt,
+            titleVisibility: .visible
+        ) {
+            Button("保留录音") {
+                finishStopMonitoring(keepRecordings: true)
+            }
+            Button("不保留", role: .destructive) {
+                finishStopMonitoring(keepRecordings: false)
+            }
+            Button("继续监测", role: .cancel) {}
+        } message: {
+            Text(stopRecordingPromptMessage)
+        }
+    }
+
+    private var stopRecordingPromptMessage: String {
+        let count = engine.currentSessionRecordingCount
+        if count > 0 {
+            return "本次监测已产生 \(count) 条声控录音。选择「不保留」将删除这些文件。"
+        }
+        return "当前仍有进行中的声控录音。选择「不保留」将丢弃本次录音文件。"
+    }
+
+    private func handleStopMonitoringTapped() {
+        if engine.shouldPromptForRecordingsOnStop {
+            showStopRecordingPrompt = true
+        } else {
+            engine.stopMonitoring()
+            engine.clearMonitoringSessionTracking()
+        }
+    }
+
+    private func finishStopMonitoring(keepRecordings: Bool) {
+        if !keepRecordings {
+            deleteCurrentSessionRecordings()
+            engine.isDiscardingSessionRecordings = true
+        }
+        engine.stopMonitoring()
+        engine.isDiscardingSessionRecordings = false
+        engine.clearMonitoringSessionTracking()
+    }
+
+    private func deleteCurrentSessionRecordings() {
+        let ids = engine.currentSessionRecordingIDs
+        guard !ids.isEmpty else { return }
+
+        for id in ids {
+            var descriptor = FetchDescriptor<RecordingSession>(
+                predicate: #Predicate { $0.id == id }
+            )
+            descriptor.fetchLimit = 1
+            guard let session = try? modelContext.fetch(descriptor).first else { continue }
+            try? FileManager.default.removeItem(at: session.fileURL)
+            modelContext.delete(session)
+        }
+        try? modelContext.save()
     }
 
     private var footerNote: String {

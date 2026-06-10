@@ -3,6 +3,7 @@ import AVFoundation
 enum AudioSessionError: LocalizedError {
     case permissionDenied
     case configurationFailed(String)
+    case activationFailed
 
     var errorDescription: String? {
         switch self {
@@ -10,7 +11,18 @@ enum AudioSessionError: LocalizedError {
             "麦克风权限被拒绝，请在设置中开启。"
         case .configurationFailed(let message):
             "音频会话配置失败：\(message)"
+        case .activationFailed:
+            "音频会话激活失败。请回到应用前台后重试；若已开启后台监测，请确认麦克风权限正常。"
         }
+    }
+
+    static func wrap(_ error: Error) -> AudioSessionError {
+        let nsError = error as NSError
+        if nsError.domain == NSOSStatusErrorDomain,
+           nsError.code == AVAudioSession.ErrorCode.cannotStartPlaying.rawValue {
+            return .activationFailed
+        }
+        return .configurationFailed(error.localizedDescription)
     }
 }
 
@@ -32,12 +44,14 @@ struct AudioSessionManager {
             .defaultToSpeaker,
         ]
         if backgroundEnabled {
+            // Required so mic capture can continue after the app enters the background
+            // when UIBackgroundModes includes "audio".
             options.insert(.mixWithOthers)
+            options.insert(.allowBluetoothA2DP)
         }
         do {
             try session.setCategory(.playAndRecord, mode: .measurement, options: options)
             try session.overrideOutputAudioPort(.none)
-            try session.setActive(true)
         } catch {
             throw AudioSessionError.configurationFailed(error.localizedDescription)
         }
@@ -70,6 +84,6 @@ struct AudioSessionManager {
 
     static func restoreMeasurementIfMonitoring(_ isMonitoring: Bool, backgroundEnabled: Bool = false) {
         guard isMonitoring else { return }
-        try? configureForMeasurement(backgroundEnabled: backgroundEnabled)
+        try? BackgroundAudioSession.activateForMeasurement(backgroundEnabled: backgroundEnabled)
     }
 }
