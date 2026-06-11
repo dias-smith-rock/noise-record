@@ -2,6 +2,8 @@ import SwiftData
 import SwiftUI
 
 struct DashboardView: View {
+    private static let showsReportAndCSVExport = false
+
     @Bindable var engine: NoiseMonitorEngine
     @Environment(\.modelContext) private var modelContext
     @State private var shareReport: SilenceRatingReport?
@@ -82,24 +84,26 @@ struct DashboardView: View {
                         .foregroundStyle(.tertiary)
                         .multilineTextAlignment(.center)
 
-                    HStack(spacing: 12) {
-                        Button(L10n.dashboardReport) {
-                            shareReport = SilenceRatingReport(
-                                leq: engine.leq,
-                                maxDB: engine.maxDB,
-                                minDB: engine.minDB,
-                                averageDB: engine.averageDB,
-                                weighting: engine.effectiveWeighting
-                            )
-                            showReportSheet = true
-                        }
-                        .buttonStyle(.bordered)
-                        .disabled(!engine.isMonitoring && engine.leq == 0)
+                    if Self.showsReportAndCSVExport {
+                        HStack(spacing: 12) {
+                            Button(L10n.dashboardReport) {
+                                shareReport = SilenceRatingReport(
+                                    leq: engine.leq,
+                                    maxDB: engine.maxDB,
+                                    minDB: engine.minDB,
+                                    averageDB: engine.averageDB,
+                                    weighting: engine.effectiveWeighting
+                                )
+                                showReportSheet = true
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(!engine.isMonitoring && engine.leq == 0)
 
-                        Button(L10n.dashboardExportCSV) {
-                            exportCSV()
+                            Button(L10n.dashboardExportCSV) {
+                                exportCSV()
+                            }
+                            .buttonStyle(.bordered)
                         }
-                        .buttonStyle(.bordered)
                     }
                 }
                 .padding()
