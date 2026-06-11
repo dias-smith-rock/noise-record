@@ -146,8 +146,11 @@ struct SettingsView: View {
 
             Section {
                 LabeledContent(L10n.settingsVersion, value: appVersionString)
-                Link(L10n.settingsPrivacyPolicy, destination: URL(string: "https://www.noise.nx.kg/privacy.html")!)
-                Link(L10n.settingsSupport, destination: URL(string: "https://www.noise.nx.kg/support.html")!)
+                Link(L10n.settingsPrivacyPolicy, destination: LegalURLs.privacyPolicy)
+                Link(L10n.settingsTermsOfService, destination: LegalURLs.termsOfService)
+                Link(destination: SupportContact.mailtoURL) {
+                    LabeledContent(L10n.settingsSupport, value: SupportContact.email)
+                }
             } header: {
                 Text(L10n.settingsAboutHeader)
             } footer: {

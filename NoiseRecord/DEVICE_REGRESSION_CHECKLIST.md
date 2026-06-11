@@ -56,7 +56,7 @@ Run on a **physical iPhone** before submitting to App Review.
 
 - [ ] Calibration with reference SPL 10–140 dB
 - [ ] Version number displayed
-- [ ] Privacy Policy and Support links open in Safari
+- [ ] Privacy Policy and Terms of Service open in Safari; Support opens Mail to music.player.250617@gmail.com
 - [ ] Clear Measurement History works
 
 ## Storage & Recovery

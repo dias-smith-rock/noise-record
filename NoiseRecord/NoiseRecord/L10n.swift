@@ -274,6 +274,7 @@ nonisolated enum L10n {
     static var settingsAboutHeader: String { localized("settings.about.header") }
     static var settingsVersion: String { localized("settings.version") }
     static var settingsPrivacyPolicy: String { localized("settings.privacyPolicy") }
+    static var settingsTermsOfService: String { localized("settings.termsOfService") }
     static var settingsSupport: String { localized("settings.support") }
     static var settingsDisclaimerTitle: String { localized("settings.disclaimer.title") }
     static var settingsDisclaimerBody: String { localized("settings.disclaimer.body") }

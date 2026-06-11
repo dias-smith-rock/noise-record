@@ -7,7 +7,9 @@ Use this when submitting **NoiseRecord** v1.0.
 | Field | URL |
 |-------|-----|
 | Privacy Policy | https://www.noise.nx.kg/privacy.html |
+| Terms of Service | https://www.noise.nx.kg/terms.html |
 | Support | https://www.noise.nx.kg/support.html |
+| Support email | music.player.250617@gmail.com |
 | Marketing (optional) | https://www.noise.nx.kg/ |
 
 ## App Information
