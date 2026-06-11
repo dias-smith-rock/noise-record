@@ -1,1 +1,26 @@
-readme
+# noise-record
+
+Monorepo for the **NoiseRecord** iOS app and its product website.
+
+## Projects
+
+| Path | Description |
+|------|-------------|
+| [`NoiseRecord/`](NoiseRecord/) | SwiftUI iOS app — noise monitoring, voice-activated recording, video evidence |
+| [`website/`](website/) | Static product landing site (HTML/CSS/JS) |
+
+The website folder is **not** part of the Xcode target. Changes to `website/` do not affect the iOS build.
+
+## Website
+
+- **Local preview:** `cd website && python3 -m http.server 8080`
+- **Deploy:** Push to `main` — GitHub Actions deploys to GitHub Pages (see [`website/README.md`](website/README.md))
+- **Custom domain:** `noise.nx.kg` — DNS & GitHub Pages steps in [`website/README.md`](website/README.md)
+
+## iOS app
+
+Open `NoiseRecord/NoiseRecord.xcodeproj` in Xcode. Requires iOS 18.6+.
+
+## Repository
+
+GitHub: [dias-smith-rock/noise-record](https://github.com/dias-smith-rock/noise-record)

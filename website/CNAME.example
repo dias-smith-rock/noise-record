@@ -1,0 +1,10 @@
+# Rename this file to CNAME (remove .example) and replace with your domain.
+# Use only the hostname — no https:// or trailing slash.
+#
+# Examples:
+#   www.yourdomain.com
+#   noiserecord.yourdomain.com
+#
+# Then configure DNS — see website/README.md
+
+www.example.com
