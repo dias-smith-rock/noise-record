@@ -3,6 +3,7 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var engine = NoiseMonitorEngine()
+    @Bindable private var appearance = AppAppearanceSettings.shared
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
 
@@ -43,6 +44,9 @@ struct ContentView: View {
                 Label(L10n.tabSettings, systemImage: "gearshape")
             }
         }
+        .preferredColorScheme(appearance.colorSchemePreference.colorScheme)
+        .environment(\.locale, AppLocalization.resolvedLocale)
+        .id(appearance.languageRefreshID)
         .onAppear {
             engine.onRecordingFinished = { event in
                 saveRecording(event)

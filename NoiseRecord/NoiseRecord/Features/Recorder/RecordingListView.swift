@@ -81,10 +81,6 @@ struct RecordingListView: View {
     @State private var showDeleteConfirm = false
     @State private var playbackErrorMessage: String?
     @State private var renameErrorMessage: String?
-    @State private var recordingsCSVURL: URL?
-    @State private var showRecordingsCSVShare = false
-    @State private var recordingsCSVErrorMessage: String?
-
     private var measurementMode: AcousticMeasurementMode {
         AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
     }
@@ -193,19 +189,6 @@ struct RecordingListView: View {
             Button(L10n.ok, role: .cancel) { renameErrorMessage = nil }
         } message: {
             Text(renameErrorMessage ?? "")
-        }
-        .alert(L10n.errorTitle, isPresented: Binding(
-            get: { recordingsCSVErrorMessage != nil },
-            set: { if !$0 { recordingsCSVErrorMessage = nil } }
-        )) {
-            Button(L10n.ok, role: .cancel) { recordingsCSVErrorMessage = nil }
-        } message: {
-            Text(recordingsCSVErrorMessage ?? "")
-        }
-        .sheet(isPresented: $showRecordingsCSVShare) {
-            if let recordingsCSVURL {
-                ShareSheet(items: [recordingsCSVURL])
-            }
         }
     }
 
@@ -347,7 +330,6 @@ struct RecordingListView: View {
     }
 
     private var summaryBar: some View {
-        VStack(spacing: 10) {
         HStack(spacing: 12) {
             switch selectedTab {
             case .audio:
@@ -366,15 +348,6 @@ struct RecordingListView: View {
                     value: videoSessions.isEmpty ? "—" : "\(Int(videoSessions.map(\.peakDB).max() ?? 0))",
                     theme: theme
                 )
-            }
-        }
-            if selectedTab == .audio, !sessions.isEmpty {
-                Button(L10n.filesExportRecordingsCSV) {
-                    exportRecordingsCSV()
-                }
-                .font(.caption.bold())
-                .buttonStyle(.bordered)
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
@@ -614,15 +587,6 @@ struct RecordingListView: View {
         }
         guard !urls.isEmpty else { return }
         SharePresenter.present(items: urls)
-    }
-
-    private func exportRecordingsCSV() {
-        guard let url = CSVExporter.exportRecordingSessions(sessions) else {
-            recordingsCSVErrorMessage = L10n.filesExportRecordingsCSVFailed
-            return
-        }
-        recordingsCSVURL = url
-        showRecordingsCSVShare = true
     }
 
     // MARK: - Delete

@@ -3,6 +3,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Bindable var engine: NoiseMonitorEngine
+    @Bindable private var appearance = AppAppearanceSettings.shared
     @Environment(\.modelContext) private var modelContext
     @Query private var measurementSamples: [MeasurementSample]
 
@@ -39,6 +40,22 @@ struct SettingsView: View {
             ProTabHeader(title: L10n.settingsTitle, theme: theme)
 
             Form {
+            Section {
+                NavigationLink {
+                    LanguagePickerView(appearance: appearance)
+                } label: {
+                    LabeledContent(L10n.settingsLanguage, value: appearance.preferredLanguage.displayName)
+                }
+
+                Picker(L10n.settingsTheme, selection: $appearance.colorSchemePreference) {
+                    ForEach(AppColorSchemePreference.allCases) { preference in
+                        Text(preference.title).tag(preference)
+                    }
+                }
+            } header: {
+                Text(L10n.settingsAppearanceHeader)
+            }
+
             Section {
                 EngineModeSwitchView(engine: engine, showsInlineHint: false)
                     .listRowInsets(EdgeInsets(top: 12, leading: 0, bottom: 12, trailing: 0))

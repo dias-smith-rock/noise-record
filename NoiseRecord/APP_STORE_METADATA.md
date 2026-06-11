@@ -15,6 +15,8 @@ Use this when submitting **NoiseRecord** v1.0.
 | Field | Value |
 |-------|-------|
 | Bundle ID | `com.goodcraft.NoiseRecord` |
+| App Store ID | `6779128095` |
+| App Store URL | https://apps.apple.com/app/id6779128095 |
 | Version | 1.0 (1) |
 | Category | Utilities |
 | Minimum OS | iOS 18.6 |
@@ -46,5 +48,5 @@ Provide at least **English** and **Simplified Chinese** metadata in Connect.
 
 ## Post-approval
 
-1. Replace `id0000000000` in `website/index.html` with the real App Store ID.
+1. ~~Replace placeholder App Store ID in `website/index.html`~~ — done (`6779128095`).
 2. Run Archive → Validate → Upload from Xcode Release configuration.

@@ -3,9 +3,9 @@ import Foundation
 extension WeightingType {
     var localizedDisplayName: String {
         switch self {
-        case .a: String(localized: "weighting.a.displayName")
-        case .c: String(localized: "weighting.c.displayName")
-        case .z: String(localized: "weighting.z.displayName")
+        case .a: AppLocalization.string( "weighting.a.displayName")
+        case .c: AppLocalization.string( "weighting.c.displayName")
+        case .z: AppLocalization.string( "weighting.z.displayName")
         }
     }
 }

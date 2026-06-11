@@ -3,19 +3,19 @@ import Foundation
 extension SilenceGrade {
     var localizedTitle: String {
         switch self {
-        case .a: String(localized: "silenceGrade.a.title")
-        case .b: String(localized: "silenceGrade.b.title")
-        case .c: String(localized: "silenceGrade.c.title")
-        case .d: String(localized: "silenceGrade.d.title")
+        case .a: AppLocalization.string( "silenceGrade.a.title")
+        case .b: AppLocalization.string( "silenceGrade.b.title")
+        case .c: AppLocalization.string( "silenceGrade.c.title")
+        case .d: AppLocalization.string( "silenceGrade.d.title")
         }
     }
 
     var localizedDescription: String {
         switch self {
-        case .a: String(localized: "silenceGrade.a.description")
-        case .b: String(localized: "silenceGrade.b.description")
-        case .c: String(localized: "silenceGrade.c.description")
-        case .d: String(localized: "silenceGrade.d.description")
+        case .a: AppLocalization.string( "silenceGrade.a.description")
+        case .b: AppLocalization.string( "silenceGrade.b.description")
+        case .c: AppLocalization.string( "silenceGrade.c.description")
+        case .d: AppLocalization.string( "silenceGrade.d.description")
         }
     }
 }
