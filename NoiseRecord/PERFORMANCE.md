@@ -1,4 +1,4 @@
-# NoiseRecord Performance Notes
+# DecibelPro Performance Notes
 
 ## Profiling summary (v1.0)
 

@@ -8219,55 +8219,55 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "NoiseRecord needs microphone access to measure sound levels and record audio. Enable it in Settings."
+            "value": "DecibelPro needs microphone access to measure sound levels and record audio. Enable it in Settings."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "NoiseRecord needs microphone access to measure sound levels and record audio. Enable it in Settings."
+            "value": "DecibelPro needs microphone access to measure sound levels and record audio. Enable it in Settings."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "NoiseRecord needs microphone access to measure sound levels and record audio. Enable it in Settings."
+            "value": "DecibelPro needs microphone access to measure sound levels and record audio. Enable it in Settings."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "NoiseRecord needs microphone access to measure sound levels and record audio. Enable it in Settings."
+            "value": "DecibelPro needs microphone access to measure sound levels and record audio. Enable it in Settings."
           }
         },
         "hi": {
           "stringUnit": {
             "state": "translated",
-            "value": "NoiseRecord needs microphone access to measure sound levels and record audio. Enable it in Settings."
+            "value": "DecibelPro needs microphone access to measure sound levels and record audio. Enable it in Settings."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "NoiseRecord needs microphone access to measure sound levels and record audio. Enable it in Settings."
+            "value": "DecibelPro needs microphone access to measure sound levels and record audio. Enable it in Settings."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "NoiseRecord needs microphone access to measure sound levels and record audio. Enable it in Settings."
+            "value": "DecibelPro needs microphone access to measure sound levels and record audio. Enable it in Settings."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "NoiseRecord 需要麦克风权限以测量噪声并录音。请在设置中开启。"
+            "value": "DecibelPro 需要麦克风权限以测量噪声并录音。请在设置中开启。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "NoiseRecord 需要麥克風權限以測量噪聲並錄音。請在設定中開啟。"
+            "value": "DecibelPro 需要麥克風權限以測量噪聲並錄音。請在設定中開啟。"
           }
         }
       }
@@ -11523,55 +11523,55 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "NoiseRecord uses your iPhone microphone and is not a certified sound level meter. Readings are estimates for personal reference and evidence documentation only."
+            "value": "DecibelPro uses your iPhone microphone and is not a certified sound level meter. Readings are estimates for personal reference and evidence documentation only."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "NoiseRecord uses your iPhone microphone and is not a certified sound level meter. Readings are estimates for personal reference and evidence documentation only."
+            "value": "DecibelPro uses your iPhone microphone and is not a certified sound level meter. Readings are estimates for personal reference and evidence documentation only."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "NoiseRecord uses your iPhone microphone and is not a certified sound level meter. Readings are estimates for personal reference and evidence documentation only."
+            "value": "DecibelPro uses your iPhone microphone and is not a certified sound level meter. Readings are estimates for personal reference and evidence documentation only."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "NoiseRecord uses your iPhone microphone and is not a certified sound level meter. Readings are estimates for personal reference and evidence documentation only."
+            "value": "DecibelPro uses your iPhone microphone and is not a certified sound level meter. Readings are estimates for personal reference and evidence documentation only."
           }
         },
         "hi": {
           "stringUnit": {
             "state": "translated",
-            "value": "NoiseRecord uses your iPhone microphone and is not a certified sound level meter. Readings are estimates for personal reference and evidence documentation only."
+            "value": "DecibelPro uses your iPhone microphone and is not a certified sound level meter. Readings are estimates for personal reference and evidence documentation only."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "NoiseRecord uses your iPhone microphone and is not a certified sound level meter. Readings are estimates for personal reference and evidence documentation only."
+            "value": "DecibelPro uses your iPhone microphone and is not a certified sound level meter. Readings are estimates for personal reference and evidence documentation only."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "NoiseRecord uses your iPhone microphone and is not a certified sound level meter. Readings are estimates for personal reference and evidence documentation only."
+            "value": "DecibelPro uses your iPhone microphone and is not a certified sound level meter. Readings are estimates for personal reference and evidence documentation only."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "NoiseRecord 使用手机麦克风，并非认证声级计。读数仅供个人参考与取证记录，不构成专业测量结果。"
+            "value": "DecibelPro 使用手机麦克风，并非认证声级计。读数仅供个人参考与取证记录，不构成专业测量结果。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "NoiseRecord 使用手機麥克風，並非認證聲級計。讀數僅供個人參考與取證記錄，不構成專業測量結果。"
+            "value": "DecibelPro 使用手機麥克風，並非認證聲級計。讀數僅供個人參考與取證記錄，不構成專業測量結果。"
           }
         }
       }

@@ -32,9 +32,9 @@ NEW_STRINGS = {
         "zh-Hant": "需要麥克風權限",
     },
     "permission.microphone.denied.message": {
-        "en": "NoiseRecord needs microphone access to measure sound levels and record audio. Enable it in Settings.",
-        "zh-Hans": "NoiseRecord 需要麦克风权限以测量噪声并录音。请在设置中开启。",
-        "zh-Hant": "NoiseRecord 需要麥克風權限以測量噪聲並錄音。請在設定中開啟。",
+        "en": "DecibelPro needs microphone access to measure sound levels and record audio. Enable it in Settings.",
+        "zh-Hans": "DecibelPro 需要麦克风权限以测量噪声并录音。请在设置中开启。",
+        "zh-Hant": "DecibelPro 需要麥克風權限以測量噪聲並錄音。請在設定中開啟。",
     },
     "permission.camera.denied.title": {
         "en": "Camera Access Required",
@@ -137,9 +137,9 @@ NEW_STRINGS = {
         "zh-Hant": "測量免責聲明",
     },
     "settings.disclaimer.body": {
-        "en": "NoiseRecord uses your iPhone microphone and is not a certified sound level meter. Readings are estimates for personal reference and evidence documentation only.",
-        "zh-Hans": "NoiseRecord 使用手机麦克风，并非认证声级计。读数仅供个人参考与取证记录，不构成专业测量结果。",
-        "zh-Hant": "NoiseRecord 使用手機麥克風，並非認證聲級計。讀數僅供個人參考與取證記錄，不構成專業測量結果。",
+        "en": "DecibelPro uses your iPhone microphone and is not a certified sound level meter. Readings are estimates for personal reference and evidence documentation only.",
+        "zh-Hans": "DecibelPro 使用手机麦克风，并非认证声级计。读数仅供个人参考与取证记录，不构成专业测量结果。",
+        "zh-Hant": "DecibelPro 使用手機麥克風，並非認證聲級計。讀數僅供個人參考與取證記錄，不構成專業測量結果。",
     },
     "settings.data.header": {
         "en": "Data",
