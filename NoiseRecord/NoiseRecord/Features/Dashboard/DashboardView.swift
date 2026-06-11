@@ -4,13 +4,13 @@ import SwiftUI
 struct DashboardView: View {
     @Bindable var engine: NoiseMonitorEngine
     @Environment(\.modelContext) private var modelContext
-    @State private var lastSampleTime = Date.distantPast
     @State private var shareReport: SilenceRatingReport?
     @State private var showReportSheet = false
     @State private var csvShareURL: URL?
     @State private var showCSVShare = false
     @State private var showStopRecordingPrompt = false
     @State private var csvExportErrorMessage: String?
+    @State private var measurementPersistTick = 0
 
     private var measurementMode: AcousticMeasurementMode {
         AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
@@ -65,6 +65,7 @@ struct DashboardView: View {
                             }
                         }
                         WaveformView(samples: engine.history, mode: measurementMode)
+                            .equatable()
                             .frame(height: 120)
                     }
 
@@ -72,6 +73,7 @@ struct DashboardView: View {
                         Text(L10n.dashboardSpectrum)
                             .font(.headline)
                         SpectrumView(spectrum: engine.latestSpectrum, mode: measurementMode)
+                            .equatable()
                             .frame(height: 100)
                     }
 
@@ -124,8 +126,13 @@ struct DashboardView: View {
         }
         .proTabBackground(theme: theme)
         .proTabNavigationChrome()
-        .onChange(of: engine.currentDB) { _, _ in
-            persistSampleIfNeeded()
+        .task(id: engine.isMonitoring) {
+            guard engine.isMonitoring else { return }
+            while !Task.isCancelled, engine.isMonitoring {
+                try? await Task.sleep(for: .seconds(1))
+                guard engine.isMonitoring else { break }
+                persistMeasurementSample()
+            }
         }
         .sheet(isPresented: $showReportSheet) {
             if let report = shareReport {
@@ -223,10 +230,8 @@ struct DashboardView: View {
         }
     }
 
-    private func persistSampleIfNeeded() {
+    private func persistMeasurementSample() {
         let now = Date()
-        guard now.timeIntervalSince(lastSampleTime) >= 1 else { return }
-        lastSampleTime = now
         let sample = MeasurementSample(
             timestamp: now,
             dbCurrent: engine.currentDB,
@@ -239,7 +244,10 @@ struct DashboardView: View {
         )
         modelContext.insert(sample)
         try? modelContext.save()
-        MeasurementDataStore.pruneSamplesIfNeeded(in: modelContext)
+        measurementPersistTick += 1
+        if measurementPersistTick % 60 == 0 {
+            MeasurementDataStore.pruneSamplesIfNeeded(in: modelContext)
+        }
     }
 
     private func exportCSV() {

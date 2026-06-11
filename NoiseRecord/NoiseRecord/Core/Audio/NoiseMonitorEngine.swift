@@ -79,11 +79,21 @@ final class NoiseMonitorEngine {
     private var slidingAverage = SlidingAverage(windowSize: 8)
     private var sessionSumDB: Float = 0
     private var filteredScratch: [Float] = []
-    private var fftFrameAccumulator: [Float] = []
+    private var historyBuffer = FloatTimeSeriesBuffer(capacity: 300)
+    private var fftSampleRing = FFTSampleRing(capacity: 2048)
+    private var fftScratch = [Float](repeating: 0, count: 2048)
+    private var uiFrameCounter = 0
     private let voiceRecorder = VoiceActivatedRecorder()
     private var noiseClassifier: NoiseClassifierManager?
     private var sampleCount = 0
     private var lastUIUpdate = Date.distantPast
+
+    private enum Performance {
+        /// UI refresh rate — 15 Hz is smooth for dB meters while cutting main-thread work ~3× vs 50 Hz.
+        static let uiInterval: TimeInterval = 1.0 / 15.0
+        /// Spectrum FFT is heavier; update every N UI frames (~5 Hz).
+        static let spectrumEveryNthUIFrame = 3
+    }
     private var cachedNoiseLabel: String?
     private var isNormalizingThresholds = false
     private var interruptionObserver: NSObjectProtocol?
@@ -245,11 +255,13 @@ final class NoiseMonitorEngine {
         averageDB = 0
         leq = 0
         history.removeAll()
+        historyBuffer.reset()
         leqCalculator.reset()
         slidingAverage = SlidingAverage(windowSize: 8)
         sampleCount = 0
         sessionSumDB = 0
-        fftFrameAccumulator.removeAll()
+        fftSampleRing.reset()
+        uiFrameCounter = 0
     }
 
     func updateWeighting(_ type: WeightingType) {
@@ -463,23 +475,28 @@ final class NoiseMonitorEngine {
 
         noiseClassifier?.append(buffer: buffer, at: time)
 
-        fftFrameAccumulator.append(contentsOf: filteredScratch.prefix(frameLength))
-
-        let fftSize = 2048
-        var spectrum: FFTSpectrum?
-        if fftFrameAccumulator.count >= fftSize {
-            let fftSlice = Array(fftFrameAccumulator.suffix(fftSize))
-            spectrum = fftSlice.withUnsafeBufferPointer { ptr in
-                fftAnalyzer?.analyze(channelData: ptr.baseAddress!, frameLength: fftSize)
-            }
-            if fftFrameAccumulator.count > fftSize {
-                fftFrameAccumulator.removeFirst(fftFrameAccumulator.count - fftSize)
-            }
+        filteredScratch.withUnsafeBufferPointer { ptr in
+            guard let base = ptr.baseAddress else { return }
+            fftSampleRing.write(base, count: frameLength)
         }
 
         let now = Date()
-        guard now.timeIntervalSince(lastUIUpdate) >= 0.02 else { return }
+        guard now.timeIntervalSince(lastUIUpdate) >= Performance.uiInterval else { return }
         lastUIUpdate = now
+        uiFrameCounter += 1
+
+        var spectrum: FFTSpectrum?
+        if uiFrameCounter % Performance.spectrumEveryNthUIFrame == 0,
+           fftSampleRing.isReadyForAnalysis {
+            fftSampleRing.copyLatestWindow(into: &fftScratch)
+            spectrum = fftScratch.withUnsafeBufferPointer { ptr in
+                fftAnalyzer?.analyze(channelData: ptr.baseAddress!, frameLength: fftScratch.count)
+            }
+        }
+
+        historyBuffer.append(smoothed)
+        var historySnapshot: [Float] = []
+        historyBuffer.copyChronological(into: &historySnapshot)
 
         let snapshotSmoothed = smoothed
         let snapshotLeq = leqCalculator.leq
@@ -501,10 +518,7 @@ final class NoiseMonitorEngine {
             if let spectrumCopy {
                 self.latestSpectrum = spectrumCopy
             }
-            self.history.append(snapshotSmoothed)
-            if self.history.count > 300 {
-                self.history.removeFirst(self.history.count - 300)
-            }
+            self.history = historySnapshot
         }
     }
 }

@@ -23,11 +23,16 @@ final class FFTAnalyzer {
     private var realBuffer: [Float]
     private var imagBuffer: [Float]
     private var magnitudes: [Float]
+    private var windowed: [Float]
+    private var dbMagnitudes: [Float]
+    private var displayMagnitudes: [Float]
     private let sampleRate: Double
+    private let displayBinCount: Int
 
-    init(bufferSize: Int = 2048, sampleRate: Double) {
+    init(bufferSize: Int = 2048, sampleRate: Double, displayBinCount: Int = 128) {
         self.bufferSize = bufferSize
         self.sampleRate = sampleRate
+        self.displayBinCount = displayBinCount
         self.log2n = vDSP_Length(log2(Float(bufferSize)))
         self.fftSetup = vDSP_create_fftsetup(log2n, FFTRadix(kFFTRadix2))!
         self.window = [Float](repeating: 0, count: bufferSize)
@@ -35,6 +40,9 @@ final class FFTAnalyzer {
         self.realBuffer = [Float](repeating: 0, count: bufferSize / 2)
         self.imagBuffer = [Float](repeating: 0, count: bufferSize / 2)
         self.magnitudes = [Float](repeating: 0, count: bufferSize / 2)
+        self.windowed = [Float](repeating: 0, count: bufferSize)
+        self.dbMagnitudes = [Float](repeating: 0, count: bufferSize / 2)
+        self.displayMagnitudes = [Float](repeating: 0, count: displayBinCount)
     }
 
     deinit {
@@ -44,7 +52,6 @@ final class FFTAnalyzer {
     func analyze(channelData: UnsafePointer<Float>, frameLength: Int) -> FFTSpectrum? {
         guard frameLength >= bufferSize else { return nil }
 
-        var windowed = [Float](repeating: 0, count: bufferSize)
         vDSP_vmul(channelData, 1, window, 1, &windowed, 1, vDSP_Length(bufferSize))
 
         return realBuffer.withUnsafeMutableBufferPointer { realPtr in
@@ -63,11 +70,21 @@ final class FFTAnalyzer {
 
                 vDSP_zvabs(&split, 1, &magnitudes, 1, vDSP_Length(bufferSize / 2))
 
-                var dbMagnitudes = [Float](repeating: 0, count: bufferSize / 2)
                 var ref: Float = 1.0
                 vDSP_vdbcon(magnitudes, 1, &ref, &dbMagnitudes, 1, vDSP_Length(bufferSize / 2), 1)
 
-                return FFTSpectrum(magnitudes: dbMagnitudes, sampleRate: sampleRate, binCount: bufferSize / 2)
+                let copyCount = min(displayBinCount, dbMagnitudes.count)
+                displayMagnitudes.withUnsafeMutableBufferPointer { dst in
+                    dbMagnitudes.withUnsafeBufferPointer { src in
+                        dst.baseAddress!.update(from: src.baseAddress!, count: copyCount)
+                    }
+                }
+
+                return FFTSpectrum(
+                    magnitudes: Array(displayMagnitudes.prefix(copyCount)),
+                    sampleRate: sampleRate,
+                    binCount: copyCount
+                )
             }
         }
     }

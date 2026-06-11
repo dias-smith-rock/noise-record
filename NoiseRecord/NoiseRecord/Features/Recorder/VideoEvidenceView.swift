@@ -103,6 +103,7 @@ struct VideoEvidenceView: View {
     @State private var showCameraPermissionDenied = false
     @State private var showLocationPermissionDenied = false
     @State private var didPromptLocationDenied = false
+    @State private var lastNoiseSync = Date.distantPast
 
     private var measurementMode: AcousticMeasurementMode {
         AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
@@ -138,6 +139,10 @@ struct VideoEvidenceView: View {
             engine.restoreMonitoringAfterExternalSession()
         }
         .onChange(of: engine.currentDB) { _, _ in
+            let now = Date()
+            let interval = coordinator.isRecording ? 0.1 : 0.25
+            guard now.timeIntervalSince(lastNoiseSync) >= interval else { return }
+            lastNoiseSync = now
             coordinator.syncNoise(from: engine)
         }
         .onChange(of: coordinator.locationProvider.latitude) { _, _ in

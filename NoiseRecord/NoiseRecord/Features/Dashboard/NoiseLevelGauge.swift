@@ -66,7 +66,7 @@ struct NoiseLevelGauge: View {
                         style: StrokeStyle(lineWidth: 16, lineCap: .round)
                     )
                     .rotationEffect(.degrees(-90))
-                    .animation(.easeOut(duration: 0.15), value: db)
+                    .animation(.linear(duration: 0.08), value: (db * 2).rounded() / 2)
 
                 VStack(spacing: 4) {
                     Text(String(format: "%.1f", db))
