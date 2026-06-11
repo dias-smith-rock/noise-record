@@ -40,32 +40,36 @@ You can also trigger a manual deploy from the **Actions** tab → **Deploy Websi
 
 ## Custom domain
 
-**Configured domain:** `noise.nx.kg` (see `CNAME` file)
+**Configured domain:** `www.noise.nx.kg` (see `CNAME` file)
 
-### Step 1 — DNS at your registrar (nx.kg)
+> The DNS zone is `noise.nx.kg`. Use CNAME on `www` — not CNAME on `@` (conflicts with SOA/NS).
 
-Add a CNAME record for the `noise` subdomain:
+### Step 1 — DNS at Stackryze (zone `noise.nx.kg`)
 
-| Type  | Name  | Value                     |
-|-------|-------|---------------------------|
-| CNAME | noise | dias-smith-rock.github.io |
+| Type  | NAME | Value                     |
+|-------|------|---------------------------|
+| CNAME | www  | dias-smith-rock.github.io |
 
-> Some panels use `noise` as the host name; others want the full `noise.nx.kg`. Do not include `https://`.
+Preview must show **`www.noise.nx.kg`**, not `noise.noise.nx.kg`.
+
+Optional: remove any **A** record on `@` if GitHub still reports apex `noise.nx.kg` errors (www-only setup does not need apex A records).
 
 ### Step 2 — GitHub Pages settings
 
-1. Push `website/CNAME` to `main` and wait for the deploy workflow to finish.
-2. Repo **Settings → Pages → Custom domain** — enter `noise.nx.kg`.
-3. Enable **Enforce HTTPS** once DNS has propagated (may take minutes to 48 hours).
+1. Push `website/CNAME` to `main` (content must be exactly `www.noise.nx.kg`).
+2. Wait for **Deploy Website** workflow to finish.
+3. Repo **Settings → Pages → Custom domain** — enter `www.noise.nx.kg` (must match `CNAME` file).
+4. Click **Check again** after deploy.
+5. Enable **Enforce HTTPS** once the warning clears.
 
 ### Step 3 — Verify
 
 ```bash
-dig noise.nx.kg +short
-# Expected: dias-smith-rock.github.io. (then GitHub IPs)
+dig www.noise.nx.kg CNAME +short
+# Expected: dias-smith-rock.github.io.
 ```
 
-Site URL: **https://noise.nx.kg**
+Site URL: **https://www.noise.nx.kg**
 
 ## Updating content
 

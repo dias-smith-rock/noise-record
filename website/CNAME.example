@@ -2,9 +2,9 @@
 # Use only the hostname — no https:// or trailing slash.
 #
 # Examples:
-#   www.yourdomain.com
-#   noiserecord.yourdomain.com
+#   www.noise.nx.kg
 #
-# Then configure DNS — see website/README.md
+# DNS (zone noise.nx.kg): CNAME www → dias-smith-rock.github.io
+# See website/README.md
 
-www.example.com
+www.noise.nx.kg
