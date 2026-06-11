@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RecorderSettingsView: View {
     @Bindable var engine: NoiseMonitorEngine
+    @State private var showAiClassificationError = false
 
     private let aiLabelOptions = [
         "speech", "music", "dog", "cat", "car", "engine",
@@ -23,6 +24,10 @@ struct RecorderSettingsView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     statusHero
+
+                    if engine.voiceActivatedEnabled && !engine.isMonitoring {
+                        monitoringRequiredBanner
+                    }
 
                 ProCard(theme: theme) {
                     ProToggleRow(
@@ -67,6 +72,34 @@ struct RecorderSettingsView: View {
         }
         .proTabBackground(theme: theme)
         .proTabNavigationChrome()
+        .onChange(of: engine.aiClassificationErrorMessage) { _, message in
+            showAiClassificationError = message != nil
+        }
+        .alert(L10n.errorTitle, isPresented: $showAiClassificationError) {
+            Button(L10n.ok, role: .cancel) {
+                engine.aiClassificationErrorMessage = nil
+            }
+        } message: {
+            Text(engine.aiClassificationErrorMessage ?? L10n.errorAiClassificationFailed)
+        }
+    }
+
+    private var monitoringRequiredBanner: some View {
+        ProCard(theme: theme) {
+            VStack(alignment: .leading, spacing: 12) {
+                Label(L10n.recorderMonitoringRequiredTitle, systemImage: "exclamationmark.triangle.fill")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(theme.accent)
+                Text(L10n.recorderMonitoringRequiredMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Button(L10n.recorderMonitoringRequiredStart) {
+                    Task { await engine.requestPermissionAndStart() }
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(theme.accent)
+            }
+        }
     }
 
     private var statusHero: some View {
@@ -164,6 +197,12 @@ struct RecorderSettingsView: View {
                     subtitle: L10n.recorderAiFilterSubtitle,
                     theme: theme
                 )
+
+                if engine.aiFilterLabels.isEmpty {
+                    Text(L10n.recorderAiFilterEmpty)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
 
                 FlowLayout(spacing: 8) {
                     ForEach(aiLabelOptions, id: \.self) { label in

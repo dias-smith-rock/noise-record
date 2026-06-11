@@ -4,6 +4,7 @@ import SoundAnalysis
 
 final class NoiseClassifierManager: NSObject, SNResultsObserving, @unchecked Sendable {
     var onClassification: ((String, Double) -> Void)?
+    var onFailure: ((Error) -> Void)?
 
     private var streamAnalyzer: SNAudioStreamAnalyzer?
     private let analysisQueue = DispatchQueue(label: "com.noiseapp.analysis")
@@ -54,6 +55,7 @@ final class NoiseClassifierManager: NSObject, SNResultsObserving, @unchecked Sen
             try streamAnalyzer?.add(request, withObserver: self)
         } catch {
             streamAnalyzer = nil
+            onFailure?(error)
         }
     }
 
@@ -63,7 +65,9 @@ final class NoiseClassifierManager: NSObject, SNResultsObserving, @unchecked Sen
         onClassification?(top.identifier, top.confidence)
     }
 
-    func request(_ request: SNRequest, didFailWithError error: Error) {}
+    func request(_ request: SNRequest, didFailWithError error: Error) {
+        onFailure?(error)
+    }
 
     func requestDidComplete(_ request: SNRequest) {}
 }

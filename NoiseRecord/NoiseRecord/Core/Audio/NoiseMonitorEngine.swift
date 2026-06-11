@@ -43,10 +43,16 @@ final class NoiseMonitorEngine {
     }
 
     var highThreshold: Float = 55 {
-        didSet { voiceRecorder.highThreshold = highThreshold }
+        didSet {
+            guard !isNormalizingThresholds else { return }
+            applyNormalizedThresholds(adjustingHigh: true)
+        }
     }
     var lowThreshold: Float = 48 {
-        didSet { voiceRecorder.lowThreshold = lowThreshold }
+        didSet {
+            guard !isNormalizingThresholds else { return }
+            applyNormalizedThresholds(adjustingHigh: false)
+        }
     }
     var voiceActivatedEnabled = false
     var backgroundMonitoringEnabled = false {
@@ -59,7 +65,11 @@ final class NoiseMonitorEngine {
         }
     }
     var aiClassificationEnabled = false
-    var aiFilterLabels: Set<String> = []
+    var aiFilterLabels: Set<String> = [] {
+        didSet { persistSettings() }
+    }
+    var aiClassificationErrorMessage: String?
+    var showMicrophonePermissionDenied = false
 
     private let audioEngine = AVAudioEngine()
     private let processingQueue = DispatchQueue(label: "com.noiseapp.processing", qos: .userInteractive)
@@ -75,6 +85,7 @@ final class NoiseMonitorEngine {
     private var sampleCount = 0
     private var lastUIUpdate = Date.distantPast
     private var cachedNoiseLabel: String?
+    private var isNormalizingThresholds = false
     private var interruptionObserver: NSObjectProtocol?
     private var mediaResetObserver: NSObjectProtocol?
     private(set) var currentSessionRecordingIDs: [UUID] = []
@@ -101,6 +112,9 @@ final class NoiseMonitorEngine {
         voiceActivatedEnabled = UserDefaults.standard.bool(forKey: "settings.voiceActivated")
         backgroundMonitoringEnabled = UserDefaults.standard.bool(forKey: "settings.backgroundMonitoring")
         aiClassificationEnabled = UserDefaults.standard.bool(forKey: "settings.aiClassification")
+        if let savedLabels = UserDefaults.standard.array(forKey: "settings.aiFilterLabels") as? [String] {
+            aiFilterLabels = Set(savedLabels)
+        }
         isHighSensitivityMode = DeviceCalibrationStore.isHighSensitivityMode
 
         voiceRecorder.highThreshold = highThreshold
@@ -118,8 +132,10 @@ final class NoiseMonitorEngine {
         permissionGranted = await AudioSessionManager.requestPermission()
         guard permissionGranted else {
             errorMessage = AudioSessionError.permissionDenied.localizedDescription
+            showMicrophonePermissionDenied = true
             return
         }
+        showMicrophonePermissionDenied = false
         startMonitoring()
     }
 
@@ -249,6 +265,17 @@ final class NoiseMonitorEngine {
         UserDefaults.standard.set(voiceActivatedEnabled, forKey: "settings.voiceActivated")
         UserDefaults.standard.set(backgroundMonitoringEnabled, forKey: "settings.backgroundMonitoring")
         UserDefaults.standard.set(aiClassificationEnabled, forKey: "settings.aiClassification")
+        UserDefaults.standard.set(Array(aiFilterLabels), forKey: "settings.aiFilterLabels")
+    }
+
+    private func applyNormalizedThresholds(adjustingHigh: Bool) {
+        let pair = VoiceThresholdValidator.normalized(high: highThreshold, low: lowThreshold)
+        isNormalizingThresholds = true
+        highThreshold = pair.high
+        lowThreshold = pair.low
+        voiceRecorder.highThreshold = pair.high
+        voiceRecorder.lowThreshold = pair.low
+        isNormalizingThresholds = false
     }
 
     private func restartPipeline() {
@@ -352,6 +379,11 @@ final class NoiseMonitorEngine {
                     self?.latestNoiseLabel = label
                     self?.latestNoiseConfidence = confidence
                     self?.voiceRecorder.setNoiseType(label)
+                }
+            }
+            classifier.onFailure = { [weak self] _ in
+                Task { @MainActor in
+                    self?.aiClassificationErrorMessage = L10n.errorAiClassificationFailed
                 }
             }
             classifier.setup(format: format)

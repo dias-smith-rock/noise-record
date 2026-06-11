@@ -1,7 +1,11 @@
+import SwiftData
 import SwiftUI
 
 struct SettingsView: View {
     @Bindable var engine: NoiseMonitorEngine
+    @Environment(\.modelContext) private var modelContext
+    @Query private var measurementSamples: [MeasurementSample]
+
     @State private var calibrationReference: Float = 94
     @State private var showCalibrationAlert = false
     @State private var calibrationAlertMessage = ""
@@ -9,6 +13,9 @@ struct SettingsView: View {
     @State private var showResetAlert = false
     @State private var resetAlertTitle = ""
     @State private var resetAlertMessage = ""
+
+    @State private var showClearMeasurementsConfirm = false
+    @State private var showClearMeasurementsDone = false
 
     @State private var displayedUserAdjustment: Float = DeviceCalibrationStore.userAdjustment
     @State private var displayedTotalOffset: Float = DeviceCalibrationStore.totalOffset
@@ -19,6 +26,12 @@ struct SettingsView: View {
 
     private var theme: ModeVisualTheme {
         .theme(for: measurementMode)
+    }
+
+    private var appVersionString: String {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+        return "\(version) (\(build))"
     }
 
     var body: some View {
@@ -103,6 +116,26 @@ struct SettingsView: View {
             } footer: {
                 Text(L10n.settingsCalibrationFooter)
             }
+
+            Section {
+                LabeledContent(L10n.settingsMeasurementSampleCount, value: "\(measurementSamples.count)")
+                Button(L10n.settingsClearMeasurements, role: .destructive) {
+                    showClearMeasurementsConfirm = true
+                }
+                .disabled(measurementSamples.isEmpty)
+            } header: {
+                Text(L10n.settingsDataHeader)
+            }
+
+            Section {
+                LabeledContent(L10n.settingsVersion, value: appVersionString)
+                Link(L10n.settingsPrivacyPolicy, destination: URL(string: "https://www.noise.nx.kg/privacy.html")!)
+                Link(L10n.settingsSupport, destination: URL(string: "https://www.noise.nx.kg/support.html")!)
+            } header: {
+                Text(L10n.settingsAboutHeader)
+            } footer: {
+                Text(L10n.settingsDisclaimerBody)
+            }
             }
             .scrollContentBackground(.hidden)
         }
@@ -120,6 +153,32 @@ struct SettingsView: View {
             Button(L10n.ok, role: .cancel) {}
         } message: {
             Text(resetAlertMessage)
+        }
+        .confirmationDialog(
+            L10n.settingsClearMeasurements,
+            isPresented: $showClearMeasurementsConfirm,
+            titleVisibility: .visible
+        ) {
+            Button(L10n.delete, role: .destructive) {
+                clearMeasurementHistory()
+            }
+            Button(L10n.cancel, role: .cancel) {}
+        } message: {
+            Text(L10n.settingsClearMeasurementsConfirm)
+        }
+        .alert(L10n.settingsClearMeasurements, isPresented: $showClearMeasurementsDone) {
+            Button(L10n.ok, role: .cancel) {}
+        } message: {
+            Text(L10n.settingsClearMeasurementsDone)
+        }
+    }
+
+    private func clearMeasurementHistory() {
+        do {
+            try MeasurementDataStore.clearAllSamples(in: modelContext)
+            showClearMeasurementsDone = true
+        } catch {
+            // SwiftData delete rarely fails; ignore for v1.
         }
     }
 

@@ -10,6 +10,7 @@ struct DashboardView: View {
     @State private var csvShareURL: URL?
     @State private var showCSVShare = false
     @State private var showStopRecordingPrompt = false
+    @State private var csvExportErrorMessage: String?
 
     private var measurementMode: AcousticMeasurementMode {
         AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
@@ -141,6 +142,19 @@ struct DashboardView: View {
         } message: {
             Text(engine.errorMessage ?? "")
         }
+        .permissionDeniedAlert(
+            isPresented: $engine.showMicrophonePermissionDenied,
+            title: L10n.permissionMicrophoneDeniedTitle,
+            message: L10n.permissionMicrophoneDeniedMessage
+        )
+        .alert(L10n.errorTitle, isPresented: Binding(
+            get: { csvExportErrorMessage != nil },
+            set: { if !$0 { csvExportErrorMessage = nil } }
+        )) {
+            Button(L10n.ok, role: .cancel) { csvExportErrorMessage = nil }
+        } message: {
+            Text(csvExportErrorMessage ?? "")
+        }
         .confirmationDialog(
             L10n.dashboardStopPromptTitle,
             isPresented: $showStopRecordingPrompt,
@@ -224,6 +238,8 @@ struct DashboardView: View {
             noiseType: engine.latestNoiseLabel
         )
         modelContext.insert(sample)
+        try? modelContext.save()
+        MeasurementDataStore.pruneSamplesIfNeeded(in: modelContext)
     }
 
     private func exportCSV() {
@@ -243,7 +259,11 @@ struct DashboardView: View {
                 noiseType: $0.noiseType
             )
         }
-        csvShareURL = CSVExporter.exportMeasurementLog(rows: rows)
+        guard let url = CSVExporter.exportMeasurementLog(rows: rows) else {
+            csvExportErrorMessage = L10n.dashboardExportCSVFailed
+            return
+        }
+        csvShareURL = url
         showCSVShare = true
     }
 }

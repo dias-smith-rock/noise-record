@@ -1,0 +1,38 @@
+name: iOS Build
+
+on:
+  push:
+    paths:
+      - 'NoiseRecord/**'
+      - '.github/workflows/ios-build.yml'
+  pull_request:
+    paths:
+      - 'NoiseRecord/**'
+      - '.github/workflows/ios-build.yml'
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Build app
+        run: |
+          xcodebuild build \
+            -project NoiseRecord/NoiseRecord.xcodeproj \
+            -scheme NoiseRecord \
+            -destination 'platform=iOS Simulator,name=iPhone 17' \
+            -configuration Release \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Run unit tests
+        run: |
+          xcodebuild test \
+            -project NoiseRecord/NoiseRecord.xcodeproj \
+            -scheme NoiseRecord \
+            -destination 'platform=iOS Simulator,name=iPhone 17' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO

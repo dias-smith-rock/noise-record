@@ -30,7 +30,11 @@ final class NoiseDataBridge: @unchecked Sendable {
     func updateGPS(latitude: Double?, longitude: Double?) {
         lock.lock()
         if let latitude, let longitude {
-            _gpsString = String(format: "Lat: %.4f, Lon: %.4f", latitude, longitude)
+            _gpsString = String(
+                format: String(localized: "overlay.gps.coordinates"),
+                latitude,
+                longitude
+            )
         } else {
             _gpsString = String(localized: "overlay.gps.unavailable")
         }

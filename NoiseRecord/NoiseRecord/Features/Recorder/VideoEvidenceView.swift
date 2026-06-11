@@ -1,4 +1,6 @@
 import AVFoundation
+import AVKit
+import CoreLocation
 import SwiftData
 import SwiftUI
 
@@ -95,7 +97,12 @@ struct VideoEvidenceView: View {
     @State private var player: AVPlayer?
     @State private var isPreparingRecording = false
     @State private var savedVideoURL: URL?
+    @State private var presentedVideoURL: URL?
+    @State private var presentedVideoTitle: String?
     @State private var previewZoomFactor: CGFloat = 1.0
+    @State private var showCameraPermissionDenied = false
+    @State private var showLocationPermissionDenied = false
+    @State private var didPromptLocationDenied = false
 
     private var measurementMode: AcousticMeasurementMode {
         AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
@@ -141,6 +148,46 @@ struct VideoEvidenceView: View {
         } message: {
             Text(coordinator.errorMessage ?? "")
         }
+        .permissionDeniedAlert(
+            isPresented: $showCameraPermissionDenied,
+            title: L10n.permissionCameraDeniedTitle,
+            message: L10n.permissionCameraDeniedMessage
+        )
+        .permissionDeniedAlert(
+            isPresented: $showLocationPermissionDenied,
+            title: L10n.permissionLocationDeniedTitle,
+            message: L10n.permissionLocationDeniedMessage
+        )
+        .onChange(of: coordinator.errorMessage) { _, message in
+            guard let message else { return }
+            if message.localizedCaseInsensitiveContains("camera") {
+                showCameraPermissionDenied = true
+            }
+        }
+        .onChange(of: coordinator.locationProvider.authorizationStatus) { _, status in
+            guard !didPromptLocationDenied else { return }
+            if status == .denied || status == .restricted {
+                didPromptLocationDenied = true
+                showLocationPermissionDenied = true
+            }
+        }
+        .fullScreenCover(isPresented: Binding(
+            get: { presentedVideoURL != nil },
+            set: { if !$0 { presentedVideoURL = nil; presentedVideoTitle = nil } }
+        )) {
+            if let url = presentedVideoURL {
+                VideoRecordingPlaybackSheet(
+                    url: url,
+                    title: presentedVideoTitle ?? url.lastPathComponent,
+                    coexistingWithMonitoring: engine.isMonitoring,
+                    backgroundMonitoringEnabled: engine.backgroundMonitoringEnabled
+                ) {
+                    presentedVideoURL = nil
+                    presentedVideoTitle = nil
+                    engine.restoreMonitoringAfterExternalSession()
+                }
+            }
+        }
     }
 
     private var previewSection: some View {
@@ -177,7 +224,7 @@ struct VideoEvidenceView: View {
             if coordinator.isRecording {
                 HStack(spacing: 8) {
                     Circle().fill(.red).frame(width: 10, height: 10)
-                    Text("REC")
+                    Text(L10n.videoRecBadge)
                         .font(.caption.bold())
                         .foregroundStyle(.white)
                 }
@@ -225,10 +272,17 @@ struct VideoEvidenceView: View {
             }
 
             if let savedVideoURL {
-                Label(L10n.videoSaved(savedVideoURL.lastPathComponent), systemImage: "checkmark.circle.fill")
-                    .font(.caption)
-                    .foregroundStyle(theme.accent)
-                    .multilineTextAlignment(.center)
+                VStack(spacing: 8) {
+                    Label(L10n.videoSaved(savedVideoURL.lastPathComponent), systemImage: "checkmark.circle.fill")
+                        .font(.caption)
+                        .foregroundStyle(theme.accent)
+                        .multilineTextAlignment(.center)
+                    Button(L10n.videoPreviewRecording) {
+                        presentedVideoURL = savedVideoURL
+                        presentedVideoTitle = savedVideoURL.lastPathComponent
+                    }
+                    .buttonStyle(.bordered)
+                }
             }
 
             Button {
@@ -305,6 +359,45 @@ struct VideoEvidenceView: View {
             savedVideoURL = url
         case .failure(let error):
             coordinator.errorMessage = error.localizedDescription
+        }
+    }
+}
+
+private struct VideoRecordingPlaybackSheet: View {
+    let url: URL
+    let title: String
+    let coexistingWithMonitoring: Bool
+    let backgroundMonitoringEnabled: Bool
+    let onDismiss: () -> Void
+
+    @State private var player: AVPlayer?
+
+    var body: some View {
+        NavigationStack {
+            VideoPlayer(player: player)
+                .ignoresSafeArea(edges: .bottom)
+                .navigationTitle(title)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button(L10n.done, action: onDismiss)
+                    }
+                }
+                .onAppear {
+                    try? AudioSessionManager.configureForPlayback(
+                        coexistingWithMonitoring: coexistingWithMonitoring,
+                        backgroundEnabled: backgroundMonitoringEnabled
+                    )
+                    let item = AVPlayerItem(url: url)
+                    let avPlayer = AVPlayer(playerItem: item)
+                    avPlayer.volume = 1.0
+                    player = avPlayer
+                    avPlayer.play()
+                }
+                .onDisappear {
+                    player?.pause()
+                    player = nil
+                }
         }
     }
 }

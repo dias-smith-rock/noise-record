@@ -5,6 +5,7 @@ import Foundation
 @Observable
 final class RecordingAudioPlayer: NSObject, AVAudioPlayerDelegate {
     private(set) var playingID: UUID?
+    private(set) var lastErrorMessage: String?
     private var player: AVAudioPlayer?
     private var onRestoreSession: (() -> Void)?
 
@@ -13,14 +14,15 @@ final class RecordingAudioPlayer: NSObject, AVAudioPlayerDelegate {
         coexistingWithMonitoring: Bool,
         backgroundMonitoringEnabled: Bool,
         onRestoreSession: @escaping () -> Void
-    ) {
+    ) -> String? {
         if playingID == session.id {
             stop(restoreSession: true)
-            return
+            return nil
         }
 
         stop(restoreSession: false)
         self.onRestoreSession = onRestoreSession
+        lastErrorMessage = nil
 
         do {
             try AudioSessionManager.configureForPlayback(
@@ -38,10 +40,14 @@ final class RecordingAudioPlayer: NSObject, AVAudioPlayerDelegate {
             }
             self.player = player
             playingID = session.id
+            return nil
         } catch {
             self.player = nil
             playingID = nil
+            let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            lastErrorMessage = message
             onRestoreSession()
+            return message
         }
     }
 

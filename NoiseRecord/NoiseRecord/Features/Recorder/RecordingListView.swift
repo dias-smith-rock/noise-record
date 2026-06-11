@@ -80,6 +80,10 @@ struct RecordingListView: View {
     @State private var renameText = ""
     @State private var showDeleteConfirm = false
     @State private var playbackErrorMessage: String?
+    @State private var renameErrorMessage: String?
+    @State private var recordingsCSVURL: URL?
+    @State private var showRecordingsCSVShare = false
+    @State private var recordingsCSVErrorMessage: String?
 
     private var measurementMode: AcousticMeasurementMode {
         AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
@@ -182,6 +186,27 @@ struct RecordingListView: View {
         } message: {
             Text(playbackErrorMessage ?? "")
         }
+        .alert(L10n.errorTitle, isPresented: Binding(
+            get: { renameErrorMessage != nil },
+            set: { if !$0 { renameErrorMessage = nil } }
+        )) {
+            Button(L10n.ok, role: .cancel) { renameErrorMessage = nil }
+        } message: {
+            Text(renameErrorMessage ?? "")
+        }
+        .alert(L10n.errorTitle, isPresented: Binding(
+            get: { recordingsCSVErrorMessage != nil },
+            set: { if !$0 { recordingsCSVErrorMessage = nil } }
+        )) {
+            Button(L10n.ok, role: .cancel) { recordingsCSVErrorMessage = nil }
+        } message: {
+            Text(recordingsCSVErrorMessage ?? "")
+        }
+        .sheet(isPresented: $showRecordingsCSVShare) {
+            if let recordingsCSVURL {
+                ShareSheet(items: [recordingsCSVURL])
+            }
+        }
     }
 
     private var pageHeader: some View {
@@ -224,6 +249,15 @@ struct RecordingListView: View {
                     .foregroundStyle(.secondary)
 
                 Spacer()
+
+                Button {
+                    shareSelected()
+                } label: {
+                    Label(L10n.filesBatchShare, systemImage: "square.and.arrow.up")
+                        .font(.headline)
+                }
+                .buttonStyle(.bordered)
+                .disabled(selectedCount == 0)
 
                 Button(role: .destructive) {
                     showDeleteConfirm = true
@@ -313,6 +347,7 @@ struct RecordingListView: View {
     }
 
     private var summaryBar: some View {
+        VStack(spacing: 10) {
         HStack(spacing: 12) {
             switch selectedTab {
             case .audio:
@@ -331,6 +366,15 @@ struct RecordingListView: View {
                     value: videoSessions.isEmpty ? "—" : "\(Int(videoSessions.map(\.peakDB).max() ?? 0))",
                     theme: theme
                 )
+            }
+        }
+            if selectedTab == .audio, !sessions.isEmpty {
+                Button(L10n.filesExportRecordingsCSV) {
+                    exportRecordingsCSV()
+                }
+                .font(.caption.bold())
+                .buttonStyle(.bordered)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
@@ -373,6 +417,9 @@ struct RecordingListView: View {
         if let lat = video.latitude, let lon = video.longitude {
             badges.append(String(format: "%.4f, %.4f", lat, lon))
         }
+        if let hash = truncatedHash(video.fileHash) {
+            badges.append("\(L10n.filesFileHash) \(hash)")
+        }
         return badges
     }
 
@@ -381,7 +428,15 @@ struct RecordingListView: View {
         if let type = session.noiseType {
             badges.append(type)
         }
+        if let hash = truncatedHash(session.fileHash) {
+            badges.append("\(L10n.filesFileHash) \(hash)")
+        }
         return badges
+    }
+
+    private func truncatedHash(_ hash: String?) -> String? {
+        guard let hash, !hash.isEmpty else { return nil }
+        return String(hash.prefix(8))
     }
 
     private func audioDetailLine(for session: RecordingSession) -> String {
@@ -434,12 +489,15 @@ struct RecordingListView: View {
             playbackErrorMessage = L10n.filesAudioNotFound(session.fileName)
             return
         }
-        audioPlayerController.togglePlayback(
+        if let error = audioPlayerController.togglePlayback(
             for: session,
             coexistingWithMonitoring: engine.isMonitoring,
-            backgroundMonitoringEnabled: engine.backgroundMonitoringEnabled
+            backgroundMonitoringEnabled: engine.backgroundMonitoringEnabled,
+            onRestoreSession: {
+                restoreMonitoringAudioSession()
+            }
         ) {
-            restoreMonitoringAudioSession()
+            playbackErrorMessage = error
         }
     }
 
@@ -542,6 +600,31 @@ struct RecordingListView: View {
         SharePresenter.present(items: [session.fileURL])
     }
 
+    private func shareSelected() {
+        let urls: [URL]
+        switch selectedTab {
+        case .audio:
+            urls = sessions
+                .filter { selectedAudioIDs.contains($0.id) && $0.fileExists }
+                .map(\.fileURL)
+        case .video:
+            urls = videoSessions
+                .filter { selectedVideoIDs.contains($0.id) && $0.fileExists }
+                .map(\.fileURL)
+        }
+        guard !urls.isEmpty else { return }
+        SharePresenter.present(items: urls)
+    }
+
+    private func exportRecordingsCSV() {
+        guard let url = CSVExporter.exportRecordingSessions(sessions) else {
+            recordingsCSVErrorMessage = L10n.filesExportRecordingsCSVFailed
+            return
+        }
+        recordingsCSVURL = url
+        showRecordingsCSVShare = true
+    }
+
     // MARK: - Delete
 
     private func deleteAudio(_ session: RecordingSession) {
@@ -549,6 +632,7 @@ struct RecordingListView: View {
         try? FileManager.default.removeItem(at: session.fileURL)
         modelContext.delete(session)
         selectedAudioIDs.remove(session.id)
+        try? modelContext.save()
     }
 
     private func deleteVideo(_ session: VideoEvidenceSession) {
@@ -558,6 +642,7 @@ struct RecordingListView: View {
         try? FileManager.default.removeItem(at: session.fileURL)
         modelContext.delete(session)
         selectedVideoIDs.remove(session.id)
+        try? modelContext.save()
     }
 
     private func deleteSelected() {
@@ -640,9 +725,19 @@ struct RecordingListView: View {
             try FileManager.default.moveItem(at: oldURL, to: newURL)
             update(newURL)
         } catch {
-            // Keep original name on failure.
+            renameErrorMessage = L10n.filesRenameFailed
         }
     }
+}
+
+private struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 // MARK: - Shared card

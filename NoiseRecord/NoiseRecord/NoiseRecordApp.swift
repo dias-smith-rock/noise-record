@@ -3,7 +3,33 @@ import SwiftUI
 
 @main
 struct NoiseRecordApp: App {
-    var sharedModelContainer: ModelContainer = {
+    @State private var modelContainer: ModelContainer?
+    @State private var storageError: Error?
+
+    var body: some Scene {
+        WindowGroup {
+            Group {
+                if let modelContainer {
+                    ContentView()
+                        .modelContainer(modelContainer)
+                } else if let storageError {
+                    StorageInitErrorView(error: storageError) {
+                        initializeStorage()
+                    }
+                } else {
+                    ProgressView()
+                }
+            }
+            .onAppear {
+                if modelContainer == nil, storageError == nil {
+                    initializeStorage()
+                }
+            }
+        }
+    }
+
+    private func initializeStorage() {
+        storageError = nil
         let schema = Schema([
             RecordingSession.self,
             MeasurementSample.self,
@@ -12,16 +38,10 @@ struct NoiseRecordApp: App {
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            modelContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+            storageError = error
+            modelContainer = nil
         }
-    }()
-
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
-        .modelContainer(sharedModelContainer)
     }
 }

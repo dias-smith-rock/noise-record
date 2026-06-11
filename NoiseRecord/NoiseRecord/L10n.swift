@@ -1,7 +1,8 @@
 import Foundation
 
 /// Centralized localization keys. Strings live in `Localizable.xcstrings`.
-enum L10n {
+/// `nonisolated` keeps string accessors usable outside `@MainActor` (Swift 6 default isolation).
+nonisolated enum L10n {
     // MARK: - Common
 
     static let ok = String(localized: "common.ok")
@@ -244,6 +245,44 @@ enum L10n {
     static let errorVideoNotRecording = String(localized: "error.video.notRecording")
     static let errorVideoWriterAddTrackFailed = String(localized: "error.video.writerAddTrackFailed")
     static let errorUnknown = String(localized: "error.unknown")
+    static let errorAiClassificationFailed = String(localized: "error.aiClassification.failed")
+    static let errorStorageInitTitle = String(localized: "error.storage.init.title")
+    static let errorStorageInitRetry = String(localized: "error.storage.init.retry")
+    static let permissionOpenSettings = String(localized: "permission.openSettings")
+    static let permissionMicrophoneDeniedTitle = String(localized: "permission.microphone.denied.title")
+    static let permissionMicrophoneDeniedMessage = String(localized: "permission.microphone.denied.message")
+    static let permissionCameraDeniedTitle = String(localized: "permission.camera.denied.title")
+    static let permissionCameraDeniedMessage = String(localized: "permission.camera.denied.message")
+    static let permissionLocationDeniedTitle = String(localized: "permission.location.denied.title")
+    static let permissionLocationDeniedMessage = String(localized: "permission.location.denied.message")
+    static let recorderMonitoringRequiredTitle = String(localized: "recorder.monitoringRequired.title")
+    static let recorderMonitoringRequiredMessage = String(localized: "recorder.monitoringRequired.message")
+    static let recorderMonitoringRequiredStart = String(localized: "recorder.monitoringRequired.start")
+    static let recorderThresholdInvalid = String(localized: "recorder.threshold.invalid")
+    static let recorderAiFilterEmpty = String(localized: "recorder.aiFilter.empty")
+    static let dashboardExportCSVFailed = String(localized: "dashboard.exportCSV.failed")
+    static let filesRenameFailed = String(localized: "files.rename.failed")
+    static let filesBatchShare = String(localized: "files.batchShare")
+    static let filesFileHash = String(localized: "files.fileHash")
+    static let filesExportRecordingsCSV = String(localized: "files.exportRecordingsCSV")
+    static let filesExportRecordingsCSVFailed = String(localized: "files.exportRecordingsCSV.failed")
+    static let settingsAboutHeader = String(localized: "settings.about.header")
+    static let settingsVersion = String(localized: "settings.version")
+    static let settingsPrivacyPolicy = String(localized: "settings.privacyPolicy")
+    static let settingsSupport = String(localized: "settings.support")
+    static let settingsDisclaimerTitle = String(localized: "settings.disclaimer.title")
+    static let settingsDisclaimerBody = String(localized: "settings.disclaimer.body")
+    static let settingsDataHeader = String(localized: "settings.data.header")
+    static let settingsMeasurementSampleCount = String(localized: "settings.measurementSampleCount")
+    static let settingsClearMeasurements = String(localized: "settings.clearMeasurements")
+    static let settingsClearMeasurementsConfirm = String(localized: "settings.clearMeasurements.confirm")
+    static let settingsClearMeasurementsDone = String(localized: "settings.clearMeasurements.done")
+    static let videoRecBadge = String(localized: "REC")
+    static let videoPreviewRecording = String(localized: "video.previewRecording")
+
+    static func errorStorageInitMessage(_ detail: String) -> String {
+        String(format: String(localized: "error.storage.init.message"), detail)
+    }
 
     static func errorAudioConfigurationFailed(_ message: String) -> String {
         String(format: String(localized: "error.audio.configurationFailed"), message)
@@ -265,105 +304,5 @@ enum L10n {
 
     static func aiLabel(_ key: String) -> String {
         String(localized: String.LocalizationValue("aiLabel.\(key)"))
-    }
-}
-
-// MARK: - Measurement mode copy
-
-extension AcousticMeasurementMode {
-    var localizedUserFacingTitle: String {
-        switch self {
-        case .standard: String(localized: "mode.standard.userFacingTitle")
-        case .highSensitivity: String(localized: "mode.highSensitivity.userFacingTitle")
-        }
-    }
-
-    var localizedUserFacingSubtitle: String {
-        switch self {
-        case .standard: String(localized: "mode.standard.userFacingSubtitle")
-        case .highSensitivity: String(localized: "mode.highSensitivity.userFacingSubtitle")
-        }
-    }
-
-    var localizedSegmentLabel: String {
-        switch self {
-        case .standard: String(localized: "mode.standard.segmentLabel")
-        case .highSensitivity: String(localized: "mode.highSensitivity.segmentLabel")
-        }
-    }
-
-    var localizedTechnicalBadge: String {
-        switch self {
-        case .standard: String(localized: "mode.standard.technicalBadge")
-        case .highSensitivity: String(localized: "mode.highSensitivity.technicalBadge")
-        }
-    }
-
-    var localizedCoreDescription: String {
-        switch self {
-        case .standard: String(localized: "mode.standard.coreDescription")
-        case .highSensitivity: String(localized: "mode.highSensitivity.coreDescription")
-        }
-    }
-
-    var localizedTooltipCopy: String {
-        switch self {
-        case .standard: String(localized: "mode.standard.tooltipCopy")
-        case .highSensitivity: String(localized: "mode.highSensitivity.tooltipCopy")
-        }
-    }
-
-    var localizedTooltipHeadline: String {
-        switch self {
-        case .standard: String(localized: "mode.standard.tooltipHeadline")
-        case .highSensitivity: String(localized: "mode.highSensitivity.tooltipHeadline")
-        }
-    }
-
-    var localizedComparisonHint: String {
-        switch self {
-        case .standard: String(localized: "mode.standard.comparisonHint")
-        case .highSensitivity: String(localized: "mode.highSensitivity.comparisonHint")
-        }
-    }
-}
-
-extension WeightingType {
-    var localizedDisplayName: String {
-        switch self {
-        case .a: String(localized: "weighting.a.displayName")
-        case .c: String(localized: "weighting.c.displayName")
-        case .z: String(localized: "weighting.z.displayName")
-        }
-    }
-}
-
-extension SilenceGrade {
-    var localizedTitle: String {
-        switch self {
-        case .a: String(localized: "silenceGrade.a.title")
-        case .b: String(localized: "silenceGrade.b.title")
-        case .c: String(localized: "silenceGrade.c.title")
-        case .d: String(localized: "silenceGrade.d.title")
-        }
-    }
-
-    var localizedDescription: String {
-        switch self {
-        case .a: String(localized: "silenceGrade.a.description")
-        case .b: String(localized: "silenceGrade.b.description")
-        case .c: String(localized: "silenceGrade.c.description")
-        case .d: String(localized: "silenceGrade.d.description")
-        }
-    }
-}
-
-extension RecordingState {
-    var localizedStatusText: String {
-        switch self {
-        case .idle: L10n.recordingVoiceStandby
-        case .recording: L10n.recordingAuto
-        case .coolingDown: L10n.recordingTailDelay
-        }
     }
 }
