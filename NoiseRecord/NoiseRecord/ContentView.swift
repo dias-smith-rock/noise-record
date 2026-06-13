@@ -2,16 +2,26 @@ import SwiftData
 import SwiftUI
 
 struct ContentView: View {
+    private enum MainTab: Hashable {
+        case monitor
+        case voice
+        case video
+        case files
+        case settings
+    }
+
     @State private var engine = NoiseMonitorEngine()
+    @State private var selectedTab: MainTab = .monitor
     @Bindable private var appearance = AppAppearanceSettings.shared
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             NavigationStack {
                 DashboardView(engine: engine)
             }
+            .tag(MainTab.monitor)
             .tabItem {
                 Label(L10n.tabMonitor, systemImage: "waveform")
             }
@@ -19,6 +29,7 @@ struct ContentView: View {
             NavigationStack {
                 RecorderSettingsView(engine: engine)
             }
+            .tag(MainTab.voice)
             .tabItem {
                 Label(L10n.tabVoice, systemImage: "record.circle")
             }
@@ -26,6 +37,7 @@ struct ContentView: View {
             NavigationStack {
                 VideoEvidenceView(engine: engine)
             }
+            .tag(MainTab.video)
             .tabItem {
                 Label(L10n.tabVideo, systemImage: "video.fill")
             }
@@ -33,13 +45,15 @@ struct ContentView: View {
             NavigationStack {
                 RecordingListView(engine: engine)
             }
+            .tag(MainTab.files)
             .tabItem {
                 Label(L10n.tabFiles, systemImage: "list.bullet")
             }
 
             NavigationStack {
-                SettingsView(engine: engine)
+                SettingsView(engine: engine, isTabActive: selectedTab == .settings)
             }
+            .tag(MainTab.settings)
             .tabItem {
                 Label(L10n.tabSettings, systemImage: "gearshape")
             }

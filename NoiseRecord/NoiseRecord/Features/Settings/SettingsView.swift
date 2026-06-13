@@ -5,9 +5,12 @@ struct SettingsView: View {
     @Bindable var engine: NoiseMonitorEngine
     @Bindable private var appearance = AppAppearanceSettings.shared
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
     @Query private var measurementSamples: [MeasurementSample]
 
-    @State private var calibrationReference: Float = DeviceCalibrationStore.referenceSPL
+    let isTabActive: Bool
+
+    @State private var calibrationReference: Float = DeviceCalibrationStore.defaultReferenceSPL
     @State private var showCalibrationAlert = false
     @State private var calibrationAlertMessage = ""
 
@@ -162,8 +165,17 @@ struct SettingsView: View {
         .proTabBackground(theme: theme)
         .proTabNavigationChrome()
         .onAppear {
-            calibrationReference = DeviceCalibrationStore.referenceSPL
             refreshCalibrationDisplay()
+        }
+        .onChange(of: isTabActive) { _, isActive in
+            if isActive {
+                refreshCalibrationDisplay()
+            }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active, isTabActive {
+                refreshCalibrationDisplay()
+            }
         }
         .alert(L10n.settingsCalibrationSavedTitle, isPresented: $showCalibrationAlert) {
             Button(L10n.ok, role: .cancel) {}
@@ -227,6 +239,7 @@ struct SettingsView: View {
     }
 
     private func refreshCalibrationDisplay() {
+        calibrationReference = DeviceCalibrationStore.referenceSPL
         displayedUserAdjustment = DeviceCalibrationStore.userAdjustment
         displayedTotalOffset = DeviceCalibrationStore.totalOffset
     }
