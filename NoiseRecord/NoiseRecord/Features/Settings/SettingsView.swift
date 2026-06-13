@@ -7,7 +7,7 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var measurementSamples: [MeasurementSample]
 
-    @State private var calibrationReference: Float = 94
+    @State private var calibrationReference: Float = DeviceCalibrationStore.referenceSPL
     @State private var showCalibrationAlert = false
     @State private var calibrationAlertMessage = ""
 
@@ -162,6 +162,7 @@ struct SettingsView: View {
         .proTabBackground(theme: theme)
         .proTabNavigationChrome()
         .onAppear {
+            calibrationReference = DeviceCalibrationStore.referenceSPL
             refreshCalibrationDisplay()
         }
         .alert(L10n.settingsCalibrationSavedTitle, isPresented: $showCalibrationAlert) {

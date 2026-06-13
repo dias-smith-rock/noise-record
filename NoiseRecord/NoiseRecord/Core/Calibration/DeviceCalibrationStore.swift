@@ -11,8 +11,11 @@ enum WeightingType: String, CaseIterable, Codable, Sendable {
 
 struct DeviceCalibrationStore: Sendable {
     private static let userAdjustmentKey = "calibration.userAdjustment"
+    private static let referenceSPLKey = "calibration.referenceSPL"
     private static let weightingKey = "settings.weighting"
     private static let highSensitivityKey = "settings.highSensitivityMode"
+
+    static let defaultReferenceSPL: Float = 94
 
     /// Baseline offset for quiet-room display ~30–40 dBA in measurement mode.
     static let defaultOffset: Float = 115.0
@@ -66,10 +69,24 @@ struct DeviceCalibrationStore: Sendable {
     /// User fine-tuning added on top of device offset.
     static var userAdjustment: Float {
         get {
-            UserDefaults.standard.object(forKey: userAdjustmentKey) as? Float ?? 0
+            guard UserDefaults.standard.object(forKey: userAdjustmentKey) != nil else { return 0 }
+            return UserDefaults.standard.float(forKey: userAdjustmentKey)
         }
         set {
             UserDefaults.standard.set(newValue, forKey: userAdjustmentKey)
+        }
+    }
+
+    /// Last reference SPL used for calibration (e.g. 94 dB from a sound-level meter).
+    static var referenceSPL: Float {
+        get {
+            guard UserDefaults.standard.object(forKey: referenceSPLKey) != nil else {
+                return defaultReferenceSPL
+            }
+            return UserDefaults.standard.float(forKey: referenceSPLKey)
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: referenceSPLKey)
         }
     }
 
@@ -95,6 +112,7 @@ struct DeviceCalibrationStore: Sendable {
     }
 
     static func calibrate(referenceSPL: Float, measuredDBFS: Float) {
+        self.referenceSPL = referenceSPL
         userAdjustment = referenceSPL - measuredDBFS - deviceOffset
     }
 
