@@ -55,10 +55,13 @@ struct ContentView: View {
         .onChange(of: scenePhase) { _, phase in
             switch phase {
             case .inactive:
+                AppTelemetry.log("scene_inactive")
                 engine.prepareForBackgroundIfNeeded()
             case .background:
+                AppTelemetry.logEvent("scene_background")
                 engine.handleDidEnterBackground()
             case .active:
+                AppTelemetry.logEvent("scene_active")
                 engine.handleDidBecomeActive()
             @unknown default:
                 break

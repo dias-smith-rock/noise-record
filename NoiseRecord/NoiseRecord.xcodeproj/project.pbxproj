@@ -80,6 +80,7 @@
 				DD3C1F942FD969F500B8AC17 /* Sources */,
 				DD3C1F952FD969F500B8AC17 /* Frameworks */,
 				DD3C1F962FD969F500B8AC17 /* Resources */,
+				FB004CRASHSCRIPT00001 /* Upload Crashlytics Symbols */,
 			);
 			buildRules = (
 			);
@@ -90,6 +91,8 @@
 			);
 			name = NoiseRecord;
 			packageProductDependencies = (
+				FB002ANALYTICS000000001 /* FirebaseAnalytics */,
+				FB003CRASHLYTICS000001 /* FirebaseCrashlytics */,
 			);
 			productName = NoiseRecord;
 			productReference = DD3C1F982FD969F500B8AC17 /* NoiseRecord.app */;
@@ -150,6 +153,9 @@
 			);
 			mainGroup = DD3C1F8F2FD969F500B8AC17;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				FB001PKGREF000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = DD3C1F992FD969F500B8AC17 /* Products */;
 			projectDirPath = "";
@@ -202,6 +208,33 @@
 			targetProxy = TEST007TESTS00000000000001 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		FB004CRASHSCRIPT00001 /* Upload Crashlytics Symbols */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}",
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${TARGET_NAME}",
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Info.plist",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GoogleService-Info.plist",
+				"$(TARGET_BUILD_DIR)/$(EXECUTABLE_PATH)",
+			);
+			name = "Upload Crashlytics Symbols";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
 		DD3C1FA32FD969F700B8AC17 /* Debug */ = {
@@ -334,6 +367,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 34878H47P6;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = DecibelPro;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
@@ -377,6 +411,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 34878H47P6;
 				ENABLE_PREVIEWS = NO;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = DecibelPro;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
@@ -480,6 +515,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		FB001PKGREF000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		FB002ANALYTICS000000001 /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FB001PKGREF000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		FB003CRASHLYTICS000001 /* FirebaseCrashlytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FB001PKGREF000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCrashlytics;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = DD3C1F902FD969F500B8AC17 /* Project object */;
 }

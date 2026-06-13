@@ -3,6 +3,7 @@ import SwiftUI
 
 @main
 struct NoiseRecordApp: App {
+    @UIApplicationDelegateAdaptor(FirebaseAppDelegate.self) private var firebaseAppDelegate
     @State private var modelContainer: ModelContainer?
     @State private var storageError: Error?
 
@@ -39,9 +40,11 @@ struct NoiseRecordApp: App {
 
         do {
             modelContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
+            AppTelemetry.log("storage_initialized")
         } catch {
             storageError = error
             modelContainer = nil
+            AppTelemetry.recordError(error, context: "storage_init")
         }
     }
 }

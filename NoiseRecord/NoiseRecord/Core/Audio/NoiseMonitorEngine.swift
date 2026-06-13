@@ -141,7 +141,10 @@ final class NoiseMonitorEngine {
     func requestPermissionAndStart() async {
         permissionGranted = await AudioSessionManager.requestPermission()
         guard permissionGranted else {
-            errorMessage = AudioSessionError.permissionDenied.localizedDescription
+            setUserError(
+                AudioSessionError.permissionDenied.localizedDescription,
+                context: "mic_permission_denied"
+            )
             showMicrophonePermissionDenied = true
             return
         }
@@ -155,7 +158,10 @@ final class NoiseMonitorEngine {
         if !permissionGranted {
             permissionGranted = await AudioSessionManager.requestPermission()
             guard permissionGranted else {
-                errorMessage = AudioSessionError.permissionDenied.localizedDescription
+                setUserError(
+                    AudioSessionError.permissionDenied.localizedDescription,
+                    context: "video_mic_permission_denied"
+                )
                 return false
             }
         }
@@ -178,7 +184,7 @@ final class NoiseMonitorEngine {
         do {
             try reconfigureAudioSessionForCurrentState()
         } catch {
-            errorMessage = AudioSessionError.wrap(error).localizedDescription
+            setUserError(AudioSessionError.wrap(error).localizedDescription, context: "audio_session_config")
             return
         }
 
@@ -190,8 +196,9 @@ final class NoiseMonitorEngine {
             audioEngine.prepare()
             try audioEngine.start()
             isMonitoring = true
+            AppTelemetry.setMonitoringActive(true)
         } catch {
-            errorMessage = L10n.errorEngineStartFailed(error.localizedDescription)
+            setUserError(L10n.errorEngineStartFailed(error.localizedDescription), context: "engine_start")
         }
     }
 
@@ -245,6 +252,7 @@ final class NoiseMonitorEngine {
         noiseClassifier?.stop()
         isMonitoring = false
         recordingState = .idle
+        AppTelemetry.setMonitoringActive(false)
     }
 
     func resetStatistics() {
@@ -330,7 +338,10 @@ final class NoiseMonitorEngine {
             try audioEngine.start()
         } catch {
             guard showErrorOnFailure, !audioEngine.isRunning else { return }
-            errorMessage = AudioSessionError.wrap(error).localizedDescription
+            setUserError(
+                AudioSessionError.wrap(error).localizedDescription,
+                context: "pipeline_recovery"
+            )
         }
     }
 
@@ -520,5 +531,10 @@ final class NoiseMonitorEngine {
             }
             self.history = historySnapshot
         }
+    }
+
+    private func setUserError(_ message: String, context: String) {
+        errorMessage = message
+        AppTelemetry.recordMessage(message, context: context)
     }
 }

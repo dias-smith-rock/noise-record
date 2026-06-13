@@ -24,7 +24,19 @@ Use this when submitting **DecibelPro** v1.0.
 | Category | Utilities |
 | Minimum OS | iOS 18.6 |
 
-## Review Notes (Background Audio)
+## Firebase
+
+| Service | SDK | Purpose |
+|---------|-----|---------|
+| Firebase Analytics | `FirebaseAnalytics` | Event logging (`app_launch`, `monitoring_state`, `app_error`, etc.) |
+| Firebase Crashlytics | `FirebaseCrashlytics` | Crash reports + breadcrumb logs |
+
+- Config: [`NoiseRecord/GoogleService-Info.plist`](NoiseRecord/GoogleService-Info.plist)
+- Bootstrap: `FirebaseAppDelegate` + `AppTelemetry`
+- dSYM upload: **Upload Crashlytics Symbols** build phase (Release Archive)
+
+Enable **Crashlytics** and **Google Analytics** in [Firebase Console](https://console.firebase.google.com/) for project `noiserecord-a7860` if not already on.
+
 
 > DecibelPro uses the `audio` background mode to continue real-time noise monitoring and voice-activated recording when the app is in the background. Users explicitly enable background monitoring in the Voice tab. The app does not play music or unrelated audio in the background.
 
