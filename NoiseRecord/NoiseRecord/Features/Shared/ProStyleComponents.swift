@@ -202,22 +202,6 @@ struct ProRecordingStatusBadge: View {
     }
 }
 
-struct MonitorTabBarIcon: View {
-    let isRecording: Bool
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: !isRecording)) { timeline in
-            let pulse = isRecording
-                ? 1.0 + 0.12 * abs(sin(timeline.date.timeIntervalSinceReferenceDate * 3.5))
-                : 1.0
-
-            Image(systemName: isRecording ? "waveform.circle.fill" : "waveform")
-                .scaleEffect(pulse)
-                .symbolEffect(.variableColor.iterative, options: .repeating, isActive: isRecording)
-        }
-    }
-}
-
 struct ProEmptyState: View {
     let title: String
     let message: String

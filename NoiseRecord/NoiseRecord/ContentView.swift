@@ -24,11 +24,7 @@ struct ContentView: View {
             }
             .tag(MainTab.monitor)
             .tabItem {
-                Label {
-                    Text(L10n.tabMonitor)
-                } icon: {
-                    MonitorTabBarIcon(isRecording: engine.recordingState == .recording)
-                }
+                Label(L10n.tabMonitor, systemImage: "waveform")
             }
 
             NavigationStack {
@@ -81,6 +77,24 @@ struct ContentView: View {
                 FilesTabBadgeStore.clear()
                 showsFilesTabBadge = false
             }
+        }
+        .task(id: engine.isVoiceRecordingRunning) {
+            guard engine.isVoiceRecordingRunning else {
+                TabBarMonitorIconUpdater.apply(frame: nil, isAnimating: false)
+                return
+            }
+
+            while !Task.isCancelled, engine.isVoiceRecordingRunning {
+                TabBarMonitorIconUpdater.apply(
+                    frame: MonitorTabBarWaveformRenderer.render(
+                        at: Date().timeIntervalSinceReferenceDate
+                    ),
+                    isAnimating: true
+                )
+                try? await Task.sleep(for: .milliseconds(33))
+            }
+
+            TabBarMonitorIconUpdater.apply(frame: nil, isAnimating: false)
         }
         .onChange(of: scenePhase) { _, phase in
             switch phase {

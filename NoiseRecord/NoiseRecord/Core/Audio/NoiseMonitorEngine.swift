@@ -111,6 +111,11 @@ final class NoiseMonitorEngine {
         voiceActivatedEnabled && (!currentSessionRecordingIDs.isEmpty || recordingState != .idle)
     }
 
+    /// Voice-activated capture is armed and the monitor pipeline is running.
+    var isVoiceRecordingRunning: Bool {
+        voiceActivatedEnabled && isMonitoring
+    }
+
     var currentSessionRecordingCount: Int {
         currentSessionRecordingIDs.count
     }
