@@ -37,6 +37,22 @@ Use this when submitting **DecibelPro** v1.0.
 
 Enable **Crashlytics** and **Google Analytics** in [Firebase Console](https://console.firebase.google.com/) for project `noiserecord-a7860` if not already on.
 
+## AdMob
+
+| Field | Value |
+|-------|-------|
+| App ID | `ca-app-pub-2283581832994740~9865795031` |
+| Cold start (App Open) | `ca-app-pub-2283581832994740/5926550020` (`openning_cold`) |
+| Hot start (Interstitial) | `ca-app-pub-2283581832994740/7790296034` (`interstitial_hot`) |
+
+- SDK: `GoogleMobileAds` via SPM
+- Config: [`AdMob-Info.plist`](AdMob-Info.plist) (GADApplicationIdentifier + SKAdNetworkItems)
+- Managers: `AppOpenAdManager` (cold), `HotStartAdManager` (hot)
+- Debug builds use [Google test ad units](https://developers.google.com/admob/ios/test-ads)
+- Analytics events: `ad_cold_load/show/fail`, `ad_hot_load/show/fail`
+
+App Store Connect privacy questionnaire: declare **Advertising Data** and **Device ID** for third-party advertising (AdMob).
+
 
 > DecibelPro uses the `audio` background mode to continue real-time noise monitoring and voice-activated recording when the app is in the background. Users explicitly enable background monitoring in the Voice tab. The app does not play music or unrelated audio in the background.
 
@@ -44,7 +60,8 @@ Enable **Crashlytics** and **Google Analytics** in [Firebase Console](https://co
 
 - Collects audio data: **Yes** — on-device measurement and recording only
 - Collects precise location: **Yes** — optional, embedded in video evidence watermark only
-- Tracks users: **No**
+- Third-party advertising (AdMob): **Yes** — app open + interstitial ads; device identifiers for ad delivery
+- Tracks users: **No** (no cross-app tracking; `NSPrivacyTracking = false`)
 - Uses encryption: **No** (non-exempt) — `ITSAppUsesNonExemptEncryption = NO`
 
 ## Screenshots (minimum)

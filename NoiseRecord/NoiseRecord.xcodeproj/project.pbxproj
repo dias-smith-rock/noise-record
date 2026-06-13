@@ -6,6 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		DD3C32F22FDD826700B8AC17 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = FB002ANALYTICS000000001 /* FirebaseAnalytics */; };
+		DD3C32F32FDD826700B8AC17 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = FB003CRASHLYTICS000001 /* FirebaseCrashlytics */; };
+		DD3C341D2FDD873200B8AC17 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = ADMOB002PRODUCT0001 /* GoogleMobileAds */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		TEST007TESTS00000000000001 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -39,6 +45,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DD3C341D2FDD873200B8AC17 /* GoogleMobileAds in Frameworks */,
+				DD3C32F32FDD826700B8AC17 /* FirebaseCrashlytics in Frameworks */,
+				DD3C32F22FDD826700B8AC17 /* FirebaseAnalytics in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -93,6 +102,7 @@
 			packageProductDependencies = (
 				FB002ANALYTICS000000001 /* FirebaseAnalytics */,
 				FB003CRASHLYTICS000001 /* FirebaseCrashlytics */,
+				ADMOB002PRODUCT0001 /* GoogleMobileAds */,
 			);
 			productName = NoiseRecord;
 			productReference = DD3C1F982FD969F500B8AC17 /* NoiseRecord.app */;
@@ -155,6 +165,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				FB001PKGREF000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				ADMOB001PKGREF00001 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = DD3C1F992FD969F500B8AC17 /* Products */;
@@ -184,31 +195,6 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
-/* Begin PBXSourcesBuildPhase section */
-		DD3C1F942FD969F500B8AC17 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		TEST004TESTS00000000000001 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXSourcesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-		TEST008TESTS00000000000001 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = DD3C1F972FD969F500B8AC17 /* NoiseRecord */;
-			targetProxy = TEST007TESTS00000000000001 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
-
 /* Begin PBXShellScriptBuildPhase section */
 		FB004CRASHSCRIPT00001 /* Upload Crashlytics Symbols */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -235,6 +221,31 @@
 			shellScript = "\"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		DD3C1F942FD969F500B8AC17 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		TEST004TESTS00000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		TEST008TESTS00000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DD3C1F972FD969F500B8AC17 /* NoiseRecord */;
+			targetProxy = TEST007TESTS00000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		DD3C1FA32FD969F700B8AC17 /* Debug */ = {
@@ -369,6 +380,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "AdMob-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = DecibelPro;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
@@ -413,6 +425,7 @@
 				ENABLE_PREVIEWS = NO;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "AdMob-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = DecibelPro;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
@@ -517,6 +530,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		ADMOB001PKGREF00001 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.0.0;
+			};
+		};
 		FB001PKGREF000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
@@ -528,6 +549,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		ADMOB002PRODUCT0001 /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = ADMOB001PKGREF00001 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
+		};
 		FB002ANALYTICS000000001 /* FirebaseAnalytics */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = FB001PKGREF000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;

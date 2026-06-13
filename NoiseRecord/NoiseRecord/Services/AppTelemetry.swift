@@ -59,6 +59,30 @@ nonisolated enum AppTelemetry {
         logEvent("monitoring_state", parameters: ["active": isActive])
     }
 
+    static func logAdColdLoad() {
+        logEvent("ad_cold_load")
+    }
+
+    static func logAdColdShow() {
+        logEvent("ad_cold_show")
+    }
+
+    static func logAdColdFail(_ message: String) {
+        logEvent("ad_cold_fail", parameters: ["message": message])
+    }
+
+    static func logAdHotLoad() {
+        logEvent("ad_hot_load")
+    }
+
+    static func logAdHotShow() {
+        logEvent("ad_hot_show")
+    }
+
+    static func logAdHotFail(_ message: String) {
+        logEvent("ad_hot_fail", parameters: ["message": message])
+    }
+
     private static func configureCrashlyticsContext() {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"
