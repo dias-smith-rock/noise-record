@@ -24,7 +24,11 @@ struct ContentView: View {
             }
             .tag(MainTab.monitor)
             .tabItem {
-                Label(L10n.tabMonitor, systemImage: "waveform")
+                Label {
+                    Text(L10n.tabMonitor)
+                } icon: {
+                    MonitorTabBarIcon(isRecording: engine.recordingState == .recording)
+                }
             }
 
             NavigationStack {

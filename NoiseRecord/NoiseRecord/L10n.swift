@@ -289,6 +289,12 @@ nonisolated enum L10n {
     static var videoRecBadge: String { localized("REC") }
     static var videoPreviewRecording: String { localized("video.previewRecording") }
 
+    static func videoPlaybackSyncedNoise(_ decibel: Float, weighting: String) -> String {
+        String(format: localized("video.playback.syncedNoise"), decibel, weighting)
+    }
+
+    static var videoPlaybackSyncedHint: String { localized("video.playback.syncedHint") }
+
     static func errorStorageInitMessage(_ detail: String) -> String {
         String(format: localized("error.storage.init.message"), detail)
     }

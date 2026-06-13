@@ -14290,6 +14290,40 @@
         }
       }
     },
+    "video.playback.syncedHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Synced with playback time"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "与播放时间同步"
+          }
+        }
+      }
+    },
+    "video.playback.syncedNoise": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noise: %.1f %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "噪音：%.1f %@"
+          }
+        }
+      }
+    },
     "video.savedFile": {
       "extractionState": "manual",
       "localizations": {

@@ -57,6 +57,10 @@ final class VideoEvidenceSession {
 
     var duration: TimeInterval { endedAt.timeIntervalSince(startedAt) }
 
+    var noiseTimeline: VideoNoiseTimeline? {
+        VideoNoiseTimelineStore.load(for: fileURL)
+    }
+
     static func hashFile(at path: String) -> String? {
         guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)) else { return nil }
         let digest = SHA256.hash(data: data)

@@ -144,15 +144,17 @@ struct RecordingListView: View {
             set: { if !$0 { dismissVideoPlayer() } }
         )) {
             if let url = presentedVideoURL {
-                VideoPlaybackSheet(
+                SyncedVideoPlayerView(
                     url: url,
                     title: presentedVideoTitle ?? url.lastPathComponent,
+                    timeline: VideoNoiseTimelineStore.load(for: url),
                     coexistingWithMonitoring: engine.isMonitoring,
-                    backgroundMonitoringEnabled: engine.backgroundMonitoringEnabled
-                ) {
-                    dismissVideoPlayer()
-                    restoreMonitoringAudioSession()
-                }
+                    backgroundMonitoringEnabled: engine.backgroundMonitoringEnabled,
+                    onDismiss: {
+                        dismissVideoPlayer()
+                        restoreMonitoringAudioSession()
+                    }
+                )
             }
         }
         .alert(L10n.filesRenameTitle, isPresented: Binding(
@@ -604,6 +606,7 @@ struct RecordingListView: View {
             dismissVideoPlayer()
         }
         try? FileManager.default.removeItem(at: session.fileURL)
+        VideoNoiseTimelineStore.remove(for: session.fileURL)
         modelContext.delete(session)
         selectedVideoIDs.remove(session.id)
         try? modelContext.save()
@@ -687,6 +690,9 @@ struct RecordingListView: View {
         }
         do {
             try FileManager.default.moveItem(at: oldURL, to: newURL)
+            if session is VideoEvidenceSession {
+                try? VideoNoiseTimelineStore.moveSidecar(from: oldURL, to: newURL)
+            }
             update(newURL)
         } catch {
             renameErrorMessage = L10n.filesRenameFailed
@@ -840,47 +846,6 @@ private struct FlowBadgeRow: View {
                     .clipShape(Capsule())
                     .lineLimit(1)
             }
-        }
-    }
-}
-
-// MARK: - Video player
-
-private struct VideoPlaybackSheet: View {
-    let url: URL
-    let title: String
-    let coexistingWithMonitoring: Bool
-    let backgroundMonitoringEnabled: Bool
-    let onDismiss: () -> Void
-
-    @State private var player: AVPlayer?
-
-    var body: some View {
-        NavigationStack {
-            VideoPlayer(player: player)
-                .ignoresSafeArea(edges: .bottom)
-                .navigationTitle(title)
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button(L10n.done, action: onDismiss)
-                    }
-                }
-                .onAppear {
-                    try? AudioSessionManager.configureForPlayback(
-                        coexistingWithMonitoring: coexistingWithMonitoring,
-                        backgroundEnabled: backgroundMonitoringEnabled
-                    )
-                    let item = AVPlayerItem(url: url)
-                    let avPlayer = AVPlayer(playerItem: item)
-                    avPlayer.volume = 1.0
-                    player = avPlayer
-                    avPlayer.play()
-                }
-                .onDisappear {
-                    player?.pause()
-                    player = nil
-                }
         }
     }
 }

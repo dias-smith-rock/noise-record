@@ -181,16 +181,18 @@ struct VideoEvidenceView: View {
             set: { if !$0 { presentedVideoURL = nil; presentedVideoTitle = nil } }
         )) {
             if let url = presentedVideoURL {
-                VideoRecordingPlaybackSheet(
+                SyncedVideoPlayerView(
                     url: url,
                     title: presentedVideoTitle ?? url.lastPathComponent,
+                    timeline: VideoNoiseTimelineStore.load(for: url),
                     coexistingWithMonitoring: engine.isMonitoring,
-                    backgroundMonitoringEnabled: engine.backgroundMonitoringEnabled
-                ) {
-                    presentedVideoURL = nil
-                    presentedVideoTitle = nil
-                    engine.restoreMonitoringAfterExternalSession()
-                }
+                    backgroundMonitoringEnabled: engine.backgroundMonitoringEnabled,
+                    onDismiss: {
+                        presentedVideoURL = nil
+                        presentedVideoTitle = nil
+                        engine.restoreMonitoringAfterExternalSession()
+                    }
+                )
             }
         }
     }
@@ -365,45 +367,6 @@ struct VideoEvidenceView: View {
             savedVideoURL = url
         case .failure(let error):
             coordinator.errorMessage = error.localizedDescription
-        }
-    }
-}
-
-private struct VideoRecordingPlaybackSheet: View {
-    let url: URL
-    let title: String
-    let coexistingWithMonitoring: Bool
-    let backgroundMonitoringEnabled: Bool
-    let onDismiss: () -> Void
-
-    @State private var player: AVPlayer?
-
-    var body: some View {
-        NavigationStack {
-            VideoPlayer(player: player)
-                .ignoresSafeArea(edges: .bottom)
-                .navigationTitle(title)
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button(L10n.done, action: onDismiss)
-                    }
-                }
-                .onAppear {
-                    try? AudioSessionManager.configureForPlayback(
-                        coexistingWithMonitoring: coexistingWithMonitoring,
-                        backgroundEnabled: backgroundMonitoringEnabled
-                    )
-                    let item = AVPlayerItem(url: url)
-                    let avPlayer = AVPlayer(playerItem: item)
-                    avPlayer.volume = 1.0
-                    player = avPlayer
-                    avPlayer.play()
-                }
-                .onDisappear {
-                    player?.pause()
-                    player = nil
-                }
         }
     }
 }

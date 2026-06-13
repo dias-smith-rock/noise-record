@@ -45,6 +45,10 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
     private var sessionStarted = false
     private var outputURL: URL?
     private var pendingAudioSamples: [CMSampleBuffer] = []
+    private var recordingOriginTime: CMTime?
+    private var noiseTimelineSamples: [VideoNoiseSample] = []
+    private var lastTimelineSampleTime: Double = -1
+    private let timelineSampleInterval: TimeInterval = 0.1
 
     private let timestampFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -195,6 +199,9 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
             self.outputURL = url ?? Self.makeOutputURL()
             self.isRecording = true
             self.sessionStarted = false
+            self.recordingOriginTime = nil
+            self.noiseTimelineSamples.removeAll()
+            self.lastTimelineSampleTime = -1
             self.pendingAudioSamples.removeAll()
             self.tearDownWriter()
         }
@@ -226,6 +233,7 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
             if let error = writer.error {
                 completion(.failure(VideoNoiseRecorderError.finishFailed(error.localizedDescription)))
             } else {
+                self?.saveNoiseTimeline(for: url)
                 completion(.success(url))
             }
             self?.tearDownWriter()
@@ -295,7 +303,29 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         audioWriterInput = nil
         pixelBufferAdaptor = nil
         sessionStarted = false
+        recordingOriginTime = nil
+        noiseTimelineSamples.removeAll()
+        lastTimelineSampleTime = -1
         pendingAudioSamples.removeAll()
+    }
+
+    private func saveNoiseTimeline(for videoURL: URL) {
+        guard !noiseTimelineSamples.isEmpty else { return }
+        let timeline = VideoNoiseTimeline(
+            weighting: dataBridge.currentWeighting,
+            samples: noiseTimelineSamples
+        )
+        try? VideoNoiseTimelineStore.save(timeline, for: videoURL)
+    }
+
+    private func appendTimelineSampleIfNeeded(at relativeTime: Double) {
+        guard relativeTime >= 0 else { return }
+        guard lastTimelineSampleTime < 0
+            || relativeTime - lastTimelineSampleTime >= timelineSampleInterval else { return }
+        noiseTimelineSamples.append(
+            VideoNoiseSample(time: relativeTime, decibel: dataBridge.currentDecibel)
+        )
+        lastTimelineSampleTime = relativeTime
     }
 
     // MARK: - OSD rendering
@@ -378,8 +408,14 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
 
             if !self.sessionStarted {
                 self.assetWriter?.startSession(atSourceTime: timestamp)
+                self.recordingOriginTime = timestamp
                 self.sessionStarted = true
                 self.flushPendingAudio()
+            }
+
+            if let origin = self.recordingOriginTime {
+                let relative = CMTimeGetSeconds(CMTimeSubtract(timestamp, origin))
+                self.appendTimelineSampleIfNeeded(at: relative)
             }
 
             guard let pool = adaptor.pixelBufferPool else { return }

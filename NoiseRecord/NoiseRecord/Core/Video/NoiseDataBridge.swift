@@ -4,9 +4,22 @@ import Foundation
 final class NoiseDataBridge: @unchecked Sendable {
     private let lock = NSLock()
 
+    private var _decibel: Float = 0
     private var _decibelString = String(localized: "overlay.decibel.default")
     private var _gpsString = String(localized: "overlay.gps.unavailable")
     private var _weightingLabel = "dBA"
+
+    var currentDecibel: Float {
+        lock.lock()
+        defer { lock.unlock() }
+        return _decibel
+    }
+
+    var currentWeighting: String {
+        lock.lock()
+        defer { lock.unlock() }
+        return _weightingLabel
+    }
 
     var decibelString: String {
         lock.lock()
@@ -22,6 +35,7 @@ final class NoiseDataBridge: @unchecked Sendable {
 
     func update(decibel: Float, weighting: String) {
         lock.lock()
+        _decibel = decibel
         _decibelString = String(format: "%.1f %@", decibel, weighting)
         _weightingLabel = weighting
         lock.unlock()
