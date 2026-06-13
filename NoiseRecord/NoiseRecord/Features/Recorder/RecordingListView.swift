@@ -62,8 +62,9 @@ private enum RenameTarget: Identifiable {
 
 struct RecordingListView: View {
     @Bindable var engine: NoiseMonitorEngine
-    @Query private var sessions: [RecordingSession]
-    @Query private var videoSessions: [VideoEvidenceSession]
+    let isTabActive: Bool
+    @Query(sort: \RecordingSession.startedAt, order: .reverse) private var sessions: [RecordingSession]
+    @Query(sort: \VideoEvidenceSession.startedAt, order: .reverse) private var videoSessions: [VideoEvidenceSession]
     @Environment(\.modelContext) private var modelContext
 
     @State private var selectedTab: RecordingListTab = .audio
@@ -90,11 +91,17 @@ struct RecordingListView: View {
     }
 
     private var sortedAudioSessions: [RecordingSession] {
-        sort(sessions)
+        switch sortOption {
+        case .dateDescending: sessions
+        default: sort(sessions)
+        }
     }
 
     private var sortedVideoSessions: [VideoEvidenceSession] {
-        sort(videoSessions)
+        switch sortOption {
+        case .dateDescending: videoSessions
+        default: sort(videoSessions)
+        }
     }
 
     private var selectedCount: Int {
@@ -126,11 +133,13 @@ struct RecordingListView: View {
             }
 
             ScrollView {
-                VStack(spacing: 20) {
-                    summaryBar
-                    listContent
+                if isTabActive {
+                    VStack(spacing: 20) {
+                        summaryBar
+                        listContent
+                    }
+                    .padding()
                 }
-                .padding()
             }
 
             if isSelectionMode {
@@ -328,7 +337,8 @@ struct RecordingListView: View {
     }
 
     private var currentTabIsEmpty: Bool {
-        selectedTab == .audio ? sessions.isEmpty : videoSessions.isEmpty
+        if !isTabActive { return true }
+        return selectedTab == .audio ? sessions.isEmpty : videoSessions.isEmpty
     }
 
     private var summaryBar: some View {

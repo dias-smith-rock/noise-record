@@ -26,7 +26,6 @@ final class VideoEvidenceCoordinator {
             try recorder.configureSession()
             recorder.startSession()
             locationProvider.requestPermission()
-            locationProvider.startUpdating()
             isSessionReady = true
         } catch {
             errorMessage = error.localizedDescription
@@ -55,6 +54,7 @@ final class VideoEvidenceCoordinator {
         guard isSessionReady, !isRecording else { return }
         peakDB = 0
         recordingStartedAt = Date()
+        locationProvider.startUpdating()
         recorder.startRecording()
         isRecording = true
     }
@@ -62,6 +62,7 @@ final class VideoEvidenceCoordinator {
     func stopRecording(completion: @escaping (Result<URL, Error>) -> Void) {
         guard isRecording else { return }
         isRecording = false
+        locationProvider.stopUpdating()
         recorder.stopRecording(completion: completion)
     }
 
@@ -92,6 +93,7 @@ final class VideoEvidenceCoordinator {
 
 struct VideoEvidenceView: View {
     @Bindable var engine: NoiseMonitorEngine
+    let isTabActive: Bool
     @Environment(\.modelContext) private var modelContext
     @State private var coordinator = VideoEvidenceCoordinator()
     @State private var player: AVPlayer?
@@ -113,6 +115,15 @@ struct VideoEvidenceView: View {
         .theme(for: measurementMode)
     }
 
+    private var liveDecibelOverlayText: String {
+        let decibelString = String(
+            format: "%.1f %@",
+            engine.currentDB,
+            engine.effectiveWeighting.rawValue
+        )
+        return String(format: L10n.overlayNoisePrefix, decibelString)
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             ProTabHeader(title: L10n.videoTitle, theme: theme)
@@ -128,17 +139,23 @@ struct VideoEvidenceView: View {
         }
         .proTabBackground(theme: theme)
         .proTabNavigationChrome()
-        .task {
-            await coordinator.configure(
-                backgroundMonitoringEnabled: engine.backgroundMonitoringEnabled,
-                isMonitoring: engine.isMonitoring
-            )
-        }
-        .onDisappear {
-            coordinator.teardown()
-            engine.restoreMonitoringAfterExternalSession()
+        .task(id: isTabActive) {
+            if isTabActive {
+                await coordinator.configure(
+                    backgroundMonitoringEnabled: engine.backgroundMonitoringEnabled,
+                    isMonitoring: engine.isMonitoring
+                )
+                engine.refreshCalibrationOffset()
+                lastNoiseSync = .distantPast
+                coordinator.syncNoise(from: engine)
+                engine.restoreMonitoringAfterExternalSession()
+            } else {
+                coordinator.teardown()
+                engine.restoreMonitoringAfterExternalSession()
+            }
         }
         .onChange(of: engine.currentDB) { _, _ in
+            guard isTabActive else { return }
             let now = Date()
             let interval = coordinator.isRecording ? 0.1 : 0.25
             guard now.timeIntervalSince(lastNoiseSync) >= interval else { return }
@@ -243,7 +260,7 @@ struct VideoEvidenceView: View {
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(coordinator.recorder.dataBridge.overlayDecibelText)
+                Text(liveDecibelOverlayText)
                     .font(.caption.bold())
                     .foregroundStyle(theme.accent)
                 Text(Date().formatted(date: .numeric, time: .standard))
@@ -262,7 +279,11 @@ struct VideoEvidenceView: View {
     private var controlSection: some View {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
-                ProMetricCard(title: L10n.videoCurrentDb, value: String(format: "%.1f", engine.currentDB), theme: theme)
+                ProMetricCard(
+                    title: L10n.videoCurrentDb,
+                    value: String(format: "%.1f %@", engine.currentDB, engine.effectiveWeighting.rawValue),
+                    theme: theme
+                )
                 ProMetricCard(title: L10n.videoClipPeak, value: String(format: "%.0f", coordinator.peakDB), theme: theme)
                 ProMetricCard(
                     title: L10n.videoGPS,
@@ -348,6 +369,8 @@ struct VideoEvidenceView: View {
     }
 
     private func handleRecordingFinished(_ result: Result<URL, Error>) {
+        engine.endTemporaryHighSensitivityForVideoIfNeeded()
+        engine.restoreMonitoringAfterExternalSession()
         switch result {
         case .success(let url):
             let started = coordinator.recordingStartedAt ?? Date()

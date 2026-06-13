@@ -6,9 +6,10 @@ struct SettingsView: View {
     @Bindable private var appearance = AppAppearanceSettings.shared
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
-    @Query private var measurementSamples: [MeasurementSample]
 
     let isTabActive: Bool
+
+    @State private var measurementSampleCount = 0
 
     @State private var calibrationReference: Float = DeviceCalibrationStore.defaultReferenceSPL
     @State private var showCalibrationAlert = false
@@ -107,6 +108,7 @@ struct SettingsView: View {
                         referenceSPL: calibrationReference,
                         measuredDBFS: engine.lastDBFS
                     )
+                    engine.refreshCalibrationOffset()
                     refreshCalibrationDisplay()
 
                     let newAdjustment = displayedUserAdjustment
@@ -138,11 +140,11 @@ struct SettingsView: View {
             }
 
             Section {
-                LabeledContent(L10n.settingsMeasurementSampleCount, value: "\(measurementSamples.count)")
+                LabeledContent(L10n.settingsMeasurementSampleCount, value: "\(measurementSampleCount)")
                 Button(L10n.settingsClearMeasurements, role: .destructive) {
                     showClearMeasurementsConfirm = true
                 }
-                .disabled(measurementSamples.isEmpty)
+                .disabled(measurementSampleCount == 0)
             } header: {
                 Text(L10n.settingsDataHeader)
             }
@@ -166,10 +168,12 @@ struct SettingsView: View {
         .proTabNavigationChrome()
         .onAppear {
             refreshCalibrationDisplay()
+            refreshMeasurementSampleCount()
         }
         .onChange(of: isTabActive) { _, isActive in
             if isActive {
                 refreshCalibrationDisplay()
+                refreshMeasurementSampleCount()
             }
         }
         .onChange(of: scenePhase) { _, phase in
@@ -209,6 +213,7 @@ struct SettingsView: View {
     private func clearMeasurementHistory() {
         do {
             try MeasurementDataStore.clearAllSamples(in: modelContext)
+            refreshMeasurementSampleCount()
             showClearMeasurementsDone = true
         } catch {
             // SwiftData delete rarely fails; ignore for v1.
@@ -219,6 +224,7 @@ struct SettingsView: View {
         let previousAdjustment = DeviceCalibrationStore.userAdjustment
         let previousTotal = DeviceCalibrationStore.deviceOffset + previousAdjustment
         DeviceCalibrationStore.resetCalibration()
+        engine.refreshCalibrationOffset()
         refreshCalibrationDisplay()
 
         if abs(previousAdjustment) < 0.05 {
@@ -236,6 +242,10 @@ struct SettingsView: View {
             )
         }
         showResetAlert = true
+    }
+
+    private func refreshMeasurementSampleCount() {
+        measurementSampleCount = MeasurementDataStore.sampleCount(in: modelContext)
     }
 
     private func refreshCalibrationDisplay() {

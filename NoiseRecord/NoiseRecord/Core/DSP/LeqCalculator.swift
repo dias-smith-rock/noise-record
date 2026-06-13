@@ -39,25 +39,38 @@ struct LeqCalculator: Sendable {
     }
 }
 
-/// Sliding-window average for short-term display smoothing.
+/// Sliding-window average for short-term display smoothing (O(1) ring buffer).
 struct SlidingAverage {
-    private var samples: [Float] = []
+    private var buffer: [Float]
+    private var writeIndex = 0
+    private var count = 0
+    private var sum: Float = 0
     private let windowSize: Int
 
     init(windowSize: Int = 30) {
         self.windowSize = windowSize
+        self.buffer = [Float](repeating: 0, count: windowSize)
     }
 
     mutating func add(_ value: Float) -> Float {
-        samples.append(value)
-        if samples.count > windowSize {
-            samples.removeFirst(samples.count - windowSize)
+        if count < windowSize {
+            buffer[count] = value
+            sum += value
+            count += 1
+        } else {
+            let replaced = buffer[writeIndex]
+            sum -= replaced
+            buffer[writeIndex] = value
+            sum += value
+            writeIndex = (writeIndex + 1) % windowSize
         }
-        guard !samples.isEmpty else { return 0 }
-        return samples.reduce(0, +) / Float(samples.count)
+        guard count > 0 else { return 0 }
+        return sum / Float(count)
     }
 
     mutating func reset() {
-        samples.removeAll()
+        writeIndex = 0
+        count = 0
+        sum = 0
     }
 }

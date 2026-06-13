@@ -20,7 +20,7 @@ struct ContentView: View {
     var body: some View {
         TabView(selection: $selectedTab) {
             NavigationStack {
-                DashboardView(engine: engine)
+                DashboardView(engine: engine, isTabActive: selectedTab == .monitor)
             }
             .tag(MainTab.monitor)
             .tabItem {
@@ -28,7 +28,7 @@ struct ContentView: View {
             }
 
             NavigationStack {
-                RecorderSettingsView(engine: engine)
+                RecorderSettingsView(engine: engine, isTabActive: selectedTab == .voice)
             }
             .tag(MainTab.voice)
             .tabItem {
@@ -36,7 +36,7 @@ struct ContentView: View {
             }
 
             NavigationStack {
-                VideoEvidenceView(engine: engine)
+                VideoEvidenceView(engine: engine, isTabActive: selectedTab == .video)
             }
             .tag(MainTab.video)
             .tabItem {
@@ -44,7 +44,7 @@ struct ContentView: View {
             }
 
             NavigationStack {
-                RecordingListView(engine: engine)
+                RecordingListView(engine: engine, isTabActive: selectedTab == .files)
             }
             .tag(MainTab.files)
             .tabItem {
@@ -68,6 +68,13 @@ struct ContentView: View {
                 saveRecording(event)
             }
             showsFilesTabBadge = FilesTabBadgeStore.isPending
+            if let root = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .flatMap(\.windows)
+                .first(where: \.isKeyWindow)?
+                .rootViewController {
+                TabBarMonitorIconUpdater.cacheTabBarController(from: root)
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: FilesTabBadgeStore.didChangeNotification)) { _ in
             showsFilesTabBadge = FilesTabBadgeStore.isPending
@@ -91,7 +98,7 @@ struct ContentView: View {
                     ),
                     isAnimating: true
                 )
-                try? await Task.sleep(for: .milliseconds(33))
+                try? await Task.sleep(for: .milliseconds(66))
             }
 
             TabBarMonitorIconUpdater.apply(frame: nil, isAnimating: false)

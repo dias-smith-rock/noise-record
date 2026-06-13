@@ -33,6 +33,8 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
     private var dbSum: Float = 0
     private var dbCount: Int = 0
     private var currentNoiseType: String?
+    private var lastFlushTime: CFAbsoluteTime = 0
+    private let flushInterval: CFAbsoluteTime = 0.2
 
     private let fileQueue = DispatchQueue(label: "com.noiseapp.recording.file")
     var onRecordingFinished: ((RecordingFinishedEvent) -> Void)?
@@ -66,7 +68,7 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
             dbSum += dbSPL
             dbCount += 1
             pcmAccumulator.append(filteredSamples, count: frameLength)
-            flushToFile()
+            flushToFileIfNeeded()
 
             if dbSPL < lowThreshold {
                 state = .coolingDown
@@ -77,7 +79,7 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
             dbSum += dbSPL
             dbCount += 1
             pcmAccumulator.append(filteredSamples, count: frameLength)
-            flushToFile()
+            flushToFileIfNeeded()
 
             if dbSPL >= highThreshold {
                 state = .recording
@@ -127,6 +129,13 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
         }
     }
 
+    private func flushToFileIfNeeded() {
+        let now = CFAbsoluteTimeGetCurrent()
+        guard now - lastFlushTime >= flushInterval else { return }
+        lastFlushTime = now
+        flushToFile()
+    }
+
     private func flushToFile() {
         fileQueue.async { [weak self] in
             guard let self, let file = self.audioFile, let format = self.recordingFormat else { return }
@@ -166,6 +175,7 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
         peakDB = 0
         dbSum = 0
         dbCount = 0
+        lastFlushTime = 0
         pcmAccumulator.reset()
     }
 

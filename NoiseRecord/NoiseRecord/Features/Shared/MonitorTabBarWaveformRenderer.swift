@@ -8,12 +8,14 @@ enum MonitorTabBarWaveformRenderer {
     private static let maxBarHeight: CGFloat = 14
     private static let minBarHeight: CGFloat = 3
 
-    static func render(at time: TimeInterval) -> UIImage {
+    private static let renderer: UIGraphicsImageRenderer = {
         let format = UIGraphicsImageRendererFormat()
         format.opaque = false
         format.scale = UIScreen.main.scale
+        return UIGraphicsImageRenderer(size: canvasSize, format: format)
+    }()
 
-        let renderer = UIGraphicsImageRenderer(size: canvasSize, format: format)
+    static func render(at time: TimeInterval) -> UIImage {
         let image = renderer.image { _ in
             let totalWidth = CGFloat(barCount) * barWidth + CGFloat(barCount - 1) * barSpacing
             var x = (canvasSize.width - totalWidth) / 2
@@ -40,7 +42,7 @@ enum MonitorTabBarWaveformRenderer {
         let t = time * 6.0
         let primary = sin(t + seed)
         let secondary = sin(t * 1.55 + seed * 0.8) * 0.55
-        let tertiary = sin(t * 2.35 + seed * 1.35) * 0.28
+        let tertiary = sin(t * 2.35 + seed * 1.4) * 0.28
         let mix = (primary + secondary + tertiary + 1.83) / 3.66
         return minBarHeight + CGFloat(mix) * (maxBarHeight - minBarHeight)
     }

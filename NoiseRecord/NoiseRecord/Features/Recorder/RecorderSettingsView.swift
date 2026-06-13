@@ -2,7 +2,10 @@ import SwiftUI
 
 struct RecorderSettingsView: View {
     @Bindable var engine: NoiseMonitorEngine
+    let isTabActive: Bool
     @State private var showAiClassificationError = false
+    @State private var cachedCurrentDB: Float = 0
+    @State private var cachedRecordingState: RecordingState = .idle
 
     private let aiLabelOptions = [
         "speech", "music", "dog", "cat", "car", "engine",
@@ -72,6 +75,18 @@ struct RecorderSettingsView: View {
         }
         .proTabBackground(theme: theme)
         .proTabNavigationChrome()
+        .onAppear { refreshCachedMetrics() }
+        .onChange(of: isTabActive) { _, active in
+            if active { refreshCachedMetrics() }
+        }
+        .onChange(of: engine.currentDB) { _, _ in
+            guard isTabActive else { return }
+            cachedCurrentDB = engine.currentDB
+        }
+        .onChange(of: engine.recordingState) { _, state in
+            guard isTabActive else { return }
+            cachedRecordingState = state
+        }
         .onChange(of: engine.aiClassificationErrorMessage) { _, message in
             showAiClassificationError = message != nil
         }
@@ -82,6 +97,11 @@ struct RecorderSettingsView: View {
         } message: {
             Text(engine.aiClassificationErrorMessage ?? L10n.errorAiClassificationFailed)
         }
+    }
+
+    private func refreshCachedMetrics() {
+        cachedCurrentDB = engine.currentDB
+        cachedRecordingState = engine.recordingState
     }
 
     private var monitoringRequiredBanner: some View {
@@ -117,13 +137,13 @@ struct RecorderSettingsView: View {
                 )
                 ProMetricCard(
                     title: L10n.recorderMetricCurrentDb,
-                    value: String(format: "%.0f", engine.currentDB),
+                    value: String(format: "%.0f", cachedCurrentDB),
                     theme: theme
                 )
             }
 
             if engine.voiceActivatedEnabled {
-                ProRecordingStatusBadge(state: engine.recordingState, theme: theme)
+                ProRecordingStatusBadge(state: cachedRecordingState, theme: theme)
             } else {
                 Text(L10n.recorderStatusOff)
                     .font(.caption)

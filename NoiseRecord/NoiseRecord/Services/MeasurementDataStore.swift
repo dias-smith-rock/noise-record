@@ -6,14 +6,17 @@ enum MeasurementDataStore {
 
     @MainActor
     static func pruneSamplesIfNeeded(in context: ModelContext) {
-        var descriptor = FetchDescriptor<MeasurementSample>(
-            sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
-        )
-        descriptor.fetchLimit = maxSampleCount + 1
-        guard let samples = try? context.fetch(descriptor), samples.count > maxSampleCount else { return }
+        let total = sampleCount(in: context)
+        guard total > maxSampleCount else { return }
 
-        let overflow = samples.suffix(from: maxSampleCount)
-        overflow.forEach { context.delete($0) }
+        let deleteCount = total - maxSampleCount
+        var descriptor = FetchDescriptor<MeasurementSample>(
+            sortBy: [SortDescriptor(\.timestamp, order: .forward)]
+        )
+        descriptor.fetchLimit = deleteCount
+        guard let oldest = try? context.fetch(descriptor), !oldest.isEmpty else { return }
+
+        oldest.forEach { context.delete($0) }
         try? context.save()
     }
 

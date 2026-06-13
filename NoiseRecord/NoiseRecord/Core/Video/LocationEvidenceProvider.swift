@@ -13,7 +13,7 @@ final class LocationEvidenceProvider: NSObject, CLLocationManagerDelegate {
     override init() {
         super.init()
         manager.delegate = self
-        manager.desiredAccuracy = kCLLocationAccuracyBest
+        manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
         authorizationStatus = manager.authorizationStatus
     }
 
@@ -32,9 +32,6 @@ final class LocationEvidenceProvider: NSObject, CLLocationManagerDelegate {
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         Task { @MainActor in
             authorizationStatus = manager.authorizationStatus
-            if authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways {
-                startUpdating()
-            }
         }
     }
 

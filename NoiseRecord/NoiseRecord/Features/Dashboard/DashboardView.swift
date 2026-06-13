@@ -3,8 +3,10 @@ import SwiftUI
 
 struct DashboardView: View {
     private static let showsReportAndCSVExport = false
+    private static let measurementPersistInterval: TimeInterval = 5
 
     @Bindable var engine: NoiseMonitorEngine
+    let isTabActive: Bool
     @Environment(\.modelContext) private var modelContext
     @State private var shareReport: SilenceRatingReport?
     @State private var showReportSheet = false
@@ -27,86 +29,9 @@ struct DashboardView: View {
             ProTabHeader(title: L10n.dashboardTitle, theme: theme)
 
             ScrollView {
-                VStack(spacing: 20) {
-                    EngineModeSwitchView(engine: engine)
-
-                    NoiseLevelGauge(db: engine.currentDB, mode: measurementMode)
-
-                    HStack(spacing: 12) {
-                        StatCard(title: L10n.dashboardMax, value: engine.maxDB, theme: theme)
-                        StatCard(title: L10n.dashboardMin, value: engine.minDB, theme: theme)
-                        StatCard(title: L10n.dashboardAvg, value: engine.averageDB, theme: theme)
-                        StatCard(title: L10n.dashboardLeq, value: engine.leq, theme: theme)
-                    }
-
-                    if engine.voiceActivatedEnabled {
-                        ProRecordingStatusBadge(state: engine.recordingState, theme: theme)
-                    }
-
-                    if let label = engine.latestNoiseLabel, engine.aiClassificationEnabled {
-                        HStack {
-                            Image(systemName: "waveform.badge.magnifyingglass")
-                            Text(L10n.dashboardDetected(label, confidence: Int(engine.latestNoiseConfidence * 100)))
-                                .font(.subheadline)
-                        }
-                        .foregroundStyle(.secondary)
-                    }
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text(L10n.dashboardWaveform)
-                                .font(.headline)
-                            if measurementMode.isHighSensitivity {
-                                Text(L10n.dashboardFullBand)
-                                    .font(.caption2.bold())
-                                    .foregroundStyle(theme.accent)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 3)
-                                    .background(theme.badgeBackground)
-                                    .clipShape(Capsule())
-                            }
-                        }
-                        WaveformView(samples: engine.history, mode: measurementMode)
-                            .equatable()
-                            .frame(height: 120)
-                    }
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(L10n.dashboardSpectrum)
-                            .font(.headline)
-                        SpectrumView(spectrum: engine.latestSpectrum, mode: measurementMode)
-                            .equatable()
-                            .frame(height: 100)
-                    }
-
-                    Text(footerNote)
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                        .multilineTextAlignment(.center)
-
-                    if Self.showsReportAndCSVExport {
-                        HStack(spacing: 12) {
-                            Button(L10n.dashboardReport) {
-                                shareReport = SilenceRatingReport(
-                                    leq: engine.leq,
-                                    maxDB: engine.maxDB,
-                                    minDB: engine.minDB,
-                                    averageDB: engine.averageDB,
-                                    weighting: engine.effectiveWeighting
-                                )
-                                showReportSheet = true
-                            }
-                            .buttonStyle(.bordered)
-                            .disabled(!engine.isMonitoring && engine.leq == 0)
-
-                            Button(L10n.dashboardExportCSV) {
-                                exportCSV()
-                            }
-                            .buttonStyle(.bordered)
-                        }
-                    }
+                if isTabActive {
+                    dashboardContent
                 }
-                .padding()
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -133,7 +58,7 @@ struct DashboardView: View {
         .task(id: engine.isMonitoring) {
             guard engine.isMonitoring else { return }
             while !Task.isCancelled, engine.isMonitoring {
-                try? await Task.sleep(for: .seconds(1))
+                try? await Task.sleep(for: .seconds(Self.measurementPersistInterval))
                 guard engine.isMonitoring else { break }
                 persistMeasurementSample()
             }
@@ -181,6 +106,89 @@ struct DashboardView: View {
         } message: {
             Text(stopRecordingPromptMessage)
         }
+    }
+
+    private var dashboardContent: some View {
+        VStack(spacing: 20) {
+            EngineModeSwitchView(engine: engine)
+
+            NoiseLevelGauge(db: engine.currentDB, mode: measurementMode)
+
+            HStack(spacing: 12) {
+                StatCard(title: L10n.dashboardMax, value: engine.maxDB, theme: theme)
+                StatCard(title: L10n.dashboardMin, value: engine.minDB, theme: theme)
+                StatCard(title: L10n.dashboardAvg, value: engine.averageDB, theme: theme)
+                StatCard(title: L10n.dashboardLeq, value: engine.leq, theme: theme)
+            }
+
+            if engine.voiceActivatedEnabled {
+                ProRecordingStatusBadge(state: engine.recordingState, theme: theme)
+            }
+
+            if let label = engine.latestNoiseLabel, engine.aiClassificationEnabled {
+                HStack {
+                    Image(systemName: "waveform.badge.magnifyingglass")
+                    Text(L10n.dashboardDetected(label, confidence: Int(engine.latestNoiseConfidence * 100)))
+                        .font(.subheadline)
+                }
+                .foregroundStyle(.secondary)
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text(L10n.dashboardWaveform)
+                        .font(.headline)
+                    if measurementMode.isHighSensitivity {
+                        Text(L10n.dashboardFullBand)
+                            .font(.caption2.bold())
+                            .foregroundStyle(theme.accent)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(theme.badgeBackground)
+                            .clipShape(Capsule())
+                    }
+                }
+                WaveformView(samples: engine.history, mode: measurementMode)
+                    .equatable()
+                    .frame(height: 120)
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text(L10n.dashboardSpectrum)
+                    .font(.headline)
+                SpectrumView(spectrum: engine.latestSpectrum, mode: measurementMode)
+                    .equatable()
+                    .frame(height: 100)
+            }
+
+            Text(footerNote)
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
+
+            if Self.showsReportAndCSVExport {
+                HStack(spacing: 12) {
+                    Button(L10n.dashboardReport) {
+                        shareReport = SilenceRatingReport(
+                            leq: engine.leq,
+                            maxDB: engine.maxDB,
+                            minDB: engine.minDB,
+                            averageDB: engine.averageDB,
+                            weighting: engine.effectiveWeighting
+                        )
+                        showReportSheet = true
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(!engine.isMonitoring && engine.leq == 0)
+
+                    Button(L10n.dashboardExportCSV) {
+                        exportCSV()
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+        }
+        .padding()
     }
 
     private var stopRecordingPromptMessage: String {
@@ -235,6 +243,9 @@ struct DashboardView: View {
     }
 
     private func persistMeasurementSample() {
+        let signpost = PerformanceSignpost.begin(.persistMeasurement)
+        defer { PerformanceSignpost.end(.persistMeasurement, signpost) }
+
         let now = Date()
         let sample = MeasurementSample(
             timestamp: now,
@@ -249,7 +260,7 @@ struct DashboardView: View {
         modelContext.insert(sample)
         try? modelContext.save()
         measurementPersistTick += 1
-        if measurementPersistTick % 60 == 0 {
+        if measurementPersistTick % 12 == 0 {
             MeasurementDataStore.pruneSamplesIfNeeded(in: modelContext)
         }
     }

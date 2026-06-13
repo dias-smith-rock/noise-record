@@ -32,6 +32,8 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
     private let writerQueue = DispatchQueue(label: "com.noiseapp.writerQueue")
 
     private var videoOutput: AVCaptureVideoDataOutput?
+    private var audioInput: AVCaptureDeviceInput?
+    private var audioOutput: AVCaptureAudioDataOutput?
     private var videoDevice: AVCaptureDevice?
     private let maxUserZoomFactor: CGFloat = 5.0
 
@@ -49,6 +51,9 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
     private var noiseTimelineSamples: [VideoNoiseSample] = []
     private var lastTimelineSampleTime: Double = -1
     private let timelineSampleInterval: TimeInterval = 0.1
+    private var cachedMetaText = ""
+    private var lastMetaRefreshTime: CFAbsoluteTime = 0
+    private let metaRefreshInterval: CFAbsoluteTime = 0.5
 
     private let timestampFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -154,15 +159,8 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         guard captureSession.canAddInput(videoInput) else { throw VideoNoiseRecorderError.cameraUnavailable }
         captureSession.addInput(videoInput)
 
-        guard let audioDevice = AVCaptureDevice.default(for: .audio) else {
-            throw VideoNoiseRecorderError.microphoneUnavailable
-        }
-        let audioInput = try AVCaptureDeviceInput(device: audioDevice)
-        guard captureSession.canAddInput(audioInput) else { throw VideoNoiseRecorderError.microphoneUnavailable }
-        captureSession.addInput(audioInput)
-
         let videoOut = AVCaptureVideoDataOutput()
-        videoOut.alwaysDiscardsLateVideoFrames = false
+        videoOut.alwaysDiscardsLateVideoFrames = true
         videoOut.videoSettings = [
             kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
         ]
@@ -174,12 +172,51 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
             connection.videoRotationAngle = 90
         }
 
-        let audioOut = AVCaptureAudioDataOutput()
-        audioOut.setSampleBufferDelegate(self, queue: writerQueue)
-        guard captureSession.canAddOutput(audioOut) else { throw VideoNoiseRecorderError.microphoneUnavailable }
-        captureSession.addOutput(audioOut)
-
         videoOutput = videoOut
+        audioInput = nil
+        audioOutput = nil
+    }
+
+    private func attachAudioCaptureLocked() throws {
+        guard audioInput == nil else { return }
+
+        guard let audioDevice = AVCaptureDevice.default(for: .audio) else {
+            throw VideoNoiseRecorderError.microphoneUnavailable
+        }
+        let input = try AVCaptureDeviceInput(device: audioDevice)
+        guard captureSession.canAddInput(input) else {
+            throw VideoNoiseRecorderError.microphoneUnavailable
+        }
+
+        let output = AVCaptureAudioDataOutput()
+        output.setSampleBufferDelegate(self, queue: writerQueue)
+        guard captureSession.canAddOutput(output) else {
+            throw VideoNoiseRecorderError.microphoneUnavailable
+        }
+
+        captureSession.beginConfiguration()
+        captureSession.addInput(input)
+        captureSession.addOutput(output)
+        captureSession.commitConfiguration()
+
+        audioInput = input
+        audioOutput = output
+    }
+
+    private func detachAudioCaptureLocked() {
+        guard audioInput != nil || audioOutput != nil else { return }
+
+        captureSession.beginConfiguration()
+        if let audioOutput {
+            captureSession.removeOutput(audioOutput)
+        }
+        if let audioInput {
+            captureSession.removeInput(audioInput)
+        }
+        captureSession.commitConfiguration()
+
+        audioInput = nil
+        audioOutput = nil
     }
 
     // MARK: - Recording control
@@ -194,16 +231,27 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
     }
 
     func startRecording(to url: URL? = nil) {
-        writerQueue.async { [weak self] in
+        sessionQueue.async { [weak self] in
             guard let self else { return }
-            self.outputURL = url ?? Self.makeOutputURL()
-            self.isRecording = true
-            self.sessionStarted = false
-            self.recordingOriginTime = nil
-            self.noiseTimelineSamples.removeAll()
-            self.lastTimelineSampleTime = -1
-            self.pendingAudioSamples.removeAll()
-            self.tearDownWriter()
+            do {
+                try self.attachAudioCaptureLocked()
+            } catch {
+                DispatchQueue.main.async {
+                    self.onRecordingFinished?(.failure(error))
+                }
+                return
+            }
+
+            self.writerQueue.async {
+                self.outputURL = url ?? Self.makeOutputURL()
+                self.isRecording = true
+                self.sessionStarted = false
+                self.recordingOriginTime = nil
+                self.noiseTimelineSamples.removeAll()
+                self.lastTimelineSampleTime = -1
+                self.pendingAudioSamples.removeAll()
+                self.tearDownWriter()
+            }
         }
     }
 
@@ -222,6 +270,9 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
 
         guard sessionStarted, let writer = assetWriter, let url = outputURL else {
             tearDownWriter()
+            sessionQueue.async { [weak self] in
+                self?.detachAudioCaptureLocked()
+            }
             completion(.failure(VideoNoiseRecorderError.notRecording))
             return
         }
@@ -230,13 +281,17 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         audioWriterInput?.markAsFinished()
 
         writer.finishWriting { [weak self] in
+            guard let self else { return }
             if let error = writer.error {
                 completion(.failure(VideoNoiseRecorderError.finishFailed(error.localizedDescription)))
             } else {
-                self?.saveNoiseTimeline(for: url)
+                self.saveNoiseTimeline(for: url)
                 completion(.success(url))
             }
-            self?.tearDownWriter()
+            self.tearDownWriter()
+            self.sessionQueue.async {
+                self.detachAudioCaptureLocked()
+            }
         }
     }
 
@@ -331,6 +386,9 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
     // MARK: - OSD rendering
 
     private func drawWatermark(on pixelBuffer: CVPixelBuffer, captureDate: Date) {
+        let signpost = PerformanceSignpost.begin(.drawWatermark)
+        defer { PerformanceSignpost.end(.drawWatermark, signpost) }
+
         CVPixelBufferLockBaseAddress(pixelBuffer, [])
         defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, []) }
 
@@ -378,7 +436,7 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
             .font: UIFont.monospacedSystemFont(ofSize: 22 * scale, weight: .regular),
             .foregroundColor: UIColor.white,
         ]
-        let metaText = "\(timestampFormatter.string(from: captureDate))\n\(dataBridge.gpsString)"
+        let metaText = refreshedMetaText(captureDate: captureDate)
         metaText.draw(
             at: CGPoint(x: cardRect.minX + 20 * scale, y: cardRect.minY + 78 * scale),
             withAttributes: metaAttributes
@@ -387,8 +445,20 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         context.restoreGState()
     }
 
+    private func refreshedMetaText(captureDate: Date) -> String {
+        let now = CFAbsoluteTimeGetCurrent()
+        if now - lastMetaRefreshTime >= metaRefreshInterval || cachedMetaText.isEmpty {
+            lastMetaRefreshTime = now
+            cachedMetaText = "\(timestampFormatter.string(from: captureDate))\n\(dataBridge.gpsString)"
+        }
+        return cachedMetaText
+    }
+
     private func processVideoSample(_ sampleBuffer: CMSampleBuffer) {
         writerQueue.async { [weak self] in
+            let signpost = PerformanceSignpost.begin(.processVideoSample)
+            defer { PerformanceSignpost.end(.processVideoSample, signpost) }
+
             guard let self, self.isRecording else { return }
             guard let sourceBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
             let timestamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)

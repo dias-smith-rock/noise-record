@@ -90,6 +90,24 @@ final class NoiseMonitorEngine {
     private var noiseClassifier: NoiseClassifierManager?
     private var sampleCount = 0
     private var lastUIUpdate = Date.distantPast
+    private var cachedCalibrationOffset = DeviceCalibrationStore.totalOffset
+    private var uiPublishGeneration: UInt64 = 0
+    private var classifierBufferSkipCounter = 0
+    /// When true, high-sensitivity was enabled only for video evidence and should be restored afterward.
+    private var shouldRestoreStandardModeAfterVideo = false
+
+    private struct UIPublishSnapshot: Sendable {
+        let generation: UInt64
+        let lastDBFS: Float
+        let currentDB: Float
+        let maxDB: Float
+        let minDB: Float
+        let averageDB: Float
+        let leq: Float
+        let recordingState: RecordingState
+        let spectrum: FFTSpectrum?
+        let history: [Float]
+    }
 
     private enum Performance {
         /// UI refresh rate — 15 Hz is smooth for dB meters while cutting main-thread work ~3× vs 50 Hz.
@@ -123,6 +141,10 @@ final class NoiseMonitorEngine {
     /// Effective weighting applied to the audio pipeline.
     var effectiveWeighting: WeightingType {
         isHighSensitivityMode ? .z : weightingType
+    }
+
+    func refreshCalibrationOffset() {
+        cachedCalibrationOffset = DeviceCalibrationStore.totalOffset
     }
 
     init() {
@@ -183,15 +205,31 @@ final class NoiseMonitorEngine {
             }
         }
 
-        if !isHighSensitivityMode {
+        let wasStandardMode = !isHighSensitivityMode
+        if wasStandardMode {
+            shouldRestoreStandardModeAfterVideo = true
             isHighSensitivityMode = true
+        } else {
+            shouldRestoreStandardModeAfterVideo = false
         }
 
         if !isMonitoring {
             startMonitoring()
         }
 
-        return isMonitoring
+        guard isMonitoring else {
+            endTemporaryHighSensitivityForVideoIfNeeded()
+            return false
+        }
+
+        return true
+    }
+
+    /// Restores standard measurement mode after a temporary high-sensitivity video session.
+    func endTemporaryHighSensitivityForVideoIfNeeded() {
+        guard shouldRestoreStandardModeAfterVideo else { return }
+        shouldRestoreStandardModeAfterVideo = false
+        isHighSensitivityMode = false
     }
 
     func startMonitoring() {
@@ -206,6 +244,7 @@ final class NoiseMonitorEngine {
         }
 
         resetStatistics()
+        refreshCalibrationOffset()
         beginMonitoringSession()
         setupAudioPipeline()
 
@@ -448,6 +487,9 @@ final class NoiseMonitorEngine {
     }
 
     private func processBuffer(_ buffer: AVAudioPCMBuffer, time: AVAudioTime) {
+        let signpost = PerformanceSignpost.begin(.processBuffer)
+        defer { PerformanceSignpost.end(.processBuffer, signpost) }
+
         guard let channelData = buffer.floatChannelData?[0] else { return }
         let frameLength = Int(buffer.frameLength)
         guard frameLength > 0 else { return }
@@ -468,7 +510,7 @@ final class NoiseMonitorEngine {
             )
         }
 
-        let offset = DeviceCalibrationStore.totalOffset
+        let offset = cachedCalibrationOffset
         var dbSPL: Float = 0
         var dbfs: Float = 0
         var smoothed: Float = 0
@@ -506,7 +548,10 @@ final class NoiseMonitorEngine {
         sampleCount += 1
         sessionSumDB += smoothed
 
-        noiseClassifier?.append(buffer: buffer, at: time)
+        classifierBufferSkipCounter += 1
+        if classifierBufferSkipCounter % 3 == 0 {
+            noiseClassifier?.append(buffer: buffer, at: time)
+        }
 
         filteredScratch.withUnsafeBufferPointer { ptr in
             guard let base = ptr.baseAddress else { return }
@@ -539,20 +584,42 @@ final class NoiseMonitorEngine {
         let state = voiceRecorder.state
         let spectrumCopy = spectrum
         let snapshotDBFS = dbfs
+        uiPublishGeneration += 1
+        let generation = uiPublishGeneration
+        let snapshot = UIPublishSnapshot(
+            generation: generation,
+            lastDBFS: snapshotDBFS,
+            currentDB: snapshotSmoothed,
+            maxDB: snapshotMax,
+            minDB: snapshotMin,
+            averageDB: snapshotAvg,
+            leq: snapshotLeq,
+            recordingState: state,
+            spectrum: spectrumCopy,
+            history: historySnapshot
+        )
 
         Task { @MainActor in
-            self.lastDBFS = snapshotDBFS
-            self.currentDB = snapshotSmoothed
-            self.maxDB = snapshotMax
-            self.minDB = snapshotMin
-            self.averageDB = snapshotAvg
-            self.leq = snapshotLeq
-            self.recordingState = state
-            if let spectrumCopy {
-                self.latestSpectrum = spectrumCopy
-            }
-            self.history = historySnapshot
+            self.publishUISnapshot(snapshot)
         }
+    }
+
+    private func publishUISnapshot(_ snapshot: UIPublishSnapshot) {
+        guard snapshot.generation == uiPublishGeneration else { return }
+        let signpost = PerformanceSignpost.begin(.publishUI)
+        defer { PerformanceSignpost.end(.publishUI, signpost) }
+
+        lastDBFS = snapshot.lastDBFS
+        currentDB = snapshot.currentDB
+        maxDB = snapshot.maxDB
+        minDB = snapshot.minDB
+        averageDB = snapshot.averageDB
+        leq = snapshot.leq
+        recordingState = snapshot.recordingState
+        if let spectrum = snapshot.spectrum {
+            latestSpectrum = spectrum
+        }
+        history = snapshot.history
     }
 
     private func setUserError(_ message: String, context: String) {
