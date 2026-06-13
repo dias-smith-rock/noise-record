@@ -12,6 +12,7 @@ struct ContentView: View {
 
     @State private var engine = NoiseMonitorEngine()
     @State private var selectedTab: MainTab = .monitor
+    @State private var showsFilesTabBadge = FilesTabBadgeStore.isPending
     @Bindable private var appearance = AppAppearanceSettings.shared
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
@@ -49,6 +50,7 @@ struct ContentView: View {
             .tabItem {
                 Label(L10n.tabFiles, systemImage: "list.bullet")
             }
+            .badge(showsFilesTabBadge ? "" : nil)
 
             NavigationStack {
                 SettingsView(engine: engine, isTabActive: selectedTab == .settings)
@@ -64,6 +66,16 @@ struct ContentView: View {
         .onAppear {
             engine.onRecordingFinished = { event in
                 saveRecording(event)
+            }
+            showsFilesTabBadge = FilesTabBadgeStore.isPending
+        }
+        .onReceive(NotificationCenter.default.publisher(for: FilesTabBadgeStore.didChangeNotification)) { _ in
+            showsFilesTabBadge = FilesTabBadgeStore.isPending
+        }
+        .onChange(of: selectedTab) { _, tab in
+            if tab == .files {
+                FilesTabBadgeStore.clear()
+                showsFilesTabBadge = false
             }
         }
         .onChange(of: scenePhase) { _, phase in
@@ -101,6 +113,10 @@ struct ContentView: View {
         modelContext.insert(session)
         engine.noteRecordingSaved(id: session.id)
         try? modelContext.save()
+        if selectedTab != .files {
+            FilesTabBadgeStore.markPending()
+            showsFilesTabBadge = true
+        }
     }
 }
 

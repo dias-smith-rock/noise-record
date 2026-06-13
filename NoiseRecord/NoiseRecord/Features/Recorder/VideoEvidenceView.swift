@@ -361,6 +361,7 @@ struct VideoEvidenceView: View {
             )
             modelContext.insert(session)
             try? modelContext.save()
+            FilesTabBadgeStore.markPending()
             savedVideoURL = url
         case .failure(let error):
             coordinator.errorMessage = error.localizedDescription
