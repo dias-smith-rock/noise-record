@@ -22,7 +22,7 @@ final class NoiseMonitorEngine {
     var currentDB: Float = 0
     var lastDBFS: Float = 0
     var maxDB: Float = 0
-    var minDB: Float = 120
+    var minDB: Float = 0
     var averageDB: Float = 0
     var leq: Float = 0
     var weightingType: WeightingType = DeviceCalibrationStore.weightingType
@@ -93,6 +93,8 @@ final class NoiseMonitorEngine {
     private var cachedCalibrationOffset = DeviceCalibrationStore.totalOffset
     private var uiPublishGeneration: UInt64 = 0
     private var classifierBufferSkipCounter = 0
+    /// Sentinel used only while a monitoring session is active.
+    private var sessionMinDB: Float = 120
     /// When true, high-sensitivity was enabled only for video evidence and should be restored afterward.
     private var shouldRestoreStandardModeAfterVideo = false
 
@@ -322,6 +324,8 @@ final class NoiseMonitorEngine {
         noiseClassifier?.stop()
         isMonitoring = false
         recordingState = .idle
+        minDB = 0
+        sessionMinDB = 120
         AppTelemetry.setMonitoringActive(false)
     }
 
@@ -329,7 +333,8 @@ final class NoiseMonitorEngine {
         currentDB = 0
         lastDBFS = 0
         maxDB = 0
-        minDB = 120
+        minDB = 0
+        sessionMinDB = 120
         averageDB = 0
         leq = 0
         history.removeAll()
@@ -593,7 +598,8 @@ final class NoiseMonitorEngine {
         let snapshotSmoothed = smoothed
         let snapshotLeq = leqCalculator.leq
         let snapshotMax = max(maxDB, snapshotSmoothed)
-        let snapshotMin = min(minDB, snapshotSmoothed)
+        sessionMinDB = min(sessionMinDB, snapshotSmoothed)
+        let snapshotMin = sessionMinDB
         let snapshotAvg = sampleCount > 0 ? sessionSumDB / Float(sampleCount) : snapshotSmoothed
         let state = voiceRecorder.state
         let spectrumCopy = spectrum
