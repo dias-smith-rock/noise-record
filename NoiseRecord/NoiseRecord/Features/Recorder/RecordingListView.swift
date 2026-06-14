@@ -251,19 +251,21 @@ struct RecordingListView: View {
                 Button {
                     shareSelected()
                 } label: {
-                    Label(L10n.filesBatchShare, systemImage: "square.and.arrow.up")
+                    Image(systemName: "square.and.arrow.up")
                         .font(.headline)
                 }
                 .buttonStyle(.bordered)
+                .accessibilityLabel(L10n.filesBatchShare)
                 .disabled(selectedCount == 0)
 
                 Button(role: .destructive) {
                     showDeleteConfirm = true
                 } label: {
-                    Label(L10n.delete, systemImage: "trash")
+                    Image(systemName: "trash")
                         .font(.headline)
                 }
                 .buttonStyle(.borderedProminent)
+                .accessibilityLabel(L10n.delete)
                 .disabled(selectedCount == 0)
             }
             .padding(.horizontal, 16)
