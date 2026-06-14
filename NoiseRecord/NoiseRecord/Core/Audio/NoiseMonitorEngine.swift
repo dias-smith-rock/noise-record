@@ -125,6 +125,8 @@ final class NoiseMonitorEngine {
     private var calibrationObserver: NSObjectProtocol?
     private(set) var currentSessionRecordingIDs: [UUID] = []
     var isDiscardingSessionRecordings = false
+    private(set) var deferredRecordingsForStopPrompt: [RecordingFinishedEvent] = []
+    private(set) var isAwaitingStopSaveDecision = false
 
     var onRecordingFinished: ((RecordingFinishedEvent) -> Void)?
 
@@ -173,7 +175,12 @@ final class NoiseMonitorEngine {
 
         voiceRecorder.onRecordingFinished = { [weak self] event in
             Task { @MainActor in
-                self?.onRecordingFinished?(event)
+                guard let self else { return }
+                if self.isAwaitingStopSaveDecision {
+                    self.deferredRecordingsForStopPrompt.append(event)
+                    return
+                }
+                self.onRecordingFinished?(event)
             }
         }
 
@@ -287,6 +294,30 @@ final class NoiseMonitorEngine {
     func clearMonitoringSessionTracking() {
         currentSessionRecordingIDs.removeAll()
         isDiscardingSessionRecordings = false
+        deferredRecordingsForStopPrompt.removeAll()
+        isAwaitingStopSaveDecision = false
+    }
+
+    func prepareStopWithSavePrompt() {
+        isAwaitingStopSaveDecision = true
+        deferredRecordingsForStopPrompt.removeAll()
+    }
+
+    func commitDeferredRecordings() {
+        let events = deferredRecordingsForStopPrompt
+        deferredRecordingsForStopPrompt.removeAll()
+        isAwaitingStopSaveDecision = false
+        for event in events {
+            onRecordingFinished?(event)
+        }
+    }
+
+    func discardDeferredRecordings() {
+        for event in deferredRecordingsForStopPrompt {
+            try? FileManager.default.removeItem(at: event.fileURL)
+        }
+        deferredRecordingsForStopPrompt.removeAll()
+        isAwaitingStopSaveDecision = false
     }
 
     /// Starts monitoring while the app is still foreground-eligible so background audio can continue.

@@ -2207,7 +2207,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Keep recording"
+            "value": "Save"
           }
         },
         "es": {
@@ -2243,7 +2243,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "保留录音"
+            "value": "保存"
           }
         },
         "zh-Hant": {
@@ -2325,7 +2325,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A recording is in progress."
+            "value": "Save this recording to Files?"
           }
         },
         "es": {
@@ -2361,13 +2361,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "正在录音。"
+            "value": "是否将此录音保存到文件？"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "正在錄音。"
+            "value": "是否將此錄音儲存到檔案？"
           }
         }
       }
@@ -2384,7 +2384,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%d clips will be saved."
+            "value": "Save %d recordings to Files?"
           }
         },
         "es": {
@@ -2420,13 +2420,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "将保存 %d 段录音。"
+            "value": "是否将 %d 段录音保存到文件？"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "將儲存 %d 段錄音。"
+            "value": "是否將 %d 段錄音儲存到檔案？"
           }
         }
       }
@@ -2443,7 +2443,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Stop monitoring?"
+            "value": "Save recording?"
           }
         },
         "es": {
@@ -2479,13 +2479,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "停止监测？"
+            "value": "保存录音？"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "停止監測？"
+            "value": "儲存錄音？"
           }
         }
       }

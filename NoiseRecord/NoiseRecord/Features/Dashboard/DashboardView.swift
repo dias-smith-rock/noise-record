@@ -91,18 +91,13 @@ struct DashboardView: View {
         } message: {
             Text(csvExportErrorMessage ?? "")
         }
-        .confirmationDialog(
-            L10n.dashboardStopPromptTitle,
-            isPresented: $showStopRecordingPrompt,
-            titleVisibility: .visible
-        ) {
-            Button(L10n.dashboardStopPromptKeep) {
-                finishStopMonitoring(keepRecordings: true)
+        .alert(L10n.dashboardStopPromptTitle, isPresented: $showStopRecordingPrompt) {
+            Button(L10n.dashboardStopPromptSave) {
+                commitStopSaveDecision(keep: true)
             }
             Button(L10n.dashboardStopPromptDiscard, role: .destructive) {
-                finishStopMonitoring(keepRecordings: false)
+                commitStopSaveDecision(keep: false)
             }
-            Button(L10n.dashboardStopPromptKeepMonitoring, role: .cancel) {}
         } message: {
             Text(stopRecordingPromptMessage)
         }
@@ -192,29 +187,36 @@ struct DashboardView: View {
     }
 
     private var stopRecordingPromptMessage: String {
-        let count = engine.currentSessionRecordingCount
-        if count > 0 {
-            return L10n.dashboardStopPromptMultiple(count)
+        let total = engine.currentSessionRecordingCount + engine.deferredRecordingsForStopPrompt.count
+        if total > 1 {
+            return L10n.dashboardStopPromptMultiple(total)
         }
         return L10n.dashboardStopPromptInProgress
     }
 
     private func handleStopMonitoringTapped() {
-        if engine.shouldPromptForRecordingsOnStop {
-            showStopRecordingPrompt = true
+        let needsSavePrompt = engine.shouldPromptForRecordingsOnStop
+        if needsSavePrompt {
+            engine.prepareStopWithSavePrompt()
+        }
+        engine.stopMonitoring()
+        if needsSavePrompt {
+            Task { @MainActor in
+                await Task.yield()
+                showStopRecordingPrompt = true
+            }
         } else {
-            engine.stopMonitoring()
             engine.clearMonitoringSessionTracking()
         }
     }
 
-    private func finishStopMonitoring(keepRecordings: Bool) {
-        if !keepRecordings {
+    private func commitStopSaveDecision(keep: Bool) {
+        if keep {
+            engine.commitDeferredRecordings()
+        } else {
+            engine.discardDeferredRecordings()
             deleteCurrentSessionRecordings()
-            engine.isDiscardingSessionRecordings = true
         }
-        engine.stopMonitoring()
-        engine.isDiscardingSessionRecordings = false
         engine.clearMonitoringSessionTracking()
     }
 

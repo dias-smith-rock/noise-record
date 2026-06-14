@@ -46,9 +46,8 @@ nonisolated enum L10n {
     static var dashboardFooterHighSensitivity: String { localized("dashboard.footer.highSensitivity") }
     static var dashboardFooterStandard: String { localized("dashboard.footer.standard") }
     static var dashboardStopPromptTitle: String { localized("dashboard.stopPrompt.title") }
-    static var dashboardStopPromptKeep: String { localized("dashboard.stopPrompt.keep") }
+    static var dashboardStopPromptSave: String { localized("dashboard.stopPrompt.keep") }
     static var dashboardStopPromptDiscard: String { localized("dashboard.stopPrompt.discard") }
-    static var dashboardStopPromptKeepMonitoring: String { localized("dashboard.stopPrompt.keepMonitoring") }
     static var silenceReportTitle: String { localized("silenceReport.title") }
     static var silenceReportSharePreview: String { localized("silenceReport.header") }
 
