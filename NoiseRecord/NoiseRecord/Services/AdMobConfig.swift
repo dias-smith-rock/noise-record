@@ -4,10 +4,12 @@ nonisolated enum AdMobConfig {
     static let appID = "ca-app-pub-2283581832994740~9865795031"
 
     #if DEBUG
-    /// Google test ad units — avoid invalid traffic during development.
+    static let isDebugBuild = true
+    /// Google test ad units for debug builds.
     static let coldStartAppOpen = "ca-app-pub-3940256099942544/5575463023"
     static let hotStartInterstitial = "ca-app-pub-3940256099942544/4411468910"
     #else
+    static let isDebugBuild = false
     static let coldStartAppOpen = "ca-app-pub-2283581832994740/5926550020"
     static let hotStartInterstitial = "ca-app-pub-2283581832994740/7790296034"
     #endif

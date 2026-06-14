@@ -9,14 +9,28 @@ final class AppOpenAdManager: NSObject {
     private var loadTime: Date?
     private var isShowingAd = false
     private var isLoadingAd = false
+    private var pendingShowAfterLoad = false
 
     private override init() {
         super.init()
     }
 
     func loadAd() {
-        guard !isLoadingAd, !isShowingAd else { return }
+        if isLoadingAd {
+            AppTelemetry.logAdLifecycle(channel: "cold", step: "load_skipped_already_loading")
+            return
+        }
+        if isShowingAd {
+            AppTelemetry.logAdLifecycle(channel: "cold", step: "load_skipped_already_showing")
+            return
+        }
+
         isLoadingAd = true
+        AppTelemetry.logAdLifecycle(
+            channel: "cold",
+            step: "load_started",
+            metadata: ["unit_id": AdMobConfig.coldStartAppOpen]
+        )
 
         AppOpenAd.load(with: AdMobConfig.coldStartAppOpen, request: Request()) { [weak self] ad, error in
             Task { @MainActor in
@@ -25,34 +39,95 @@ final class AppOpenAdManager: NSObject {
 
                 if let error {
                     AppTelemetry.logAdColdFail(error.localizedDescription)
+                    AppTelemetry.logAdLifecycle(
+                        channel: "cold",
+                        step: "load_failed",
+                        metadata: ["error": error.localizedDescription]
+                    )
+                    self.pendingShowAfterLoad = false
+                    return
+                }
+
+                guard let ad else {
+                    AppTelemetry.logAdLifecycle(channel: "cold", step: "load_failed_empty_ad")
+                    self.pendingShowAfterLoad = false
                     return
                 }
 
                 self.appOpenAd = ad
                 self.loadTime = Date()
-                ad?.fullScreenContentDelegate = self
+                ad.fullScreenContentDelegate = self
                 AppTelemetry.logAdColdLoad()
+                AppTelemetry.logAdLifecycle(channel: "cold", step: "load_succeeded")
+
+                if self.pendingShowAfterLoad {
+                    AppTelemetry.logAdLifecycle(channel: "cold", step: "show_after_pending_load")
+                    self.showAdIfAvailable()
+                }
             }
         }
     }
 
     func showAdIfAvailable(retryCount: Int = 0) {
-        guard !isShowingAd else { return }
+        if isShowingAd {
+            AppTelemetry.logAdLifecycle(channel: "cold", step: "show_skipped_already_showing")
+            return
+        }
 
-        if appOpenAd == nil || isAdExpired {
+        if appOpenAd == nil {
+            pendingShowAfterLoad = true
+            AppTelemetry.logAdLifecycle(
+                channel: "cold",
+                step: "show_waiting_for_load",
+                metadata: ["retry": String(retryCount)]
+            )
+            loadAd()
+            scheduleRetry(retryCount: retryCount)
+            return
+        }
+
+        if isAdExpired {
+            pendingShowAfterLoad = true
+            AppTelemetry.logAdLifecycle(
+                channel: "cold",
+                step: "show_ad_expired_reload",
+                metadata: [
+                    "retry": String(retryCount),
+                    "loaded_age_sec": String(Int(loadedAgeSeconds)),
+                ]
+            )
+            clearAd(keepPendingShow: true)
             loadAd()
             scheduleRetry(retryCount: retryCount)
             return
         }
 
         guard let root = UIApplication.shared.topViewController else {
+            AppTelemetry.logAdLifecycle(
+                channel: "cold",
+                step: "show_no_root_view_controller",
+                metadata: ["retry": String(retryCount)]
+            )
             scheduleRetry(retryCount: retryCount)
             return
         }
 
-        guard let appOpenAd else { return }
+        guard let appOpenAd else {
+            AppTelemetry.logAdLifecycle(channel: "cold", step: "show_missing_ad_instance")
+            scheduleRetry(retryCount: retryCount)
+            return
+        }
 
+        pendingShowAfterLoad = false
         isShowingAd = true
+        AppTelemetry.logAdLifecycle(
+            channel: "cold",
+            step: "show_presenting",
+            metadata: [
+                "root": String(describing: type(of: root)),
+                "retry": String(retryCount),
+            ]
+        )
         appOpenAd.present(from: root)
         AppTelemetry.logAdColdShow()
     }
@@ -62,23 +137,52 @@ final class AppOpenAdManager: NSObject {
         return Date().timeIntervalSince(loadTime) > AdMobConfig.appOpenAdTimeout
     }
 
+    private var loadedAgeSeconds: Int {
+        guard let loadTime else { return -1 }
+        return Int(Date().timeIntervalSince(loadTime))
+    }
+
     private func scheduleRetry(retryCount: Int) {
-        guard retryCount < AdMobConfig.maxPresentationRetries else { return }
+        guard retryCount < AdMobConfig.maxPresentationRetries else {
+            AppTelemetry.logAdLifecycle(
+                channel: "cold",
+                step: "show_retry_exhausted",
+                metadata: [
+                    "max_retries": String(AdMobConfig.maxPresentationRetries),
+                    "pending_show_after_load": String(pendingShowAfterLoad),
+                    "has_ad": String(appOpenAd != nil),
+                ]
+            )
+            return
+        }
+
+        AppTelemetry.logAdLifecycle(
+            channel: "cold",
+            step: "show_retry_scheduled",
+            metadata: [
+                "retry": String(retryCount + 1),
+                "delay_ms": String(AdMobConfig.presentationRetryDelayMs),
+            ]
+        )
         Task {
             try? await Task.sleep(for: .milliseconds(AdMobConfig.presentationRetryDelayMs))
             showAdIfAvailable(retryCount: retryCount + 1)
         }
     }
 
-    private func clearAd() {
+    private func clearAd(keepPendingShow: Bool = false) {
         isShowingAd = false
         appOpenAd = nil
         loadTime = nil
+        if !keepPendingShow {
+            pendingShowAfterLoad = false
+        }
     }
 }
 
 extension AppOpenAdManager: FullScreenContentDelegate {
     func adDidDismissFullScreenContent(_ ad: FullScreenPresentingAd) {
+        AppTelemetry.logAdLifecycle(channel: "cold", step: "dismissed")
         clearAd()
         loadAd()
     }
@@ -88,6 +192,11 @@ extension AppOpenAdManager: FullScreenContentDelegate {
         didFailToPresentFullScreenContentWithError error: Error
     ) {
         AppTelemetry.logAdColdFail(error.localizedDescription)
+        AppTelemetry.logAdLifecycle(
+            channel: "cold",
+            step: "present_failed",
+            metadata: ["error": error.localizedDescription]
+        )
         clearAd()
         loadAd()
     }

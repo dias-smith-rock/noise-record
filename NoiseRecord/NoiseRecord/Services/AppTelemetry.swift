@@ -83,6 +83,27 @@ nonisolated enum AppTelemetry {
         logEvent("ad_hot_fail", parameters: ["message": message])
     }
 
+    /// Structured ad lifecycle logs for cold/hot start troubleshooting.
+    static func logAdLifecycle(
+        channel: String,
+        step: String,
+        metadata: [String: String] = [:]
+    ) {
+        var parameters: [String: Any] = [
+            "channel": channel,
+            "step": step,
+        ]
+        for (key, value) in metadata {
+            parameters[key] = value
+        }
+
+        let metadataSummary = metadata.isEmpty
+            ? ""
+            : " " + metadata.map { "\($0.key)=\($0.value)" }.sorted().joined(separator: " ")
+        log("ad.\(channel).\(step)\(metadataSummary)")
+        logEvent("ad_lifecycle", parameters: parameters)
+    }
+
     private static func configureCrashlyticsContext() {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"

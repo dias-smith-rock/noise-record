@@ -23,6 +23,7 @@ struct NoiseRecordApp: App {
                     ProgressView()
                 }
             }
+            .adSceneLifecycle()
             .onAppear {
                 if modelContainer == nil, storageError == nil {
                     initializeStorage()
