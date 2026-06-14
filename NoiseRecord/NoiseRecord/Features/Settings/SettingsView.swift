@@ -24,6 +24,7 @@ struct SettingsView: View {
 
     @State private var displayedUserAdjustment: Float = DeviceCalibrationStore.userAdjustment
     @State private var displayedTotalOffset: Float = DeviceCalibrationStore.totalOffset
+    @State private var showAppReviewPrompt = false
 
     private var measurementMode: AcousticMeasurementMode {
         AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
@@ -152,12 +153,18 @@ struct SettingsView: View {
             }
 
             Section {
-                LabeledContent(L10n.settingsVersion, value: appVersionString)
+                Button {
+                    showAppReviewPrompt = true
+                } label: {
+                    Label(L10n.settingsReviewApp, systemImage: "text.bubble")
+                }
+
                 Link(L10n.settingsPrivacyPolicy, destination: LegalURLs.privacyPolicy)
                 Link(L10n.settingsTermsOfService, destination: LegalURLs.termsOfService)
                 Link(destination: SupportContact.mailtoURL) {
                     LabeledContent(L10n.settingsSupport, value: SupportContact.email)
                 }
+                LabeledContent(L10n.settingsVersion, value: appVersionString)
             } header: {
                 Text(L10n.settingsAboutHeader)
             } footer: {
@@ -211,6 +218,14 @@ struct SettingsView: View {
             Button(L10n.ok, role: .cancel) {}
         } message: {
             Text(L10n.settingsClearMeasurementsDone)
+        }
+        .alert(L10n.settingsReviewPromptTitle, isPresented: $showAppReviewPrompt) {
+            Button(L10n.settingsReviewAction) {
+                AppReviewPresenter.openAppStoreReviewPage()
+            }
+            Button(L10n.appReviewLater, role: .cancel) {}
+        } message: {
+            Text(L10n.settingsReviewPromptMessage)
         }
     }
 

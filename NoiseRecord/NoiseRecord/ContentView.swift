@@ -15,6 +15,7 @@ struct ContentView: View {
     @State private var selectedTab: MainTab = .monitor
     @State private var mountedTabs: Set<MainTab> = [.monitor]
     @State private var hasUnreadFiles = false
+    @State private var showAppReviewPrompt = false
     @Bindable private var appearance = AppAppearanceSettings.shared
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
@@ -80,6 +81,10 @@ struct ContentView: View {
 
             TabBarMonitorIconUpdater.apply(frame: nil, isAnimating: false)
         }
+        .onReceive(NotificationCenter.default.publisher(for: AppReviewStore.shouldPresentPromptNotification)) { _ in
+            showAppReviewPrompt = true
+        }
+        .appReviewPrompt(isPresented: $showAppReviewPrompt)
         .onChange(of: scenePhase) { _, phase in
             switch phase {
             case .inactive:
@@ -210,6 +215,7 @@ struct ContentView: View {
         engine.noteRecordingSaved(id: session.id)
         try? modelContext.save()
         refreshUnreadBadge()
+        AppReviewStore.noteEvidenceFileSaved()
     }
 }
 

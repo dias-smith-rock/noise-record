@@ -196,6 +196,51 @@ NEW_STRINGS = {
         "zh-Hans": "纬度: %1$.4f, 经度: %2$.4f",
         "zh-Hant": "緯度: %1$.4f, 經度: %2$.4f",
     },
+    "settings.rateApp": {
+        "en": "Rate DecibelPro",
+        "zh-Hans": "为 DecibelPro 评分",
+        "zh-Hant": "為 DecibelPro 評分",
+    },
+    "settings.reviewApp": {
+        "en": "Review DecibelPro",
+        "zh-Hans": "为 DecibelPro 写评论",
+        "zh-Hant": "為 DecibelPro 寫評論",
+    },
+    "settings.review.prompt.title": {
+        "en": "Share Your Experience",
+        "zh-Hans": "分享你的使用体验",
+        "zh-Hant": "分享你的使用體驗",
+    },
+    "settings.review.prompt.message": {
+        "en": "Your review helps others find a reliable noise evidence tool. Tell us what works for you on the App Store — a few words about your experience means a lot.",
+        "zh-Hans": "你的评论能帮助更多人找到可靠的噪声取证工具。欢迎在 App Store 写下使用感受，哪怕几句话也很有价值。",
+        "zh-Hant": "你的評論能幫助更多人找到可靠的噪聲取證工具。歡迎在 App Store 寫下使用感受，哪怕幾句話也很有價值。",
+    },
+    "settings.review.action": {
+        "en": "Write a Review",
+        "zh-Hans": "前往写评论",
+        "zh-Hant": "前往寫評論",
+    },
+    "appReview.prompt.title": {
+        "en": "Enjoying DecibelPro?",
+        "zh-Hans": "喜欢 DecibelPro 吗？",
+        "zh-Hant": "喜歡 DecibelPro 嗎？",
+    },
+    "appReview.prompt.message": {
+        "en": "If this app helps you document noise, a quick App Store review would mean a lot.",
+        "zh-Hans": "如果这款应用对你记录噪声有帮助，欢迎在 App Store 给我们评分。",
+        "zh-Hant": "如果這款 App 對你記錄噪聲有幫助，歡迎在 App Store 為我們評分。",
+    },
+    "appReview.rateNow": {
+        "en": "Rate on App Store",
+        "zh-Hans": "前往 App Store 评分",
+        "zh-Hant": "前往 App Store 評分",
+    },
+    "appReview.later": {
+        "en": "Maybe Later",
+        "zh-Hans": "以后再说",
+        "zh-Hant": "以後再說",
+    },
 }
 
 

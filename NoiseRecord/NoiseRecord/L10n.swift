@@ -283,7 +283,15 @@ nonisolated enum L10n {
     static var filesExportRecordingsCSV: String { localized("files.exportRecordingsCSV") }
     static var filesExportRecordingsCSVFailed: String { localized("files.exportRecordingsCSV.failed") }
     static var settingsAboutHeader: String { localized("settings.about.header") }
+    static var settingsReviewApp: String { localized("settings.reviewApp") }
+    static var settingsReviewPromptTitle: String { localized("settings.review.prompt.title") }
+    static var settingsReviewPromptMessage: String { localized("settings.review.prompt.message") }
+    static var settingsReviewAction: String { localized("settings.review.action") }
     static var settingsVersion: String { localized("settings.version") }
+    static var appReviewPromptTitle: String { localized("appReview.prompt.title") }
+    static var appReviewPromptMessage: String { localized("appReview.prompt.message") }
+    static var appReviewRateNow: String { localized("appReview.rateNow") }
+    static var appReviewLater: String { localized("appReview.later") }
     static var settingsPrivacyPolicy: String { localized("settings.privacyPolicy") }
     static var settingsTermsOfService: String { localized("settings.termsOfService") }
     static var settingsSupport: String { localized("settings.support") }
