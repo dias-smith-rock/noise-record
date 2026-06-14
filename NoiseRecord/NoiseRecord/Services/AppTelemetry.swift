@@ -59,6 +59,24 @@ nonisolated enum AppTelemetry {
         logEvent("monitoring_state", parameters: ["active": isActive])
     }
 
+    static func logMonitorStart() {
+        log("monitor_start")
+        logEvent("monitor_start")
+    }
+
+    static func logVideoRecordingStart() {
+        log("video_recording_start")
+        logEvent("video_recording_start")
+    }
+
+    static func logBackgroundRecordingStart(peakDB: Float) {
+        log("background_recording_start peak_db=\(Int(peakDB))")
+        logEvent(
+            "background_recording_start",
+            parameters: ["peak_db": Int(peakDB)]
+        )
+    }
+
     static func logAdColdLoad() {
         logEvent("ad_cold_load")
     }

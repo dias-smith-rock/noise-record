@@ -47,6 +47,9 @@ struct DashboardView: View {
                         handleStopMonitoringTapped()
                     } else {
                         await engine.requestPermissionAndStart()
+                        if engine.isMonitoring {
+                            AppTelemetry.logMonitorStart()
+                        }
                     }
                 }
             }

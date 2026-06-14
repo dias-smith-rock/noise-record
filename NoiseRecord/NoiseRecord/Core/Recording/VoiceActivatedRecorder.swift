@@ -1,5 +1,6 @@
 import AVFoundation
 import Foundation
+import UIKit
 
 enum RecordingState: String, Sendable {
     case idle
@@ -92,6 +93,9 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
 
     private func startRecording(format: AVAudioFormat, currentDB: Float) {
         guard let ringBuffer else { return }
+        if UIApplication.shared.applicationState == .background {
+            AppTelemetry.logBackgroundRecordingStart(peakDB: currentDB)
+        }
         state = .recording
         recordingStartDate = Date()
         peakDB = currentDB

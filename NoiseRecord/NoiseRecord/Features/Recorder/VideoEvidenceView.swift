@@ -372,6 +372,7 @@ struct VideoEvidenceView: View {
         coordinator.syncNoise(from: engine)
         coordinator.syncLocation()
         coordinator.startRecording()
+        AppTelemetry.logVideoRecordingStart()
     }
 
     private func handleRecordingFinished(_ result: Result<URL, Error>) {
