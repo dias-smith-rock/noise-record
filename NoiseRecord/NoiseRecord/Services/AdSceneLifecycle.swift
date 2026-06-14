@@ -20,9 +20,12 @@ enum AdSceneLifecycle {
             )
 
             if isColdStart {
-                AppTelemetry.logAdLifecycle(channel: "cold", step: "show_requested_on_cold_start")
-                AppOpenAdManager.shared.showAdIfAvailable()
                 isColdStart = false
+                Task { @MainActor in
+                    await LaunchPerformance.whenFirstInteractive()
+                    AppTelemetry.logAdLifecycle(channel: "cold", step: "show_requested_on_cold_start")
+                    AppOpenAdManager.shared.showAdIfAvailable()
+                }
             } else if wasInBackground {
                 AppTelemetry.logAdLifecycle(channel: "hot", step: "show_requested_on_hot_start")
                 HotStartAdManager.shared.showAdIfAvailable()

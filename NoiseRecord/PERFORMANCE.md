@@ -1,5 +1,61 @@
 # DecibelPro Performance Notes
 
+## Profiling summary (v1.2)
+
+### Cold-start milestones
+
+`LaunchPerformance` records one-shot milestones (console `[Launch]`, Firebase `launch_milestone`, Instruments `Launch` signposts):
+
+| Step | Trigger |
+|------|---------|
+| `launchAppInit` | `NoiseRecordApp.init` after `FirebaseApp.configure()` |
+| `launchFirebaseConfigure` | Immediately after Firebase configure in `App.init` |
+| `launchDelegateEntry` | `UIApplicationDelegate.didFinishLaunching` entry |
+| `launchWindowAppear` | `WindowGroup` root `onAppear` |
+| `launchSwiftDataInit` | `ModelContainer` created in `App.init` |
+| `launchContentViewAppear` | `ContentView.onAppear` |
+| `launchFirstInteractive` | `DashboardView.onAppear` (T8 stopwatch) |
+| `launchAdMobStartRequested` | `MobileAds.shared.start` (deferred until after first interactive) |
+| `launchAdMobStartCompleted` | AdMob start callback |
+
+**Pre-optimization baseline (device Debug, cold launch × 1):**
+
+| Segment | Duration | Notes |
+|---------|----------|-------|
+| App init → Firebase configure | 13,450 ms | Delegate not yet run; correlated with Networking subprocess ~13.5 s |
+| Firebase configure → SwiftData | 109 ms | Healthy |
+| SwiftData → ContentView appear | 18,636 ms | TabView built all 5 tabs + AdMob contention |
+| ContentView → first interactive | 103 ms | Dashboard itself is light |
+| **Total → first interactive** | **32,298 ms** | Far above T8 target |
+
+**v1.2 optimizations applied:**
+
+1. Firebase configure moved to earliest `App.init` (eliminates `I-COR000003`).
+2. `ModelContainer` created eagerly in `App.init` (removed `ProgressView` gate).
+3. AdMob `start` + `loadAd` deferred until `launchFirstInteractive`.
+4. Cold-start ad `showAdIfAvailable` deferred until `launchFirstInteractive`.
+5. Tab lazy mount (`mountedTabs`) — only Monitor tab on cold start.
+6. Files badge uses `fetchCount` instead of dual `@Query`.
+
+**T8 measurement protocol (Release, real device):**
+
+1. Product → Scheme → Edit Scheme → Run → Build Configuration: **Release**.
+2. Delete app, reboot device (or wait 30 s), cold launch × 3.
+3. Filter Xcode console for `[Launch]`; record `launchFirstInteractive` `elapsed_ms` (exclude ad fullscreen time).
+4. Pass: mean **< 2000 ms**.
+5. Optional: Instruments → App Launch + Points of Interest (`com.goodcraft.NoiseRecord` / `Performance`).
+
+Record Release means here after on-device verification:
+
+| Run | `launchFirstInteractive` (ms) |
+|-----|-------------------------------|
+| 1 | _pending device test_ |
+| 2 | _pending device test_ |
+| 3 | _pending device test_ |
+| Mean | _pending device test_ |
+
+---
+
 ## Profiling summary (v1.1)
 
 Primary bottlenecks identified on the monitoring hot path:
@@ -46,8 +102,9 @@ Other constants:
 - `drawWatermark`
 - `tabBarIconApply`
 - `persistMeasurement`
+- `launchSwiftDataInit`
 
-Filter these in Instruments → Points of Interest.
+Filter these in Instruments → Points of Interest. Launch milestones appear under the `Launch` signpost name.
 
 ## Manual regression matrix (T1–T8)
 
@@ -72,4 +129,4 @@ Filter these in Instruments → Points of Interest.
 
 - Downsample `RecordingListView` `@Query` when Files tab inactive (manual fetch).
 - Pre-render TabBar waveform sprite sheet instead of per-frame `UIGraphicsImageRenderer`.
-- Instrument with Instruments (Time Profiler + SwiftUI + Energy) before each release and record T1–T8 numbers here.
+- Record T8 Release means in the table above after each release.

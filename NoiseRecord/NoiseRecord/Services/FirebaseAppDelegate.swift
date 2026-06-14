@@ -1,14 +1,13 @@
-import FirebaseCore
 import GoogleMobileAds
 import UIKit
 
-/// App bootstrap: Firebase, AdMob, and cold/hot-start ad lifecycle.
+/// App bootstrap: AdMob lifecycle (Firebase configured in `NoiseRecordApp.init`).
 final class FirebaseAppDelegate: NSObject, UIApplicationDelegate {
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
-        AppTelemetry.configure()
+        LaunchPerformance.mark(.launchDelegateEntry)
         AppTelemetry.logAdLifecycle(
             channel: "bootstrap",
             step: "did_finish_launching",
@@ -19,9 +18,21 @@ final class FirebaseAppDelegate: NSObject, UIApplicationDelegate {
             ]
         )
 
+        Task { @MainActor in
+            await LaunchPerformance.whenFirstInteractive()
+            startAdMob()
+        }
+        return true
+    }
+
+    @MainActor
+    private func startAdMob() {
+        LaunchPerformance.mark(.launchAdMobStartRequested)
         AppTelemetry.logAdLifecycle(channel: "bootstrap", step: "admob_start_requested")
+
         MobileAds.shared.start { status in
             Task { @MainActor in
+                LaunchPerformance.mark(.launchAdMobStartCompleted)
                 AppTelemetry.logAdLifecycle(
                     channel: "bootstrap",
                     step: "admob_start_completed",
@@ -44,6 +55,5 @@ final class FirebaseAppDelegate: NSObject, UIApplicationDelegate {
                 HotStartAdManager.shared.loadAd()
             }
         }
-        return true
     }
 }

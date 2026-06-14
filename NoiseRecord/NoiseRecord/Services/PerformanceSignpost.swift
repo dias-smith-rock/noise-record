@@ -12,6 +12,7 @@ nonisolated enum PerformanceSignpost {
         case drawWatermark = "drawWatermark"
         case tabBarIconApply = "tabBarIconApply"
         case persistMeasurement = "persistMeasurement"
+        case launchSwiftDataInit = "launchSwiftDataInit"
     }
 
     static func begin(_ interval: Interval) -> OSSignpostID {
@@ -26,5 +27,9 @@ nonisolated enum PerformanceSignpost {
 
     static func event(_ interval: Interval) {
         os_signpost(.event, log: log, name: "Event", "%{public}s", interval.rawValue)
+    }
+
+    static func launchEvent(_ milestone: String) {
+        os_signpost(.event, log: log, name: "Launch", "%{public}s", milestone)
     }
 }
