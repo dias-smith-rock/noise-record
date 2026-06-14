@@ -7,6 +7,8 @@ enum TabBarAppearanceUpdater {
     private static let filesBadgeSize: CGFloat = 6
 
     private static weak var cachedTabBarController: UITabBarController?
+    private static var filesBadgeShouldBeVisible = false
+    private static var filesBadgeLayoutRetryScheduled = false
 
     @MainActor
     static func cacheTabBarController(from root: UIViewController?) {
@@ -34,48 +36,86 @@ enum TabBarAppearanceUpdater {
 
     @MainActor
     static func setFilesBadgeVisible(_ visible: Bool) {
+        filesBadgeShouldBeVisible = visible
+
         guard let controller = resolvedTabBarController(),
               let items = controller.tabBar.items,
               filesTabIndex < items.count else { return }
 
+        let tabBar = controller.tabBar
         items[filesTabIndex].badgeValue = nil
-        removeCustomFilesBadge(from: controller.tabBar)
+        removeCustomFilesBadge(from: tabBar)
 
         guard visible else { return }
 
-        guard let button = tabBarButton(at: filesTabIndex, in: controller.tabBar) else { return }
+        tabBar.layoutIfNeeded()
+
+        guard let button = tabBarButton(at: filesTabIndex, in: tabBar) else {
+            scheduleFilesBadgeLayoutRetry()
+            return
+        }
 
         let dot = UIView()
         dot.tag = filesBadgeTag
         dot.backgroundColor = .systemRed
         dot.layer.cornerRadius = filesBadgeSize / 2
-        dot.translatesAutoresizingMaskIntoConstraints = false
         dot.isUserInteractionEnabled = false
-        button.addSubview(dot)
 
-        NSLayoutConstraint.activate([
-            dot.widthAnchor.constraint(equalToConstant: filesBadgeSize),
-            dot.heightAnchor.constraint(equalToConstant: filesBadgeSize),
-            dot.topAnchor.constraint(equalTo: button.topAnchor, constant: 6),
-            dot.trailingAnchor.constraint(equalTo: button.trailingAnchor, constant: -10),
-        ])
+        let anchor = button.convert(
+            CGPoint(x: button.bounds.maxX - 10, y: 6),
+            to: tabBar
+        )
+        dot.frame = CGRect(
+            x: anchor.x - filesBadgeSize / 2,
+            y: anchor.y - filesBadgeSize / 2,
+            width: filesBadgeSize,
+            height: filesBadgeSize
+        )
+        tabBar.addSubview(dot)
+    }
+
+    @MainActor
+    private static func scheduleFilesBadgeLayoutRetry() {
+        guard !filesBadgeLayoutRetryScheduled else { return }
+        filesBadgeLayoutRetryScheduled = true
+        DispatchQueue.main.async {
+            filesBadgeLayoutRetryScheduled = false
+            guard filesBadgeShouldBeVisible else { return }
+            setFilesBadgeVisible(true)
+        }
     }
 
     @MainActor
     private static func removeCustomFilesBadge(from tabBar: UITabBar) {
+        for subview in tabBar.subviews where subview.tag == filesBadgeTag {
+            subview.removeFromSuperview()
+        }
+
         tabBar.subviews
-            .flatMap { $0.subviews }
-            .first { $0.tag == filesBadgeTag }?
-            .removeFromSuperview()
+            .flatMap(\.subviews)
+            .filter { $0.tag == filesBadgeTag }
+            .forEach { $0.removeFromSuperview() }
     }
 
     @MainActor
     private static func tabBarButton(at index: Int, in tabBar: UITabBar) -> UIView? {
-        let buttons = tabBar.subviews
-            .filter { NSStringFromClass(type(of: $0)).contains("UITabBarButton") }
+        let buttons = collectTabBarButtons(in: tabBar)
             .sorted { $0.frame.minX < $1.frame.minX }
         guard index < buttons.count else { return nil }
         return buttons[index]
+    }
+
+    @MainActor
+    private static func collectTabBarButtons(in view: UIView) -> [UIView] {
+        var buttons: [UIView] = []
+        for subview in view.subviews {
+            if NSStringFromClass(type(of: subview)).contains("UITabBarButton") {
+                buttons.append(subview)
+            } else {
+                buttons.append(contentsOf: collectTabBarButtons(in: subview))
+            }
+        }
+        return buttons
     }
 
     @MainActor

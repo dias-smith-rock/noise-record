@@ -12,10 +12,15 @@ struct ContentView: View {
 
     @State private var engine = NoiseMonitorEngine()
     @State private var selectedTab: MainTab = .monitor
-    @State private var showsFilesTabBadge = FilesTabBadgeStore.isPending
+    @Query(filter: #Predicate<RecordingSession> { $0.isNew == true }) private var unreadAudioSessions: [RecordingSession]
+    @Query(filter: #Predicate<VideoEvidenceSession> { $0.isNew == true }) private var unreadVideoSessions: [VideoEvidenceSession]
     @Bindable private var appearance = AppAppearanceSettings.shared
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
+
+    private var hasUnreadFiles: Bool {
+        !unreadAudioSessions.isEmpty || !unreadVideoSessions.isEmpty
+    }
 
     var body: some View {
         let _ = appearance.languageRefreshID
@@ -49,6 +54,7 @@ struct ContentView: View {
             NavigationStack {
                 RecordingListView(engine: engine, isTabActive: selectedTab == .files)
             }
+            .badge(hasUnreadFiles ? "" : nil)
             .tag(MainTab.files)
             .tabItem {
                 Label(L10n.tabFiles, systemImage: "list.bullet")
@@ -69,7 +75,6 @@ struct ContentView: View {
             engine.onRecordingFinished = { event in
                 saveRecording(event)
             }
-            showsFilesTabBadge = FilesTabBadgeStore.isPending
             if let root = UIApplication.shared.connectedScenes
                 .compactMap({ $0 as? UIWindowScene })
                 .flatMap(\.windows)
@@ -78,27 +83,9 @@ struct ContentView: View {
                 TabBarAppearanceUpdater.cacheTabBarController(from: root)
             }
             TabBarAppearanceUpdater.applyTabTitles()
-            TabBarAppearanceUpdater.setFilesBadgeVisible(showsFilesTabBadge)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: FilesTabBadgeStore.didChangeNotification)) { _ in
-            showsFilesTabBadge = FilesTabBadgeStore.isPending
-            TabBarAppearanceUpdater.setFilesBadgeVisible(showsFilesTabBadge)
-            refreshMonitorTabIconIfNeeded()
         }
         .onChange(of: appearance.languageRefreshID) { _, _ in
             TabBarAppearanceUpdater.applyTabTitles()
-            TabBarAppearanceUpdater.setFilesBadgeVisible(showsFilesTabBadge)
-            refreshMonitorTabIconIfNeeded()
-        }
-        .onChange(of: selectedTab) { _, tab in
-            if tab == .files {
-                FilesTabBadgeStore.clear()
-                showsFilesTabBadge = false
-                TabBarAppearanceUpdater.setFilesBadgeVisible(false)
-            }
-        }
-        .onChange(of: showsFilesTabBadge) { _, isVisible in
-            TabBarAppearanceUpdater.setFilesBadgeVisible(isVisible)
             refreshMonitorTabIconIfNeeded()
         }
         .task(id: engine.isMonitoring) {
@@ -164,11 +151,6 @@ struct ContentView: View {
         modelContext.insert(session)
         engine.noteRecordingSaved(id: session.id)
         try? modelContext.save()
-        if selectedTab != .files {
-            FilesTabBadgeStore.markPending()
-            showsFilesTabBadge = true
-            TabBarAppearanceUpdater.setFilesBadgeVisible(true)
-        }
     }
 }
 
