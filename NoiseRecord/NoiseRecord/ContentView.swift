@@ -75,7 +75,6 @@ struct ContentView: View {
                 .first(where: \.isKeyWindow)?
                 .rootViewController {
                 TabBarAppearanceUpdater.cacheTabBarController(from: root)
-                TabBarMonitorIconUpdater.cacheTabBarController(from: root)
             }
             TabBarAppearanceUpdater.applyTabTitles()
             TabBarAppearanceUpdater.setFilesBadgeVisible(showsFilesTabBadge)
@@ -83,10 +82,12 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: FilesTabBadgeStore.didChangeNotification)) { _ in
             showsFilesTabBadge = FilesTabBadgeStore.isPending
             TabBarAppearanceUpdater.setFilesBadgeVisible(showsFilesTabBadge)
+            refreshMonitorTabIconIfNeeded()
         }
         .onChange(of: appearance.languageRefreshID) { _, _ in
             TabBarAppearanceUpdater.applyTabTitles()
             TabBarAppearanceUpdater.setFilesBadgeVisible(showsFilesTabBadge)
+            refreshMonitorTabIconIfNeeded()
         }
         .onChange(of: selectedTab) { _, tab in
             if tab == .files {
@@ -97,14 +98,15 @@ struct ContentView: View {
         }
         .onChange(of: showsFilesTabBadge) { _, isVisible in
             TabBarAppearanceUpdater.setFilesBadgeVisible(isVisible)
+            refreshMonitorTabIconIfNeeded()
         }
-        .task(id: engine.isVoiceRecordingRunning) {
-            guard engine.isVoiceRecordingRunning else {
+        .task(id: engine.isMonitoring) {
+            guard engine.isMonitoring else {
                 TabBarMonitorIconUpdater.apply(frame: nil, isAnimating: false)
                 return
             }
 
-            while !Task.isCancelled, engine.isVoiceRecordingRunning {
+            while !Task.isCancelled, engine.isMonitoring {
                 TabBarMonitorIconUpdater.apply(
                     frame: MonitorTabBarWaveformRenderer.render(
                         at: Date().timeIntervalSinceReferenceDate
@@ -131,6 +133,16 @@ struct ContentView: View {
                 break
             }
         }
+    }
+
+    private func refreshMonitorTabIconIfNeeded() {
+        guard engine.isMonitoring else { return }
+        TabBarMonitorIconUpdater.apply(
+            frame: MonitorTabBarWaveformRenderer.render(
+                at: Date().timeIntervalSinceReferenceDate
+            ),
+            isAnimating: true
+        )
     }
 
     private func saveRecording(_ event: RecordingFinishedEvent) {

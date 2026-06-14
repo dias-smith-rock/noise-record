@@ -10,12 +10,19 @@ enum TabBarAppearanceUpdater {
 
     @MainActor
     static func cacheTabBarController(from root: UIViewController?) {
-        cachedTabBarController = root?.findTabBarController()
+        if let controller = root?.findTabBarController() {
+            cachedTabBarController = controller
+        }
+    }
+
+    @MainActor
+    static func tabBarItems() -> [UITabBarItem]? {
+        resolvedTabBarController()?.tabBar.items
     }
 
     @MainActor
     static func applyTabTitles() {
-        guard let items = resolvedTabBarController()?.tabBar.items,
+        guard let items = tabBarItems(),
               items.count > filesTabIndex else { return }
 
         items[monitorTabIndex].title = L10n.tabMonitor
@@ -73,15 +80,24 @@ enum TabBarAppearanceUpdater {
 
     @MainActor
     private static func resolvedTabBarController() -> UITabBarController? {
-        if let cachedTabBarController {
+        if let cachedTabBarController,
+           cachedTabBarController.view.window != nil,
+           let items = cachedTabBarController.tabBar.items,
+           !items.isEmpty {
             return cachedTabBarController
         }
-        return UIApplication.shared.connectedScenes
+
+        let fresh = UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
             .flatMap(\.windows)
             .first(where: \.isKeyWindow)?
             .rootViewController?
             .findTabBarController()
+
+        if let fresh {
+            cachedTabBarController = fresh
+        }
+        return fresh
     }
 }
 
