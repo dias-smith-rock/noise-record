@@ -82,7 +82,9 @@ final class AppAppearanceSettings {
             guard oldValue != preferredLanguage else { return }
             Self.persistLanguage(preferredLanguage)
             languageRefreshID = UUID()
-            TabBarAppearanceUpdater.applyTabTitles()
+            DispatchQueue.main.async {
+                TabBarAppearanceUpdater.applyTabTitles()
+            }
         }
     }
 
@@ -95,15 +97,17 @@ final class AppAppearanceSettings {
     private(set) var languageRefreshID = UUID()
 
     private init() {
-        let languageRaw = UserDefaults.standard.string(forKey: AppLocalization.languageKey) ?? AppLanguage.system.rawValue
-        preferredLanguage = AppLanguage(rawValue: languageRaw) ?? .system
-
         let schemeRaw = UserDefaults.standard.string(forKey: Self.colorSchemeKey) ?? AppColorSchemePreference.system.rawValue
         colorSchemePreference = AppColorSchemePreference(rawValue: schemeRaw) ?? .system
+
+        let languageRaw = UserDefaults.standard.string(forKey: AppLocalization.languageKey) ?? AppLanguage.system.rawValue
+        preferredLanguage = AppLanguage(rawValue: languageRaw) ?? .system
+        AppLocalization.setActiveLanguage(preferredLanguage)
     }
 
     private static func persistLanguage(_ language: AppLanguage) {
         UserDefaults.standard.set(language.rawValue, forKey: AppLocalization.languageKey)
+        AppLocalization.setActiveLanguage(language)
         if language == .system {
             UserDefaults.standard.removeObject(forKey: "AppleLanguages")
         } else {

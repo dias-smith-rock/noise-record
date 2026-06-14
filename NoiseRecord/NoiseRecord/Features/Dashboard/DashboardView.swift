@@ -34,6 +34,7 @@ struct DashboardView: View {
                 }
             }
         }
+        .observesAppLanguage()
         .safeAreaInset(edge: .bottom, spacing: 0) {
             ProFloatingActionButton(
                 title: engine.isMonitoring ? L10n.dashboardStop : L10n.dashboardStart,

@@ -12,6 +12,8 @@ struct LanguagePickerView: View {
     }
 
     var body: some View {
+        let _ = appearance.languageRefreshID
+
         List {
             ForEach(AppLanguage.allCases) { language in
                 Button {
@@ -29,6 +31,8 @@ struct LanguagePickerView: View {
                 }
             }
         }
+        .id(appearance.languageRefreshID)
+        .observesAppLanguage()
         .navigationTitle(L10n.settingsLanguage)
         .navigationBarTitleDisplayMode(.inline)
     }

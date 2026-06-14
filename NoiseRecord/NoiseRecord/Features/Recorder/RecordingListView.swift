@@ -149,6 +149,7 @@ struct RecordingListView: View {
                 selectionActionBar
             }
         }
+        .observesAppLanguage()
         .proTabBackground(theme: theme)
         .proTabNavigationChrome()
         .fullScreenCover(isPresented: Binding(

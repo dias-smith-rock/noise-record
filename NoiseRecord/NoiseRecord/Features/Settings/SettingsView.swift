@@ -40,6 +40,8 @@ struct SettingsView: View {
     }
 
     var body: some View {
+        let _ = appearance.languageRefreshID
+
         VStack(spacing: 0) {
             ProTabHeader(title: L10n.settingsTitle, theme: theme)
 
@@ -163,7 +165,9 @@ struct SettingsView: View {
             }
             }
             .scrollContentBackground(.hidden)
+            .id(appearance.languageRefreshID)
         }
+        .observesAppLanguage()
         .proTabBackground(theme: theme)
         .proTabNavigationChrome()
         .onAppear {

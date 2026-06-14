@@ -18,11 +18,13 @@ struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
+        let _ = appearance.languageRefreshID
+        let locale = AppLocalization.resolvedLocale(for: appearance.preferredLanguage)
+
         TabView(selection: $selectedTab) {
             NavigationStack {
                 DashboardView(engine: engine, isTabActive: selectedTab == .monitor)
             }
-            .id(appearance.languageRefreshID)
             .tag(MainTab.monitor)
             .tabItem {
                 Label(L10n.tabMonitor, systemImage: "waveform")
@@ -31,7 +33,6 @@ struct ContentView: View {
             NavigationStack {
                 RecorderSettingsView(engine: engine, isTabActive: selectedTab == .voice)
             }
-            .id(appearance.languageRefreshID)
             .tag(MainTab.voice)
             .tabItem {
                 Label(L10n.tabVoice, systemImage: "record.circle")
@@ -40,7 +41,6 @@ struct ContentView: View {
             NavigationStack {
                 VideoEvidenceView(engine: engine, isTabActive: selectedTab == .video)
             }
-            .id(appearance.languageRefreshID)
             .tag(MainTab.video)
             .tabItem {
                 Label(L10n.tabVideo, systemImage: "video.fill")
@@ -49,20 +49,21 @@ struct ContentView: View {
             NavigationStack {
                 RecordingListView(engine: engine, isTabActive: selectedTab == .files)
             }
-            .id(appearance.languageRefreshID)
             .tag(MainTab.files)
             .tabItem {
                 Label(L10n.tabFiles, systemImage: "list.bullet")
             }
+
             NavigationStack {
                 SettingsView(engine: engine, isTabActive: selectedTab == .settings)
             }
-            .id(appearance.languageRefreshID)
             .tag(MainTab.settings)
             .tabItem {
                 Label(L10n.tabSettings, systemImage: "gearshape")
             }
         }
+        .environment(\.locale, locale)
+        .environment(\.appLanguageRevision, appearance.languageRefreshID)
         .preferredColorScheme(appearance.colorSchemePreference.colorScheme)
         .onAppear {
             engine.onRecordingFinished = { event in

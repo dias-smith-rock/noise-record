@@ -137,6 +137,7 @@ struct VideoEvidenceView: View {
                 .padding()
             }
         }
+        .observesAppLanguage()
         .proTabBackground(theme: theme)
         .proTabNavigationChrome()
         .task(id: isTabActive) {

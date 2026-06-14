@@ -73,6 +73,7 @@ struct RecorderSettingsView: View {
                 .padding()
             }
         }
+        .observesAppLanguage()
         .proTabBackground(theme: theme)
         .proTabNavigationChrome()
         .onAppear { refreshCachedMetrics() }
