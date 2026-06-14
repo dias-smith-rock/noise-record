@@ -16,6 +16,7 @@ final class VideoEvidenceCoordinator {
     var recordingStartedAt: Date?
     var peakDB: Float = 0
     var sessionPeakDB: Float = 0
+    var cameraPosition: AVCaptureDevice.Position = .back
 
     func configure(backgroundMonitoringEnabled: Bool, isMonitoring: Bool) async {
         do {
@@ -25,6 +26,7 @@ final class VideoEvidenceCoordinator {
             )
             try recorder.configureSession()
             recorder.startSession()
+            cameraPosition = recorder.cameraPosition
             locationProvider.requestPermission()
             isSessionReady = true
         } catch {
@@ -69,6 +71,19 @@ final class VideoEvidenceCoordinator {
     func teardown() {
         locationProvider.stopUpdating()
         recorder.stopSession()
+    }
+
+    func switchCamera() {
+        guard isSessionReady, !isRecording else { return }
+        recorder.switchCamera { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .success(let position):
+                self.cameraPosition = position
+            case .failure(let error):
+                self.errorMessage = error.localizedDescription
+            }
+        }
     }
 
     private func configureAudioSessionForVideo(
@@ -224,6 +239,7 @@ struct VideoEvidenceView: View {
         ZStack(alignment: .bottomLeading) {
             CameraPreviewView(
                 session: coordinator.recorder.captureSessionForPreview,
+                isFrontCamera: { coordinator.cameraPosition == .front },
                 currentZoom: { coordinator.recorder.currentZoomFactor },
                 onZoomChange: { factor in
                     coordinator.recorder.setZoomFactor(factor) { applied in
@@ -250,6 +266,22 @@ struct VideoEvidenceView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                     .allowsHitTesting(false)
             }
+
+            Button {
+                coordinator.switchCamera()
+                previewZoomFactor = 1.0
+            } label: {
+                Image(systemName: "arrow.triangle.2.circlepath.camera")
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .padding(10)
+                    .background(.black.opacity(0.55))
+                    .clipShape(Circle())
+            }
+            .accessibilityLabel(L10n.videoSwitchCamera)
+            .disabled(!coordinator.isSessionReady || coordinator.isRecording)
+            .padding(12)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
             if coordinator.isRecording {
                 HStack(spacing: 8) {

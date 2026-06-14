@@ -6,6 +6,7 @@ import UIKit
 
 enum VideoNoiseRecorderError: LocalizedError {
     case cameraUnavailable
+    case cannotSwitchCameraWhileRecording
     case microphoneUnavailable
     case writerSetupFailed(String)
     case notRecording
@@ -14,6 +15,7 @@ enum VideoNoiseRecorderError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .cameraUnavailable: L10n.errorVideoCameraUnavailable
+        case .cannotSwitchCameraWhileRecording: L10n.errorVideoCannotSwitchCameraWhileRecording
         case .microphoneUnavailable: L10n.errorVideoMicUnavailable
         case .writerSetupFailed(let msg): L10n.errorVideoWriterSetupFailed(msg)
         case .notRecording: L10n.errorVideoNotRecording
@@ -32,9 +34,11 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
     private let writerQueue = DispatchQueue(label: "com.noiseapp.writerQueue")
 
     private var videoOutput: AVCaptureVideoDataOutput?
+    private var videoInput: AVCaptureDeviceInput?
     private var audioInput: AVCaptureDeviceInput?
     private var audioOutput: AVCaptureAudioDataOutput?
     private var videoDevice: AVCaptureDevice?
+    private var currentCameraPosition: AVCaptureDevice.Position = .back
     private let maxUserZoomFactor: CGFloat = 5.0
 
     private var assetWriter: AVAssetWriter?
@@ -99,6 +103,10 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
 
     var captureSessionForPreview: AVCaptureSession { captureSession }
 
+    var cameraPosition: AVCaptureDevice.Position {
+        sessionQueue.sync { currentCameraPosition }
+    }
+
     var currentZoomFactor: CGFloat {
         sessionQueue.sync {
             videoDevice?.videoZoomFactor ?? 1.0
@@ -120,6 +128,39 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
             if let completion {
                 DispatchQueue.main.async {
                     completion(applied)
+                }
+            }
+        }
+    }
+
+    func switchCamera(completion: ((Result<AVCaptureDevice.Position, Error>) -> Void)? = nil) {
+        sessionQueue.async { [weak self] in
+            guard let self else { return }
+            guard !self.isRecording else {
+                DispatchQueue.main.async {
+                    completion?(.failure(VideoNoiseRecorderError.cannotSwitchCameraWhileRecording))
+                }
+                return
+            }
+
+            let newPosition: AVCaptureDevice.Position = self.currentCameraPosition == .back ? .front : .back
+            do {
+                self.captureSession.beginConfiguration()
+                defer { self.captureSession.commitConfiguration() }
+
+                if let videoInput = self.videoInput {
+                    self.captureSession.removeInput(videoInput)
+                }
+                try self.addVideoInputLocked(position: newPosition)
+                _ = self.applyZoomLocked(1.0)
+                self.configureVideoConnectionLocked()
+
+                DispatchQueue.main.async {
+                    completion?(.success(newPosition))
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    completion?(.failure(error))
                 }
             }
         }
@@ -151,13 +192,7 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
 
         captureSession.sessionPreset = .hd1920x1080
 
-        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
-            throw VideoNoiseRecorderError.cameraUnavailable
-        }
-        videoDevice = device
-        let videoInput = try AVCaptureDeviceInput(device: device)
-        guard captureSession.canAddInput(videoInput) else { throw VideoNoiseRecorderError.cameraUnavailable }
-        captureSession.addInput(videoInput)
+        try addVideoInputLocked(position: .back)
 
         let videoOut = AVCaptureVideoDataOutput()
         videoOut.alwaysDiscardsLateVideoFrames = true
@@ -168,13 +203,33 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         guard captureSession.canAddOutput(videoOut) else { throw VideoNoiseRecorderError.cameraUnavailable }
         captureSession.addOutput(videoOut)
 
-        if let connection = videoOut.connection(with: .video), connection.isVideoRotationAngleSupported(90) {
-            connection.videoRotationAngle = 90
-        }
-
         videoOutput = videoOut
+        configureVideoConnectionLocked()
         audioInput = nil
         audioOutput = nil
+    }
+
+    private func addVideoInputLocked(position: AVCaptureDevice.Position) throws {
+        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position) else {
+            throw VideoNoiseRecorderError.cameraUnavailable
+        }
+        let input = try AVCaptureDeviceInput(device: device)
+        guard captureSession.canAddInput(input) else { throw VideoNoiseRecorderError.cameraUnavailable }
+        captureSession.addInput(input)
+        videoInput = input
+        videoDevice = device
+        currentCameraPosition = position
+    }
+
+    private func configureVideoConnectionLocked() {
+        guard let connection = videoOutput?.connection(with: .video) else { return }
+        if connection.isVideoRotationAngleSupported(90) {
+            connection.videoRotationAngle = 90
+        }
+        if connection.isVideoMirroringSupported {
+            connection.automaticallyAdjustsVideoMirroring = false
+            connection.isVideoMirrored = currentCameraPosition == .front
+        }
     }
 
     private func attachAudioCaptureLocked() throws {

@@ -3,11 +3,16 @@ import SwiftUI
 
 struct CameraPreviewView: UIViewRepresentable {
     let session: AVCaptureSession
+    let isFrontCamera: () -> Bool
     let currentZoom: () -> CGFloat
     let onZoomChange: (CGFloat) -> Void
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(currentZoom: currentZoom, onZoomChange: onZoomChange)
+        Coordinator(
+            isFrontCamera: isFrontCamera,
+            currentZoom: currentZoom,
+            onZoomChange: onZoomChange
+        )
     }
 
     func makeUIView(context: Context) -> PreviewUIView {
@@ -34,16 +39,27 @@ struct CameraPreviewView: UIViewRepresentable {
 
     func updateUIView(_ uiView: PreviewUIView, context: Context) {
         uiView.previewLayer.session = session
+        context.coordinator.isFrontCamera = isFrontCamera
         context.coordinator.currentZoom = currentZoom
         context.coordinator.onZoomChange = onZoomChange
+        if let connection = uiView.previewLayer.connection {
+            connection.automaticallyAdjustsVideoMirroring = false
+            connection.isVideoMirrored = isFrontCamera()
+        }
     }
 
     final class Coordinator: NSObject {
+        var isFrontCamera: () -> Bool
         var currentZoom: () -> CGFloat
         var onZoomChange: (CGFloat) -> Void
         private var pinchStartZoom: CGFloat = 1.0
 
-        init(currentZoom: @escaping () -> CGFloat, onZoomChange: @escaping (CGFloat) -> Void) {
+        init(
+            isFrontCamera: @escaping () -> Bool,
+            currentZoom: @escaping () -> CGFloat,
+            onZoomChange: @escaping (CGFloat) -> Void
+        ) {
+            self.isFrontCamera = isFrontCamera
             self.currentZoom = currentZoom
             self.onZoomChange = onZoomChange
         }
