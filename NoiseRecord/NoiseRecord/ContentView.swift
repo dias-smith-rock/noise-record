@@ -16,6 +16,7 @@ struct ContentView: View {
     @State private var mountedTabs: Set<MainTab> = [.monitor]
     @State private var hasUnreadFiles = false
     @State private var showAppReviewPrompt = false
+    @State private var pendingWidgetStart = false
     @Bindable private var appearance = AppAppearanceSettings.shared
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
@@ -48,6 +49,33 @@ struct ContentView: View {
                 TabBarAppearanceUpdater.cacheTabBarController(from: root)
             }
             TabBarAppearanceUpdater.applyTabTitles()
+            WidgetPendingActionHandler.install {
+                WidgetPendingActionHandler.processPendingAction(
+                    engine: engine,
+                    shouldStart: true,
+                    navigateToMonitor: { selectedTab = .monitor }
+                )
+            }
+            WidgetPendingActionHandler.processPendingAction(
+                engine: engine,
+                shouldStart: pendingWidgetStart,
+                navigateToMonitor: { selectedTab = .monitor }
+            )
+            pendingWidgetStart = false
+            WidgetSnapshotPublisher.publishFromEngine(engine, force: true)
+        }
+        .onOpenURL { url in
+            guard url.scheme == WidgetDeepLink.scheme, url.host == WidgetDeepLink.monitorHost else { return }
+            selectedTab = .monitor
+            if WidgetDeepLink.parsesActionStart(from: url) {
+                pendingWidgetStart = true
+                WidgetPendingActionHandler.processPendingAction(
+                    engine: engine,
+                    shouldStart: true,
+                    navigateToMonitor: { selectedTab = .monitor }
+                )
+                pendingWidgetStart = false
+            }
         }
         .onChange(of: selectedTab) { _, tab in
             if tab == .video {
@@ -69,6 +97,7 @@ struct ContentView: View {
                 return
             }
 
+            var frameCounter = 0
             while !Task.isCancelled, engine.isMonitoring {
                 TabBarMonitorIconUpdater.apply(
                     frame: MonitorTabBarWaveformRenderer.render(
@@ -76,10 +105,17 @@ struct ContentView: View {
                     ),
                     isAnimating: true
                 )
+                frameCounter += 1
+                if frameCounter % 30 == 0 {
+                    WidgetSnapshotPublisher.publishFromEngine(engine, force: true)
+                }
                 try? await Task.sleep(for: .milliseconds(66))
             }
 
             TabBarMonitorIconUpdater.apply(frame: nil, isAnimating: false)
+        }
+        .onChange(of: engine.isMonitoring) { _, _ in
+            WidgetSnapshotPublisher.publishFromEngine(engine, force: true)
         }
         .onReceive(NotificationCenter.default.publisher(for: AppReviewStore.shouldPresentPromptNotification)) { _ in
             showAppReviewPrompt = true
@@ -93,10 +129,17 @@ struct ContentView: View {
             case .background:
                 AppTelemetry.logEvent("scene_background")
                 engine.handleDidEnterBackground()
+                WidgetSnapshotPublisher.publishFromEngine(engine, force: true)
             case .active:
                 AppTelemetry.logEvent("scene_active")
                 engine.handleDidBecomeActive()
                 refreshUnreadBadge()
+                WidgetSnapshotPublisher.publishFromEngine(engine, force: true)
+                WidgetPendingActionHandler.processPendingAction(
+                    engine: engine,
+                    shouldStart: false,
+                    navigateToMonitor: { selectedTab = .monitor }
+                )
             @unknown default:
                 break
             }

@@ -241,6 +241,106 @@ NEW_STRINGS = {
         "zh-Hans": "以后再说",
         "zh-Hant": "以後再說",
     },
+    "widget.live.title": {
+        "en": "Live Noise",
+        "zh-Hans": "实时噪声",
+        "zh-Hant": "即時噪聲",
+    },
+    "widget.live.description": {
+        "en": "Current decibel level and monitoring status.",
+        "zh-Hans": "当前分贝与监测状态。",
+        "zh-Hant": "當前分貝與監測狀態。",
+    },
+    "widget.stats.title": {
+        "en": "Session Stats",
+        "zh-Hans": "会话统计",
+        "zh-Hant": "會話統計",
+    },
+    "widget.stats.description": {
+        "en": "Max, min, average, and Leq for the current session.",
+        "zh-Hans": "当前会话的最大、最小、平均与 Leq。",
+        "zh-Hant": "當前會話的最大、最小、平均與 Leq。",
+    },
+    "widget.control.title": {
+        "en": "Monitoring Control",
+        "zh-Hans": "监测控制",
+        "zh-Hant": "監測控制",
+    },
+    "widget.control.description": {
+        "en": "Start or stop noise monitoring from the Home Screen.",
+        "zh-Hans": "从主屏幕启停噪声监测。",
+        "zh-Hant": "從主畫面啟停噪聲監測。",
+    },
+    "widget.status.monitoring": {
+        "en": "Monitoring",
+        "zh-Hans": "监测中",
+        "zh-Hant": "監測中",
+    },
+    "widget.status.idle": {
+        "en": "Not Monitoring",
+        "zh-Hans": "未监测",
+        "zh-Hant": "未監測",
+    },
+    "widget.placeholder.start": {
+        "en": "Tap to start monitoring",
+        "zh-Hans": "点击开始监测",
+        "zh-Hant": "點擊開始監測",
+    },
+    "widget.intent.start": {
+        "en": "Start Monitoring",
+        "zh-Hans": "开始监测",
+        "zh-Hant": "開始監測",
+    },
+    "widget.intent.stop": {
+        "en": "Stop Monitoring",
+        "zh-Hans": "停止监测",
+        "zh-Hant": "停止監測",
+    },
+    "widget.stat.max": {
+        "en": "Max",
+        "zh-Hans": "最大",
+        "zh-Hant": "最大",
+    },
+    "widget.stat.min": {
+        "en": "Min",
+        "zh-Hans": "最小",
+        "zh-Hant": "最小",
+    },
+    "widget.stat.avg": {
+        "en": "Avg",
+        "zh-Hans": "平均",
+        "zh-Hant": "平均",
+    },
+    "widget.stat.leq": {
+        "en": "Leq",
+        "zh-Hans": "Leq",
+        "zh-Hant": "Leq",
+    },
+    "widget.lastUpdated": {
+        "en": "Updated %@",
+        "zh-Hans": "更新于 %@",
+        "zh-Hant": "更新於 %@",
+    },
+    "widget.time.justNow": {
+        "en": "Just now",
+        "zh-Hans": "刚刚",
+        "zh-Hant": "剛剛",
+    },
+    "widget.time.minutesAgo": {
+        "en": "%d min ago",
+        "zh-Hans": "%d 分钟前",
+        "zh-Hant": "%d 分鐘前",
+    },
+    "widget.time.hoursAgo": {
+        "en": "%d hr ago",
+        "zh-Hans": "%d 小时前",
+        "zh-Hant": "%d 小時前",
+    },
+    "widget.time.daysAgo": {
+        "en": "%d d ago",
+        "zh-Hans": "%d 天前",
+        "zh-Hant": "%d 天前",
+    },
 }
 
 

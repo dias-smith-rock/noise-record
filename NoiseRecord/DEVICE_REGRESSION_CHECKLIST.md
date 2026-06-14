@@ -59,6 +59,15 @@ Run on a **physical iPhone** before submitting to App Review.
 - [ ] Privacy Policy and Terms of Service open in Safari; Support opens Mail to music.player.250617@gmail.com
 - [ ] Clear Measurement History works
 
+## Widgets
+
+- [ ] Add Live Noise widget (Small/Medium) — shows current dB while monitoring
+- [ ] Add Session Stats widget (Medium/Large) — Max/Min/Avg/Leq and waveform
+- [ ] Add Monitoring Control widget — Start opens app and begins monitoring; Stop works while app is alive in background
+- [ ] Stop monitoring — widget shows last value with timestamp and idle state
+- [ ] Fresh install / no data — widget shows placeholder; tap opens Monitor tab
+- [ ] Deep link `decibelpro://monitor?action=start` opens Monitor and starts monitoring
+
 ## Storage & Recovery
 
 - [ ] Measurement samples pruned (no unbounded growth after long session)
