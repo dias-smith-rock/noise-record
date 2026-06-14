@@ -132,15 +132,18 @@ struct RecordingListView: View {
                 exitSelectionMode()
             }
 
-            ScrollView {
-                if isTabActive {
-                    VStack(spacing: 20) {
-                        summaryBar
-                        listContent
-                    }
-                    .padding()
+            TabView(selection: $selectedTab) {
+                filesTabPage(.video) {
+                    videoListContent
                 }
+                .tag(RecordingListTab.video)
+
+                filesTabPage(.audio) {
+                    audioListContent
+                }
+                .tag(RecordingListTab.audio)
             }
+            .tabViewStyle(.page(indexDisplayMode: .never))
 
             if isSelectionMode {
                 selectionActionBar
@@ -268,69 +271,83 @@ struct RecordingListView: View {
         }
     }
 
+    private func filesTabPage<Content: View>(
+        _ tab: RecordingListTab,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        ScrollView {
+            if isTabActive {
+                VStack(spacing: 20) {
+                    summaryBar(for: tab)
+                    content()
+                }
+                .padding()
+            }
+        }
+    }
+
     @ViewBuilder
-    private var listContent: some View {
-        switch selectedTab {
-        case .video:
-            if sortedVideoSessions.isEmpty {
-                ProEmptyState(
-                    title: L10n.filesEmptyVideoTitle,
-                    message: L10n.filesEmptyVideoMessage,
-                    systemImage: "video.slash",
-                    theme: theme
-                )
-            } else {
-                VStack(spacing: 12) {
-                    ForEach(sortedVideoSessions) { video in
-                        MediaListCard(
-                            fileName: video.fileName,
-                            isNew: video.isNew,
-                            subtitle: video.startedAt.formatted(date: .abbreviated, time: .standard),
-                            badges: videoBadges(for: video),
-                            isPlaying: false,
-                            playIcon: "play.rectangle.fill",
-                            theme: theme,
-                            isSelectionMode: isSelectionMode,
-                            isSelected: selectedVideoIDs.contains(video.id),
-                            onPlay: { playVideo(video) },
-                            onShare: { shareMedia(video) },
-                            onDelete: { deleteVideo(video) },
-                            onRename: { beginRename(.video(video)) },
-                            onToggleSelection: { toggleVideoSelection(video.id) }
-                        )
-                    }
+    private var videoListContent: some View {
+        if sortedVideoSessions.isEmpty {
+            ProEmptyState(
+                title: L10n.filesEmptyVideoTitle,
+                message: L10n.filesEmptyVideoMessage,
+                systemImage: "video.slash",
+                theme: theme
+            )
+        } else {
+            VStack(spacing: 12) {
+                ForEach(sortedVideoSessions) { video in
+                    MediaListCard(
+                        fileName: video.fileName,
+                        isNew: video.isNew,
+                        subtitle: video.startedAt.formatted(date: .abbreviated, time: .standard),
+                        badges: videoBadges(for: video),
+                        isPlaying: false,
+                        playIcon: "play.rectangle.fill",
+                        theme: theme,
+                        isSelectionMode: isSelectionMode,
+                        isSelected: selectedVideoIDs.contains(video.id),
+                        onPlay: { playVideo(video) },
+                        onShare: { shareMedia(video) },
+                        onDelete: { deleteVideo(video) },
+                        onRename: { beginRename(.video(video)) },
+                        onToggleSelection: { toggleVideoSelection(video.id) }
+                    )
                 }
             }
+        }
+    }
 
-        case .audio:
-            if sortedAudioSessions.isEmpty {
-                ProEmptyState(
-                    title: L10n.filesEmptyAudioTitle,
-                    message: L10n.filesEmptyAudioMessage,
-                    systemImage: "waveform",
-                    theme: theme
-                )
-            } else {
-                VStack(spacing: 12) {
-                    ForEach(sortedAudioSessions) { session in
-                        MediaListCard(
-                            fileName: session.fileName,
-                            isNew: session.isNew,
-                            subtitle: nil,
-                            detailLine: audioDetailLine(for: session),
-                            badges: audioBadges(for: session),
-                            isPlaying: audioPlayerController.playingID == session.id,
-                            playIcon: audioPlayerController.playingID == session.id ? "stop.circle.fill" : "play.circle.fill",
-                            theme: theme,
-                            isSelectionMode: isSelectionMode,
-                            isSelected: selectedAudioIDs.contains(session.id),
-                            onPlay: { toggleAudioPlayback(session) },
-                            onShare: { shareMedia(session) },
-                            onDelete: { deleteAudio(session) },
-                            onRename: { beginRename(.audio(session)) },
-                            onToggleSelection: { toggleAudioSelection(session.id) }
-                        )
-                    }
+    @ViewBuilder
+    private var audioListContent: some View {
+        if sortedAudioSessions.isEmpty {
+            ProEmptyState(
+                title: L10n.filesEmptyAudioTitle,
+                message: L10n.filesEmptyAudioMessage,
+                systemImage: "waveform",
+                theme: theme
+            )
+        } else {
+            VStack(spacing: 12) {
+                ForEach(sortedAudioSessions) { session in
+                    MediaListCard(
+                        fileName: session.fileName,
+                        isNew: session.isNew,
+                        subtitle: nil,
+                        detailLine: audioDetailLine(for: session),
+                        badges: audioBadges(for: session),
+                        isPlaying: audioPlayerController.playingID == session.id,
+                        playIcon: audioPlayerController.playingID == session.id ? "stop.circle.fill" : "play.circle.fill",
+                        theme: theme,
+                        isSelectionMode: isSelectionMode,
+                        isSelected: selectedAudioIDs.contains(session.id),
+                        onPlay: { toggleAudioPlayback(session) },
+                        onShare: { shareMedia(session) },
+                        onDelete: { deleteAudio(session) },
+                        onRename: { beginRename(.audio(session)) },
+                        onToggleSelection: { toggleAudioSelection(session.id) }
+                    )
                 }
             }
         }
@@ -341,9 +358,9 @@ struct RecordingListView: View {
         return selectedTab == .audio ? sessions.isEmpty : videoSessions.isEmpty
     }
 
-    private var summaryBar: some View {
+    private func summaryBar(for tab: RecordingListTab) -> some View {
         HStack(spacing: 12) {
-            switch selectedTab {
+            switch tab {
             case .audio:
                 ProMetricCard(title: L10n.filesSummaryClips, value: "\(sessions.count)", theme: theme)
                 ProMetricCard(title: L10n.filesSummaryDuration, value: formattedAudioTotalDuration, theme: theme)
