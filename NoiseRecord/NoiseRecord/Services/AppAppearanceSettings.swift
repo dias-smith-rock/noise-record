@@ -82,6 +82,7 @@ final class AppAppearanceSettings {
             guard oldValue != preferredLanguage else { return }
             Self.persistLanguage(preferredLanguage)
             languageRefreshID = UUID()
+            TabBarAppearanceUpdater.applyTabTitles()
         }
     }
 

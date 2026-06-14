@@ -22,6 +22,7 @@ struct ContentView: View {
             NavigationStack {
                 DashboardView(engine: engine, isTabActive: selectedTab == .monitor)
             }
+            .id(appearance.languageRefreshID)
             .tag(MainTab.monitor)
             .tabItem {
                 Label(L10n.tabMonitor, systemImage: "waveform")
@@ -30,6 +31,7 @@ struct ContentView: View {
             NavigationStack {
                 RecorderSettingsView(engine: engine, isTabActive: selectedTab == .voice)
             }
+            .id(appearance.languageRefreshID)
             .tag(MainTab.voice)
             .tabItem {
                 Label(L10n.tabVoice, systemImage: "record.circle")
@@ -38,6 +40,7 @@ struct ContentView: View {
             NavigationStack {
                 VideoEvidenceView(engine: engine, isTabActive: selectedTab == .video)
             }
+            .id(appearance.languageRefreshID)
             .tag(MainTab.video)
             .tabItem {
                 Label(L10n.tabVideo, systemImage: "video.fill")
@@ -46,23 +49,21 @@ struct ContentView: View {
             NavigationStack {
                 RecordingListView(engine: engine, isTabActive: selectedTab == .files)
             }
+            .id(appearance.languageRefreshID)
             .tag(MainTab.files)
             .tabItem {
                 Label(L10n.tabFiles, systemImage: "list.bullet")
             }
-            .badge(showsFilesTabBadge ? "" : nil)
-
             NavigationStack {
                 SettingsView(engine: engine, isTabActive: selectedTab == .settings)
             }
+            .id(appearance.languageRefreshID)
             .tag(MainTab.settings)
             .tabItem {
                 Label(L10n.tabSettings, systemImage: "gearshape")
             }
         }
         .preferredColorScheme(appearance.colorSchemePreference.colorScheme)
-        .environment(\.locale, AppLocalization.resolvedLocale)
-        .id(appearance.languageRefreshID)
         .onAppear {
             engine.onRecordingFinished = { event in
                 saveRecording(event)
@@ -73,17 +74,29 @@ struct ContentView: View {
                 .flatMap(\.windows)
                 .first(where: \.isKeyWindow)?
                 .rootViewController {
+                TabBarAppearanceUpdater.cacheTabBarController(from: root)
                 TabBarMonitorIconUpdater.cacheTabBarController(from: root)
             }
+            TabBarAppearanceUpdater.applyTabTitles()
+            TabBarAppearanceUpdater.setFilesBadgeVisible(showsFilesTabBadge)
         }
         .onReceive(NotificationCenter.default.publisher(for: FilesTabBadgeStore.didChangeNotification)) { _ in
             showsFilesTabBadge = FilesTabBadgeStore.isPending
+            TabBarAppearanceUpdater.setFilesBadgeVisible(showsFilesTabBadge)
+        }
+        .onChange(of: appearance.languageRefreshID) { _, _ in
+            TabBarAppearanceUpdater.applyTabTitles()
+            TabBarAppearanceUpdater.setFilesBadgeVisible(showsFilesTabBadge)
         }
         .onChange(of: selectedTab) { _, tab in
             if tab == .files {
                 FilesTabBadgeStore.clear()
                 showsFilesTabBadge = false
+                TabBarAppearanceUpdater.setFilesBadgeVisible(false)
             }
+        }
+        .onChange(of: showsFilesTabBadge) { _, isVisible in
+            TabBarAppearanceUpdater.setFilesBadgeVisible(isVisible)
         }
         .task(id: engine.isVoiceRecordingRunning) {
             guard engine.isVoiceRecordingRunning else {
@@ -141,6 +154,7 @@ struct ContentView: View {
         if selectedTab != .files {
             FilesTabBadgeStore.markPending()
             showsFilesTabBadge = true
+            TabBarAppearanceUpdater.setFilesBadgeVisible(true)
         }
     }
 }

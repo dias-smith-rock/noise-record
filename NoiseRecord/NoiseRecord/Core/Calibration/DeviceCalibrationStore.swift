@@ -10,6 +10,8 @@ enum WeightingType: String, CaseIterable, Codable, Sendable {
 }
 
 struct DeviceCalibrationStore: Sendable {
+    static let didChangeNotification = Notification.Name("DeviceCalibrationStore.didChange")
+
     private static let userAdjustmentKey = "calibration.userAdjustment"
     private static let referenceSPLKey = "calibration.referenceSPL"
     private static let weightingKey = "settings.weighting"
@@ -106,17 +108,37 @@ struct DeviceCalibrationStore: Sendable {
         }
     }
 
+    /// Defaults to high-sensitivity on first install; respects explicit user choice afterward.
     static var isHighSensitivityMode: Bool {
-        get { UserDefaults.standard.bool(forKey: highSensitivityKey) }
+        get {
+            guard UserDefaults.standard.object(forKey: highSensitivityKey) != nil else {
+                return true
+            }
+            return UserDefaults.standard.bool(forKey: highSensitivityKey)
+        }
         set { UserDefaults.standard.set(newValue, forKey: highSensitivityKey) }
     }
 
+    /// Aligns the live displayed SPL with the reference level using the current total offset.
+    static func calibrate(referenceSPL: Float, displayedSPL: Float) {
+        self.referenceSPL = referenceSPL
+        userAdjustment += referenceSPL - displayedSPL
+        notifyCalibrationChanged()
+    }
+
+    /// Legacy entry point for tests and measured dBFS workflows.
     static func calibrate(referenceSPL: Float, measuredDBFS: Float) {
         self.referenceSPL = referenceSPL
         userAdjustment = referenceSPL - measuredDBFS - deviceOffset
+        notifyCalibrationChanged()
     }
 
     static func resetCalibration() {
         userAdjustment = 0
+        notifyCalibrationChanged()
+    }
+
+    private static func notifyCalibrationChanged() {
+        NotificationCenter.default.post(name: didChangeNotification, object: nil)
     }
 }

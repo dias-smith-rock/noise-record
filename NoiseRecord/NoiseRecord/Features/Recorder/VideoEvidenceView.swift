@@ -162,6 +162,11 @@ struct VideoEvidenceView: View {
             lastNoiseSync = now
             coordinator.syncNoise(from: engine)
         }
+        .onReceive(NotificationCenter.default.publisher(for: DeviceCalibrationStore.didChangeNotification)) { _ in
+            guard isTabActive else { return }
+            engine.refreshCalibrationOffset()
+            coordinator.syncNoise(from: engine)
+        }
         .onChange(of: coordinator.locationProvider.latitude) { _, _ in
             coordinator.syncLocation()
         }

@@ -4,6 +4,7 @@ import SwiftUI
 @main
 struct NoiseRecordApp: App {
     @UIApplicationDelegateAdaptor(FirebaseAppDelegate.self) private var firebaseAppDelegate
+    @Bindable private var appearance = AppAppearanceSettings.shared
     @State private var modelContainer: ModelContainer?
     @State private var storageError: Error?
 
@@ -13,6 +14,7 @@ struct NoiseRecordApp: App {
                 if let modelContainer {
                     ContentView()
                         .modelContainer(modelContainer)
+                        .environment(\.locale, AppLocalization.resolvedLocale(for: appearance.preferredLanguage))
                 } else if let storageError {
                     StorageInitErrorView(error: storageError) {
                         initializeStorage()

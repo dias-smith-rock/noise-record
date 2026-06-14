@@ -106,7 +106,7 @@ struct SettingsView: View {
                     let previousAdjustment = DeviceCalibrationStore.userAdjustment
                     DeviceCalibrationStore.calibrate(
                         referenceSPL: calibrationReference,
-                        measuredDBFS: engine.lastDBFS
+                        displayedSPL: engine.currentDB
                     )
                     engine.refreshCalibrationOffset()
                     refreshCalibrationDisplay()

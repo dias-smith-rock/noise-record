@@ -120,6 +120,7 @@ final class NoiseMonitorEngine {
     private var isLoadingPersistedSettings = false
     private var interruptionObserver: NSObjectProtocol?
     private var mediaResetObserver: NSObjectProtocol?
+    private var calibrationObserver: NSObjectProtocol?
     private(set) var currentSessionRecordingIDs: [UUID] = []
     var isDiscardingSessionRecordings = false
 
@@ -175,6 +176,19 @@ final class NoiseMonitorEngine {
         }
 
         installAudioSessionObservers()
+        installCalibrationObserver()
+    }
+
+    private func installCalibrationObserver() {
+        calibrationObserver = NotificationCenter.default.addObserver(
+            forName: DeviceCalibrationStore.didChangeNotification,
+            object: nil,
+            queue: nil
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.refreshCalibrationOffset()
+            }
+        }
     }
 
     func requestPermissionAndStart() async {
