@@ -11,6 +11,7 @@ enum VideoNoiseRecorderError: LocalizedError {
     case writerSetupFailed(String)
     case notRecording
     case finishFailed(String)
+    case sessionNotRunning
 
     var errorDescription: String? {
         switch self {
@@ -20,6 +21,7 @@ enum VideoNoiseRecorderError: LocalizedError {
         case .writerSetupFailed(let msg): L10n.errorVideoWriterSetupFailed(msg)
         case .notRecording: L10n.errorVideoNotRecording
         case .finishFailed(let msg): L10n.errorVideoFinishFailed(msg)
+        case .sessionNotRunning: L10n.errorVideoCameraUnavailable
         }
     }
 }
@@ -40,6 +42,9 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
     private var videoDevice: AVCaptureDevice?
     private var currentCameraPosition: AVCaptureDevice.Position = .back
     private let maxUserZoomFactor: CGFloat = 5.0
+
+    private var isPreviewConfigured = false
+    private var recordingOutputsAttached = false
 
     private var assetWriter: AVAssetWriter?
     private var videoWriterInput: AVAssetWriterInput?
@@ -70,27 +75,45 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
 
     // MARK: - Session setup
 
-    func configureSession() throws {
-        var configError: Error?
-        sessionQueue.sync {
-            do {
-                try self.setupCaptureSessionLocked()
-            } catch {
-                configError = error
+    func configureSession() async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            sessionQueue.async { [weak self] in
+                guard let self else {
+                    continuation.resume(throwing: VideoNoiseRecorderError.cameraUnavailable)
+                    return
+                }
+                do {
+                    if !self.isPreviewConfigured {
+                        try self.setupPreviewSessionLocked()
+                        self.isPreviewConfigured = true
+                    }
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
             }
         }
-        if let configError { throw configError }
     }
 
-    func startSession() {
+    func startSession(completion: ((AVCaptureDevice.Position) -> Void)? = nil) {
         sessionQueue.async { [weak self] in
-            guard let self, !self.isSessionRunning else { return }
-            self.captureSession.startRunning()
-            self.isSessionRunning = true
+            guard let self else { return }
+            if !self.isSessionRunning {
+                self.captureSession.startRunning()
+                self.isSessionRunning = true
+                VideoTabPerformance.mark(.captureSessionRunning)
+            }
+            let position = self.currentCameraPosition
+            if let completion {
+                DispatchQueue.main.async {
+                    completion(position)
+                }
+            }
         }
     }
 
-    func stopSession() {
+    /// Stops preview capture but keeps the configured preview pipeline for fast re-entry.
+    func pausePreview() {
         sessionQueue.async { [weak self] in
             guard let self, self.isSessionRunning else { return }
             if self.isRecording {
@@ -102,24 +125,6 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
     }
 
     var captureSessionForPreview: AVCaptureSession { captureSession }
-
-    var cameraPosition: AVCaptureDevice.Position {
-        sessionQueue.sync { currentCameraPosition }
-    }
-
-    var currentZoomFactor: CGFloat {
-        sessionQueue.sync {
-            videoDevice?.videoZoomFactor ?? 1.0
-        }
-    }
-
-    var allowedZoomRange: ClosedRange<CGFloat> {
-        sessionQueue.sync {
-            guard let device = videoDevice else { return 1.0 ... 1.0 }
-            let maxZoom = min(device.maxAvailableVideoZoomFactor, maxUserZoomFactor)
-            return device.minAvailableVideoZoomFactor ... maxZoom
-        }
-    }
 
     func setZoomFactor(_ factor: CGFloat, completion: ((CGFloat) -> Void)? = nil) {
         sessionQueue.async { [weak self] in
@@ -183,30 +188,20 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         }
     }
 
-    private func setupCaptureSessionLocked() throws {
+    private func setupPreviewSessionLocked() throws {
         captureSession.beginConfiguration()
         defer { captureSession.commitConfiguration() }
 
         captureSession.inputs.forEach { captureSession.removeInput($0) }
         captureSession.outputs.forEach { captureSession.removeOutput($0) }
 
-        captureSession.sessionPreset = .hd1920x1080
-
+        captureSession.sessionPreset = .high
         try addVideoInputLocked(position: .back)
 
-        let videoOut = AVCaptureVideoDataOutput()
-        videoOut.alwaysDiscardsLateVideoFrames = true
-        videoOut.videoSettings = [
-            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
-        ]
-        videoOut.setSampleBufferDelegate(self, queue: videoQueue)
-        guard captureSession.canAddOutput(videoOut) else { throw VideoNoiseRecorderError.cameraUnavailable }
-        captureSession.addOutput(videoOut)
-
-        videoOutput = videoOut
-        configureVideoConnectionLocked()
+        videoOutput = nil
         audioInput = nil
         audioOutput = nil
+        recordingOutputsAttached = false
     }
 
     private func addVideoInputLocked(position: AVCaptureDevice.Position) throws {
@@ -219,6 +214,47 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         videoInput = input
         videoDevice = device
         currentCameraPosition = position
+    }
+
+    private func attachRecordingOutputsLocked() throws {
+        guard !recordingOutputsAttached else { return }
+
+        captureSession.beginConfiguration()
+        defer { captureSession.commitConfiguration() }
+
+        if captureSession.canSetSessionPreset(.hd1920x1080) {
+            captureSession.sessionPreset = .hd1920x1080
+        }
+
+        let videoOut = AVCaptureVideoDataOutput()
+        videoOut.alwaysDiscardsLateVideoFrames = true
+        videoOut.videoSettings = [
+            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+        ]
+        videoOut.setSampleBufferDelegate(self, queue: videoQueue)
+        guard captureSession.canAddOutput(videoOut) else {
+            throw VideoNoiseRecorderError.cameraUnavailable
+        }
+        captureSession.addOutput(videoOut)
+        videoOutput = videoOut
+        configureVideoConnectionLocked()
+        recordingOutputsAttached = true
+    }
+
+    private func detachRecordingOutputsLocked() {
+        guard recordingOutputsAttached else { return }
+
+        captureSession.beginConfiguration()
+        if let videoOutput {
+            captureSession.removeOutput(videoOutput)
+        }
+        if captureSession.canSetSessionPreset(.high) {
+            captureSession.sessionPreset = .high
+        }
+        captureSession.commitConfiguration()
+
+        videoOutput = nil
+        recordingOutputsAttached = false
     }
 
     private func configureVideoConnectionLocked() {
@@ -285,27 +321,36 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         return dir.appendingPathComponent("evidence_\(formatter.string(from: Date())).mp4")
     }
 
-    func startRecording(to url: URL? = nil) {
-        sessionQueue.async { [weak self] in
-            guard let self else { return }
-            do {
-                try self.attachAudioCaptureLocked()
-            } catch {
-                DispatchQueue.main.async {
-                    self.onRecordingFinished?(.failure(error))
+    func startRecording(to url: URL? = nil) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            sessionQueue.async { [weak self] in
+                guard let self else {
+                    continuation.resume(throwing: VideoNoiseRecorderError.notRecording)
+                    return
                 }
-                return
-            }
+                guard self.isSessionRunning else {
+                    continuation.resume(throwing: VideoNoiseRecorderError.sessionNotRunning)
+                    return
+                }
+                do {
+                    try self.attachRecordingOutputsLocked()
+                    try self.attachAudioCaptureLocked()
+                } catch {
+                    continuation.resume(throwing: error)
+                    return
+                }
 
-            self.writerQueue.async {
-                self.outputURL = url ?? Self.makeOutputURL()
-                self.isRecording = true
-                self.sessionStarted = false
-                self.recordingOriginTime = nil
-                self.noiseTimelineSamples.removeAll()
-                self.lastTimelineSampleTime = -1
-                self.pendingAudioSamples.removeAll()
-                self.tearDownWriter()
+                self.writerQueue.async {
+                    self.outputURL = url ?? Self.makeOutputURL()
+                    self.isRecording = true
+                    self.sessionStarted = false
+                    self.recordingOriginTime = nil
+                    self.noiseTimelineSamples.removeAll()
+                    self.lastTimelineSampleTime = -1
+                    self.pendingAudioSamples.removeAll()
+                    self.tearDownWriter()
+                    continuation.resume()
+                }
             }
         }
     }
@@ -327,6 +372,7 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
             tearDownWriter()
             sessionQueue.async { [weak self] in
                 self?.detachAudioCaptureLocked()
+                self?.detachRecordingOutputsLocked()
             }
             completion(.failure(VideoNoiseRecorderError.notRecording))
             return
@@ -346,6 +392,7 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
             self.tearDownWriter()
             self.sessionQueue.async {
                 self.detachAudioCaptureLocked()
+                self.detachRecordingOutputsLocked()
             }
         }
     }
@@ -471,20 +518,25 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         let cardWidth = min(600 * scale, CGFloat(width) - 80)
         let cardHeight = 180 * scale
         let margin: CGFloat = 40 * scale
-        let cardRect = CGRect(x: margin, y: margin, width: cardWidth, height: cardHeight)
+        let cardRect = CGRect(
+            x: CGFloat(width) - margin - cardWidth,
+            y: margin,
+            width: cardWidth,
+            height: cardHeight
+        )
 
         UIGraphicsPushContext(context)
         let cardPath = UIBezierPath(roundedRect: cardRect, cornerRadius: 16 * scale)
         UIColor.black.withAlphaComponent(0.6).setFill()
         cardPath.fill()
 
-        let decibelAttributes: [NSAttributedString.Key: Any] = [
+        let titleAttributes: [NSAttributedString.Key: Any] = [
             .font: UIFont.monospacedDigitSystemFont(ofSize: 42 * scale, weight: .bold),
             .foregroundColor: UIColor.systemOrange,
         ]
-        dataBridge.overlayDecibelText.draw(
+        dataBridge.overlayTimeAndLocationTitle.draw(
             at: CGPoint(x: cardRect.minX + 20 * scale, y: cardRect.minY + 18 * scale),
-            withAttributes: decibelAttributes
+            withAttributes: titleAttributes
         )
 
         let metaAttributes: [NSAttributedString.Key: Any] = [
@@ -504,7 +556,11 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         let now = CFAbsoluteTimeGetCurrent()
         if now - lastMetaRefreshTime >= metaRefreshInterval || cachedMetaText.isEmpty {
             lastMetaRefreshTime = now
-            cachedMetaText = "\(timestampFormatter.string(from: captureDate))\n\(dataBridge.gpsString)"
+            cachedMetaText = """
+            \(timestampFormatter.string(from: captureDate))
+            \(dataBridge.gpsString)
+            \(dataBridge.overlayDecibelText)
+            """
         }
         return cachedMetaText
     }

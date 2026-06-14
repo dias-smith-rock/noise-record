@@ -11,6 +11,7 @@ struct ContentView: View {
     }
 
     @State private var engine = NoiseMonitorEngine()
+    @State private var videoCoordinator = VideoEvidenceCoordinator()
     @State private var selectedTab: MainTab = .monitor
     @State private var mountedTabs: Set<MainTab> = [.monitor]
     @State private var hasUnreadFiles = false
@@ -48,6 +49,10 @@ struct ContentView: View {
             TabBarAppearanceUpdater.applyTabTitles()
         }
         .onChange(of: selectedTab) { _, tab in
+            if tab == .video {
+                VideoTabPerformance.beginSession()
+                VideoTabPerformance.mark(.tabSelected)
+            }
             mountedTabs.insert(tab)
             if tab == .files {
                 refreshUnreadBadge()
@@ -118,7 +123,11 @@ struct ContentView: View {
     @ViewBuilder
     private var videoTab: some View {
         tabRoot(for: .video) {
-            VideoEvidenceView(engine: engine, isTabActive: selectedTab == .video)
+            VideoEvidenceView(
+                engine: engine,
+                coordinator: videoCoordinator,
+                isTabActive: selectedTab == .video
+            )
         }
         .tag(MainTab.video)
         .tabItem {

@@ -237,7 +237,17 @@ nonisolated enum L10n {
     // MARK: - Overlay
 
     static var overlayNoisePrefix: String { localized("overlay.decibel.prefix") }
+    static var overlayTimeLabel: String { localized("overlay.time.label") }
+    static var overlayTimeAndLocationLabel: String { localized("overlay.timeAndLocation.label") }
     static var overlayGpsUnavailable: String { localized("overlay.gps.unavailable") }
+
+    static func overlayGpsCoordinates(latitude: Double, longitude: Double) -> String {
+        String(format: localized("overlay.gps.coordinates"), latitude, longitude)
+    }
+
+    static func overlayDecibelLine(_ decibelString: String) -> String {
+        String(format: localized("overlay.decibel.line"), decibelString)
+    }
 
     // MARK: - Errors
 

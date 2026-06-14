@@ -54,6 +54,49 @@ Record Release means here after on-device verification:
 | 3 | _pending device test_ |
 | Mean | _pending device test_ |
 
+### Video tab activation milestones
+
+`VideoTabPerformance` (console `[VideoTab]`, Firebase `video_tab_milestone`, Instruments `VideoTab` category):
+
+| Step | Trigger |
+|------|---------|
+| `tabSelected` | User switches to Video tab |
+| `viewAppear` / `previewViewCreated` | `VideoEvidenceView` / `CameraPreviewView` mount |
+| `taskActiveBegin` | `.task(isTabActive)` starts configure |
+| `audioSessionDone` | `AVAudioSession` configured |
+| `captureConfigureDone` | Preview-only `AVCaptureSession` configured (async) |
+| `captureStartRequested` | `startRunning()` dispatched (non-blocking) |
+| `uiReady` | `isSessionReady` — controls enabled |
+| `previewReady` | `startRunning()` completed — live preview visible |
+| `captureSessionRunning` | Same queue callback as `previewReady` |
+| `taskActiveComplete` | Post-configure engine sync done |
+
+**Pre-optimization baseline (device Debug, first Video tab visit × 1):**
+
+| Segment | Duration | Root cause |
+|---------|----------|------------|
+| `audioSessionDone` → `captureConfigureDone` | 6,004 ms | Full 1080p session + `VideoDataOutput` sync configure |
+| `captureStartRequested` → `configureComplete` | 9,003 ms | `sessionQueue.sync` on `cameraPosition` blocked until `startRunning()` finished |
+| **Total → `taskActiveComplete`** | **15,170 ms** | UI frozen until camera fully running |
+
+**v1.3 optimizations applied:**
+
+1. Removed post-`startSession` `cameraPosition` sync read (eliminated ~9s MainActor block).
+2. `isSessionReady` set immediately after dispatching `startRunning`; `isPreviewReady` on async completion.
+3. Preview pipeline: `.high` preset + video input only; `VideoDataOutput`/audio attached on record start.
+4. `configureSession()` async; soft `pausePreview()` teardown preserves pipeline for re-entry.
+5. `VideoEvidenceCoordinator` hoisted to `ContentView` `@State` for session reuse.
+
+| Metric | Pre-opt | Target |
+|--------|---------|--------|
+| `taskActiveComplete` | 15,170 ms | **< 300 ms** |
+| `uiReady` | 15,169 ms | **< 300 ms** |
+| `previewReady` | 15,167 ms | **< 3,000 ms** (async, non-blocking) |
+| `captureConfigureDone` | 6,163 ms | **< 500 ms** (preview-only preset) |
+| Re-visit same session | ~15 s | **< 500 ms** to `previewReady` |
+
+Filter Xcode console: `[VideoTab]`.
+
 ---
 
 ## Profiling summary (v1.1)

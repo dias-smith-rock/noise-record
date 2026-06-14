@@ -12,6 +12,7 @@ final class VideoEvidenceCoordinator {
 
     var isRecording = false
     var isSessionReady = false
+    var isPreviewReady = false
     var errorMessage: String?
     var recordingStartedAt: Date?
     var peakDB: Float = 0
@@ -19,17 +20,41 @@ final class VideoEvidenceCoordinator {
     var cameraPosition: AVCaptureDevice.Position = .back
 
     func configure(backgroundMonitoringEnabled: Bool, isMonitoring: Bool) async {
+        let configureSignpost = VideoTabPerformance.begin(.configureTotal)
+        defer { VideoTabPerformance.end(.configureTotal, configureSignpost) }
+
+        isSessionReady = false
+        isPreviewReady = false
+
         do {
+            let audioSignpost = VideoTabPerformance.begin(.audioSession)
             try configureAudioSessionForVideo(
                 backgroundMonitoringEnabled: backgroundMonitoringEnabled,
                 isMonitoring: isMonitoring
             )
-            try recorder.configureSession()
-            recorder.startSession()
-            cameraPosition = recorder.cameraPosition
+            VideoTabPerformance.end(.audioSession, audioSignpost)
+            VideoTabPerformance.mark(.audioSessionDone)
+
+            let captureSignpost = VideoTabPerformance.begin(.captureConfigure)
+            try await recorder.configureSession()
+            VideoTabPerformance.end(.captureConfigure, captureSignpost)
+            VideoTabPerformance.mark(.captureConfigureDone)
+
+            VideoTabPerformance.mark(.captureStartRequested)
+            recorder.startSession { [weak self] position in
+                guard let self else { return }
+                self.cameraPosition = position
+                self.isPreviewReady = true
+                VideoTabPerformance.mark(.previewReady)
+            }
+
             locationProvider.requestPermission()
+            VideoTabPerformance.mark(.locationPermissionRequested)
             isSessionReady = true
+            VideoTabPerformance.mark(.uiReady)
+            VideoTabPerformance.mark(.configureComplete)
         } catch {
+            VideoTabPerformance.mark(.configureFailed)
             errorMessage = error.localizedDescription
         }
     }
@@ -52,12 +77,12 @@ final class VideoEvidenceCoordinator {
         )
     }
 
-    func startRecording() {
-        guard isSessionReady, !isRecording else { return }
+    func startRecording() async throws {
+        guard isSessionReady, isPreviewReady, !isRecording else { return }
         peakDB = 0
         recordingStartedAt = Date()
         locationProvider.startUpdating()
-        recorder.startRecording()
+        try await recorder.startRecording()
         isRecording = true
     }
 
@@ -69,8 +94,13 @@ final class VideoEvidenceCoordinator {
     }
 
     func teardown() {
+        let teardownSignpost = VideoTabPerformance.begin(.teardown)
         locationProvider.stopUpdating()
-        recorder.stopSession()
+        isSessionReady = false
+        isPreviewReady = false
+        recorder.pausePreview()
+        VideoTabPerformance.end(.teardown, teardownSignpost)
+        VideoTabPerformance.mark(.teardownDone)
     }
 
     func switchCamera() {
@@ -108,9 +138,9 @@ final class VideoEvidenceCoordinator {
 
 struct VideoEvidenceView: View {
     @Bindable var engine: NoiseMonitorEngine
+    @Bindable var coordinator: VideoEvidenceCoordinator
     let isTabActive: Bool
     @Environment(\.modelContext) private var modelContext
-    @State private var coordinator = VideoEvidenceCoordinator()
     @State private var player: AVPlayer?
     @State private var isPreparingRecording = false
     @State private var savedVideoURL: URL?
@@ -130,15 +160,6 @@ struct VideoEvidenceView: View {
         .theme(for: measurementMode)
     }
 
-    private var liveDecibelOverlayText: String {
-        let decibelString = String(
-            format: "%.1f %@",
-            engine.currentDB,
-            engine.effectiveWeighting.rawValue
-        )
-        return String(format: L10n.overlayNoisePrefix, decibelString)
-    }
-
     var body: some View {
         VStack(spacing: 0) {
             ProTabHeader(title: L10n.videoTitle, theme: theme)
@@ -153,10 +174,14 @@ struct VideoEvidenceView: View {
             }
         }
         .observesAppLanguage()
+        .onAppear {
+            VideoTabPerformance.mark(.viewAppear)
+        }
         .proTabBackground(theme: theme)
         .proTabNavigationChrome()
         .task(id: isTabActive) {
             if isTabActive {
+                VideoTabPerformance.mark(.taskActiveBegin)
                 await coordinator.configure(
                     backgroundMonitoringEnabled: engine.backgroundMonitoringEnabled,
                     isMonitoring: engine.isMonitoring
@@ -164,10 +189,15 @@ struct VideoEvidenceView: View {
                 engine.refreshCalibrationOffset()
                 lastNoiseSync = .distantPast
                 coordinator.syncNoise(from: engine)
+                VideoTabPerformance.mark(.syncNoiseDone)
                 engine.restoreMonitoringAfterExternalSession()
+                VideoTabPerformance.mark(.restoreMonitoringDone)
+                VideoTabPerformance.mark(.taskActiveComplete)
             } else {
+                VideoTabPerformance.mark(.taskInactiveBegin)
                 coordinator.teardown()
                 engine.restoreMonitoringAfterExternalSession()
+                VideoTabPerformance.mark(.taskInactiveComplete)
             }
         }
         .onChange(of: engine.currentDB) { _, _ in
@@ -222,7 +252,6 @@ struct VideoEvidenceView: View {
                 SyncedVideoPlayerView(
                     url: url,
                     title: presentedVideoTitle ?? url.lastPathComponent,
-                    timeline: VideoNoiseTimelineStore.load(for: url),
                     coexistingWithMonitoring: engine.isMonitoring,
                     backgroundMonitoringEnabled: engine.backgroundMonitoringEnabled,
                     onDismiss: {
@@ -240,7 +269,7 @@ struct VideoEvidenceView: View {
             CameraPreviewView(
                 session: coordinator.recorder.captureSessionForPreview,
                 isFrontCamera: { coordinator.cameraPosition == .front },
-                currentZoom: { coordinator.recorder.currentZoomFactor },
+                currentZoom: { previewZoomFactor },
                 onZoomChange: { factor in
                     coordinator.recorder.setZoomFactor(factor) { applied in
                         previewZoomFactor = applied
@@ -253,6 +282,15 @@ struct VideoEvidenceView: View {
                 RoundedRectangle(cornerRadius: 16)
                     .strokeBorder(theme.surfaceBorder, lineWidth: 1)
             )
+            .overlay {
+                if coordinator.isSessionReady, !coordinator.isPreviewReady {
+                    ZStack {
+                        Color.black.opacity(0.35)
+                        ProgressView()
+                            .tint(.white)
+                    }
+                }
+            }
 
             if previewZoomFactor > 1.05 {
                 Text(String(format: "%.1fx", previewZoomFactor))
@@ -279,7 +317,7 @@ struct VideoEvidenceView: View {
                     .clipShape(Circle())
             }
             .accessibilityLabel(L10n.videoSwitchCamera)
-            .disabled(!coordinator.isSessionReady || coordinator.isRecording)
+            .disabled(!coordinator.isSessionReady || !coordinator.isPreviewReady || coordinator.isRecording)
             .padding(12)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
@@ -298,7 +336,7 @@ struct VideoEvidenceView: View {
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(liveDecibelOverlayText)
+                Text(L10n.overlayTimeLabel)
                     .font(.caption.bold())
                     .foregroundStyle(theme.accent)
                 Text(Date().formatted(date: .numeric, time: .standard))
@@ -372,7 +410,7 @@ struct VideoEvidenceView: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(coordinator.isRecording ? .red : theme.accent)
-            .disabled(!coordinator.isSessionReady || isPreparingRecording)
+            .disabled(!coordinator.isSessionReady || !coordinator.isPreviewReady || isPreparingRecording)
         }
     }
 
@@ -390,7 +428,7 @@ struct VideoEvidenceView: View {
     }
 
     private func startEvidenceRecording() async {
-        guard coordinator.isSessionReady, !coordinator.isRecording else { return }
+        guard coordinator.isSessionReady, coordinator.isPreviewReady, !coordinator.isRecording else { return }
         isPreparingRecording = true
         savedVideoURL = nil
         defer { isPreparingRecording = false }
@@ -403,8 +441,12 @@ struct VideoEvidenceView: View {
 
         coordinator.syncNoise(from: engine)
         coordinator.syncLocation()
-        coordinator.startRecording()
-        AppTelemetry.logVideoRecordingStart()
+        do {
+            try await coordinator.startRecording()
+            AppTelemetry.logVideoRecordingStart()
+        } catch {
+            coordinator.errorMessage = error.localizedDescription
+        }
     }
 
     private func handleRecordingFinished(_ result: Result<URL, Error>) {

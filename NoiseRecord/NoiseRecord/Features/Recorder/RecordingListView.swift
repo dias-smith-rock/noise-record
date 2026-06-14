@@ -160,7 +160,6 @@ struct RecordingListView: View {
                 SyncedVideoPlayerView(
                     url: url,
                     title: presentedVideoTitle ?? url.lastPathComponent,
-                    timeline: VideoNoiseTimelineStore.load(for: url),
                     coexistingWithMonitoring: engine.isMonitoring,
                     backgroundMonitoringEnabled: engine.backgroundMonitoringEnabled,
                     onDismiss: {

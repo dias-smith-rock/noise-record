@@ -44,18 +44,18 @@ final class NoiseDataBridge: @unchecked Sendable {
     func updateGPS(latitude: Double?, longitude: Double?) {
         lock.lock()
         if let latitude, let longitude {
-            _gpsString = String(
-                format: String(localized: "overlay.gps.coordinates"),
-                latitude,
-                longitude
-            )
+            _gpsString = L10n.overlayGpsCoordinates(latitude: latitude, longitude: longitude)
         } else {
-            _gpsString = String(localized: "overlay.gps.unavailable")
+            _gpsString = L10n.overlayGpsUnavailable
         }
         lock.unlock()
     }
 
     var overlayDecibelText: String {
-        String(format: String(localized: "overlay.decibel.prefix"), decibelString)
+        L10n.overlayDecibelLine(decibelString)
+    }
+
+    var overlayTimeAndLocationTitle: String {
+        L10n.overlayTimeAndLocationLabel
     }
 }
