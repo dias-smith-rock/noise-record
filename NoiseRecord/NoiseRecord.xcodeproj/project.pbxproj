@@ -14,19 +14,19 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		TEST007TESTS00000000000001 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = DD3C1F902FD969F500B8AC17 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = DD3C1F972FD969F500B8AC17;
-			remoteInfo = NoiseRecord;
-		};
 		LAEXTPRX00000000000001 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = DD3C1F902FD969F500B8AC17 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = LAEXTTGT000000000001;
 			remoteInfo = DecibelProLiveActivityExtension;
+		};
+		TEST007TESTS00000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DD3C1F902FD969F500B8AC17 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DD3C1F972FD969F500B8AC17;
+			remoteInfo = NoiseRecord;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -46,8 +46,9 @@
 
 /* Begin PBXFileReference section */
 		DD3C1F982FD969F500B8AC17 /* NoiseRecord.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NoiseRecord.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		TEST001TESTS00000000000001 /* NoiseRecordTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NoiseRecordTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		LAEXTREF000000000001 /* DecibelProLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; name = DecibelProLiveActivity.appex; path = DecibelProLiveActivityExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		SKCFG0000000000000001 /* DecibelPro.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = DecibelPro.storekit; sourceTree = "<group>"; };
+		TEST001TESTS00000000000001 /* NoiseRecordTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NoiseRecordTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -66,6 +67,14 @@
 			path = NoiseRecord;
 			sourceTree = "<group>";
 		};
+		LAEXTGRP00000000000001 /* DecibelProLiveActivity */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				LAEXTEXC00000000000001 /* Exceptions for "DecibelProLiveActivity" folder in "DecibelProLiveActivityExtension" target */,
+			);
+			path = DecibelProLiveActivity;
+			sourceTree = "<group>";
+		};
 		SHARED000000000000000001 /* SharedLiveActivity */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = SharedLiveActivity;
@@ -74,14 +83,6 @@
 		TEST002TESTS00000000000001 /* NoiseRecordTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = NoiseRecordTests;
-			sourceTree = "<group>";
-		};
-		LAEXTGRP00000000000001 /* DecibelProLiveActivity */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				LAEXTEXC00000000000001 /* Exceptions for "DecibelProLiveActivity" folder in "DecibelProLiveActivityExtension" target */,
-			);
-			path = DecibelProLiveActivity;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -97,14 +98,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		TEST005TESTS00000000000001 /* Frameworks */ = {
+		LAEXTFRM00000000000001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		LAEXTFRM00000000000001 /* Frameworks */ = {
+		TEST005TESTS00000000000001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -117,6 +118,7 @@
 		DD3C1F8F2FD969F500B8AC17 = {
 			isa = PBXGroup;
 			children = (
+				SKCFG0000000000000001 /* DecibelPro.storekit */,
 				DD3C1F9A2FD969F500B8AC17 /* NoiseRecord */,
 				SHARED000000000000000001 /* SharedLiveActivity */,
 				LAEXTGRP00000000000001 /* DecibelProLiveActivity */,
@@ -167,6 +169,29 @@
 			productReference = DD3C1F982FD969F500B8AC17 /* NoiseRecord.app */;
 			productType = "com.apple.product-type.application";
 		};
+		LAEXTTGT000000000001 /* DecibelProLiveActivityExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = LAEXTCFGLIST0000000001 /* Build configuration list for PBXNativeTarget "DecibelProLiveActivityExtension" */;
+			buildPhases = (
+				LAEXTSRC00000000000001 /* Sources */,
+				LAEXTFRM00000000000001 /* Frameworks */,
+				LAEXTRES00000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				LAEXTGRP00000000000001 /* DecibelProLiveActivity */,
+				SHARED000000000000000001 /* SharedLiveActivity */,
+			);
+			name = DecibelProLiveActivityExtension;
+			packageProductDependencies = (
+			);
+			productName = DecibelProLiveActivityExtension;
+			productReference = LAEXTREF000000000001 /* DecibelProLiveActivity.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		TEST003TESTS00000000000001 /* NoiseRecordTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = TEST011TESTS00000000000001 /* Build configuration list for PBXNativeTarget "NoiseRecordTests" */;
@@ -189,30 +214,6 @@
 			productName = NoiseRecordTests;
 			productReference = TEST001TESTS00000000000001 /* NoiseRecordTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
-		};
-
-		LAEXTTGT000000000001 /* DecibelProLiveActivityExtension */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = LAEXTCFGLIST0000000001 /* Build configuration list for PBXNativeTarget "DecibelProLiveActivityExtension" */;
-			buildPhases = (
-				LAEXTSRC00000000000001 /* Sources */,
-				LAEXTFRM00000000000001 /* Frameworks */,
-				LAEXTRES00000000000001 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				SHARED000000000000000001 /* SharedLiveActivity */,
-				LAEXTGRP00000000000001 /* DecibelProLiveActivity */,
-			);
-			name = DecibelProLiveActivityExtension;
-			packageProductDependencies = (
-			);
-			productName = DecibelProLiveActivityExtension;
-			productReference = LAEXTREF000000000001 /* DecibelProLiveActivity.appex */;
-			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -270,14 +271,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		TEST006TESTS00000000000001 /* Resources */ = {
+		LAEXTRES00000000000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		LAEXTRES00000000000001 /* Resources */ = {
+		TEST006TESTS00000000000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -321,14 +322,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		TEST004TESTS00000000000001 /* Sources */ = {
+		LAEXTSRC00000000000001 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		LAEXTSRC00000000000001 /* Sources */ = {
+		TEST004TESTS00000000000001 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -338,15 +339,15 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		TEST008TESTS00000000000001 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = DD3C1F972FD969F500B8AC17 /* NoiseRecord */;
-			targetProxy = TEST007TESTS00000000000001 /* PBXContainerItemProxy */;
-		};
 		LAEXTDEP00000000000001 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = LAEXTTGT000000000001 /* DecibelProLiveActivityExtension */;
 			targetProxy = LAEXTPRX00000000000001 /* PBXContainerItemProxy */;
+		};
+		TEST008TESTS00000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DD3C1F972FD969F500B8AC17 /* NoiseRecord */;
+			targetProxy = TEST007TESTS00000000000001 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -566,7 +567,6 @@
 			};
 			name = Release;
 		};
-
 		LAEXTDBG00000000000001 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -680,20 +680,20 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		TEST011TESTS00000000000001 /* Build configuration list for PBXNativeTarget "NoiseRecordTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				TEST009TESTS00000000000001 /* Debug */,
-				TEST010TESTS00000000000001 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		LAEXTCFGLIST0000000001 /* Build configuration list for PBXNativeTarget "DecibelProLiveActivityExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				LAEXTDBG00000000000001 /* Debug */,
 				LAEXTREL00000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		TEST011TESTS00000000000001 /* Build configuration list for PBXNativeTarget "NoiseRecordTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				TEST009TESTS00000000000001 /* Debug */,
+				TEST010TESTS00000000000001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

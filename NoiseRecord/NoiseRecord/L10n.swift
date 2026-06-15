@@ -318,6 +318,42 @@ nonisolated enum L10n {
     static var settingsAppearanceHeader: String { localized("settings.appearance.header") }
     static var settingsLanguage: String { localized("settings.language") }
     static var settingsTheme: String { localized("settings.theme") }
+    static var settingsRemoveAdsHeader: String { localized("settings.removeAds.header") }
+    static var settingsRemoveAdsFooter: String { localized("settings.removeAds.footer") }
+    static var settingsRemoveAdsBannerTitle: String { localized("settings.removeAds.banner.title") }
+    static var settingsRemoveAdsBannerSubtitle: String { localized("settings.removeAds.banner.subtitle") }
+    static var settingsRemoveAdsSheetTitle: String { localized("settings.removeAds.sheet.title") }
+    static var settingsRemoveAdsSheetHeadline: String { localized("settings.removeAds.sheet.headline") }
+    static var settingsRemoveAdsSheetSubheadline: String { localized("settings.removeAds.sheet.subheadline") }
+    static var settingsRemoveAdsBenefitNoAppOpen: String { localized("settings.removeAds.benefit.noAppOpen") }
+    static var settingsRemoveAdsBenefitNoInterstitial: String { localized("settings.removeAds.benefit.noInterstitial") }
+    static var settingsRemoveAdsBenefitLifetime: String { localized("settings.removeAds.benefit.lifetime") }
+    static var settingsRemoveAdsPriceOriginal: String { localized("settings.removeAds.price.original") }
+    static var settingsRemoveAdsPriceSale: String { localized("settings.removeAds.price.sale") }
+    static var settingsRemoveAdsPriceNote: String { localized("settings.removeAds.price.note") }
+    static var settingsRemoveAdsProductLoaded: String { localized("settings.removeAds.product.loaded") }
+    static var settingsRemoveAdsProductFallback: String { localized("settings.removeAds.product.fallback") }
+    static var settingsRemoveAdsCancelledTitle: String { localized("settings.removeAds.alert.cancelled.title") }
+    static var settingsRemoveAdsCancelledMessage: String { localized("settings.removeAds.alert.cancelled.message") }
+    static var settingsRemoveAdsPurchaseFallback: String { localized("settings.removeAds.purchaseFallback") }
+    static var settingsRemoveAdsRestore: String { localized("settings.removeAds.restore") }
+    static var settingsRemoveAdsActive: String { localized("settings.removeAds.active") }
+    static var settingsRemoveAdsPurchasedTitle: String { localized("settings.removeAds.alert.purchased.title") }
+    static var settingsRemoveAdsPurchasedMessage: String { localized("settings.removeAds.alert.purchased.message") }
+    static var settingsRemoveAdsPendingTitle: String { localized("settings.removeAds.alert.pending.title") }
+    static var settingsRemoveAdsPendingMessage: String { localized("settings.removeAds.alert.pending.message") }
+    static var settingsRemoveAdsRestoredTitle: String { localized("settings.removeAds.alert.restored.title") }
+    static var settingsRemoveAdsRestoredMessage: String { localized("settings.removeAds.alert.restored.message") }
+    static var settingsRemoveAdsErrorTitle: String { localized("settings.removeAds.alert.error.title") }
+
+    static func settingsRemoveAdsPurchase(price: String) -> String {
+        String(format: localized("settings.removeAds.purchase"), price)
+    }
+
+    static var iapErrorProductNotFound: String { localized("iap.error.productNotFound") }
+    static var iapErrorVerificationFailed: String { localized("iap.error.verificationFailed") }
+    static var iapErrorNothingToRestore: String { localized("iap.error.nothingToRestore") }
+    static var iapErrorUnknown: String { localized("iap.error.unknown") }
     static var videoRecBadge: String { localized("REC") }
     static var videoPreviewRecording: String { localized("video.previewRecording") }
 

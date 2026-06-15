@@ -46,6 +46,10 @@ struct SettingsView: View {
         VStack(spacing: 0) {
             ProTabHeader(title: L10n.settingsTitle, theme: theme)
 
+            RemoveAdsSettingsPromo(theme: theme)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+
             Form {
             Section {
                 NavigationLink {

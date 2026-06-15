@@ -286,6 +286,166 @@ NEW_STRINGS = {
         "zh-Hans": "监测已停止",
         "zh-Hant": "監測已停止",
     },
+    "settings.removeAds.header": {
+        "en": "Remove Ads",
+        "zh-Hans": "移除广告",
+        "zh-Hant": "移除廣告",
+    },
+    "settings.removeAds.banner.title": {
+        "en": "Go Ad-Free",
+        "zh-Hans": "升级永久免广告",
+        "zh-Hant": "升級永久免廣告",
+    },
+    "settings.removeAds.banner.subtitle": {
+        "en": "One-time purchase · Tap to learn more",
+        "zh-Hans": "一次性买断 · 点击查看详情",
+        "zh-Hant": "一次性買斷 · 點擊查看詳情",
+    },
+    "settings.removeAds.sheet.title": {
+        "en": "Remove Ads",
+        "zh-Hans": "永久免广告",
+        "zh-Hant": "永久免廣告",
+    },
+    "settings.removeAds.sheet.headline": {
+        "en": "Enjoy DecibelPro without interruptions",
+        "zh-Hans": "畅享无干扰的专业测噪体验",
+        "zh-Hant": "暢享無干擾的專業測噪體驗",
+    },
+    "settings.removeAds.sheet.subheadline": {
+        "en": "Pay once. Keep ad-free access on every device signed into your Apple ID.",
+        "zh-Hans": "一次付费，登录同一 Apple ID 的设备均可免广告。",
+        "zh-Hant": "一次付費，登入同一 Apple ID 的裝置均可免廣告。",
+    },
+    "settings.removeAds.benefit.noAppOpen": {
+        "en": "No app open ads on launch",
+        "zh-Hans": "启动时不再展示开屏广告",
+        "zh-Hant": "啟動時不再展示開屏廣告",
+    },
+    "settings.removeAds.benefit.noInterstitial": {
+        "en": "No interstitial ads when returning to the app",
+        "zh-Hans": "回到 App 时不再弹出插屏广告",
+        "zh-Hant": "回到 App 時不再彈出插屏廣告",
+    },
+    "settings.removeAds.benefit.lifetime": {
+        "en": "Lifetime access with a single purchase",
+        "zh-Hans": "一次购买，永久生效",
+        "zh-Hant": "一次購買，永久生效",
+    },
+    "settings.removeAds.price.original": {
+        "en": "$3.99",
+        "zh-Hans": "$3.99",
+        "zh-Hant": "$3.99",
+    },
+    "settings.removeAds.price.sale": {
+        "en": "$2.99",
+        "zh-Hans": "$2.99",
+        "zh-Hant": "$2.99",
+    },
+    "settings.removeAds.price.note": {
+        "en": "Limited-time offer · One-time purchase",
+        "zh-Hans": "限时优惠 · 一次性买断",
+        "zh-Hant": "限時優惠 · 一次性買斷",
+    },
+    "settings.removeAds.product.loaded": {
+        "en": "Store price loaded from App Store",
+        "zh-Hans": "已从 App Store 加载真实价格",
+        "zh-Hant": "已從 App Store 載入真實價格",
+    },
+    "settings.removeAds.product.fallback": {
+        "en": "Showing marketing price — product not loaded yet",
+        "zh-Hans": "当前为营销展示价，商品尚未从商店加载",
+        "zh-Hant": "目前為行銷展示價，商品尚未從商店載入",
+    },
+    "settings.removeAds.alert.cancelled.title": {
+        "en": "Purchase Cancelled",
+        "zh-Hans": "购买已取消",
+        "zh-Hant": "購買已取消",
+    },
+    "settings.removeAds.alert.cancelled.message": {
+        "en": "The purchase was not completed. If you already own this item, try Restore Purchases.",
+        "zh-Hans": "购买未完成。若您已购买过，请尝试「恢复购买」。",
+        "zh-Hant": "購買未完成。若您已購買過，請嘗試「恢復購買」。",
+    },
+    "settings.removeAds.footer": {
+        "en": "One-time purchase. Permanently removes app open and interstitial ads for this Apple ID.",
+        "zh-Hans": "一次性买断，永久移除本 Apple ID 下的开屏与插屏广告。",
+        "zh-Hant": "一次性買斷，永久移除本 Apple ID 下的開屏與插屏廣告。",
+    },
+    "settings.removeAds.purchase": {
+        "en": "Remove Ads — %@",
+        "zh-Hans": "永久免广告 — %@",
+        "zh-Hant": "永久免廣告 — %@",
+    },
+    "settings.removeAds.purchaseFallback": {
+        "en": "Remove Ads Forever",
+        "zh-Hans": "永久免广告",
+        "zh-Hant": "永久免廣告",
+    },
+    "settings.removeAds.restore": {
+        "en": "Restore Purchases",
+        "zh-Hans": "恢复购买",
+        "zh-Hant": "恢復購買",
+    },
+    "settings.removeAds.active": {
+        "en": "Ads removed — thank you for your support!",
+        "zh-Hans": "已永久免广告，感谢支持！",
+        "zh-Hant": "已永久免廣告，感謝支持！",
+    },
+    "settings.removeAds.alert.purchased.title": {
+        "en": "Purchase Complete",
+        "zh-Hans": "购买成功",
+        "zh-Hant": "購買成功",
+    },
+    "settings.removeAds.alert.purchased.message": {
+        "en": "Ads have been permanently removed. Enjoy an uninterrupted experience.",
+        "zh-Hans": "广告已永久移除，尽情享受无干扰的使用体验。",
+        "zh-Hant": "廣告已永久移除，盡情享受無干擾的使用體驗。",
+    },
+    "settings.removeAds.alert.pending.title": {
+        "en": "Purchase Pending",
+        "zh-Hans": "购买待批准",
+        "zh-Hant": "購買待批准",
+    },
+    "settings.removeAds.alert.pending.message": {
+        "en": "Your purchase is waiting for approval. Ads will be removed automatically once it completes.",
+        "zh-Hans": "购买正在等待批准，完成后将自动移除广告。",
+        "zh-Hant": "購買正在等待批准，完成後將自動移除廣告。",
+    },
+    "settings.removeAds.alert.restored.title": {
+        "en": "Purchases Restored",
+        "zh-Hans": "购买已恢复",
+        "zh-Hant": "購買已恢復",
+    },
+    "settings.removeAds.alert.restored.message": {
+        "en": "Your ad-free access has been restored on this device.",
+        "zh-Hans": "已在此设备恢复免广告权益。",
+        "zh-Hant": "已在此裝置恢復免廣告權益。",
+    },
+    "settings.removeAds.alert.error.title": {
+        "en": "Purchase Error",
+        "zh-Hans": "购买失败",
+        "zh-Hant": "購買失敗",
+    },
+    "iap.error.productNotFound": {
+        "en": "Product not found. Please try again later.",
+        "zh-Hans": "未找到商品，请稍后重试。",
+        "zh-Hant": "未找到商品，請稍後重試。",
+    },
+    "iap.error.verificationFailed": {
+        "en": "Purchase verification failed. Contact support if you were charged.",
+        "zh-Hans": "购买验证失败。若已扣款，请联系客服。",
+        "zh-Hant": "購買驗證失敗。若已扣款，請聯絡客服。",
+    },
+    "iap.error.nothingToRestore": {
+        "en": "No previous purchase was found for this Apple ID.",
+        "zh-Hans": "未找到此 Apple ID 的历史购买记录。",
+        "zh-Hant": "未找到此 Apple ID 的歷史購買記錄。",
+    },
+    "iap.error.unknown": {
+        "en": "An unknown purchase result was returned.",
+        "zh-Hans": "收到未知的购买结果。",
+        "zh-Hant": "收到未知的購買結果。",
+    },
 }
 
 

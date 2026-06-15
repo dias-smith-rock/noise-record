@@ -12,6 +12,7 @@ struct NoiseRecordApp: App {
         AppTelemetry.configure()
         LaunchPerformance.mark(.launchAppInit)
         LaunchPerformance.mark(.launchFirebaseConfigure)
+        _ = IAPManager.shared
 
         let signpostID = PerformanceSignpost.begin(.launchSwiftDataInit)
         defer { PerformanceSignpost.end(.launchSwiftDataInit, signpostID) }

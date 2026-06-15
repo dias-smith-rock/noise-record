@@ -1,0 +1,54 @@
+{
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : [
+      {
+        "locale" : "en_US",
+        "policyText" : "",
+        "policyURL" : ""
+      }
+    ]
+  },
+  "identifier" : "DECIBELPRO_IAP_CONFIG",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "2.99",
+      "familyShareable" : false,
+      "internalID" : "DECIBELPRO_REMOVE_ADS",
+      "localizations" : [
+        {
+          "description" : "Permanently removes app open and interstitial ads.",
+          "displayName" : "Remove Ads Forever",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "永久移除开屏与插屏广告。",
+          "displayName" : "永久免广告",
+          "locale" : "zh_Hans"
+        }
+      ],
+      "productID" : "com.decibelpro.removeads.lifetime",
+      "referenceName" : "Remove Ads Lifetime",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+
+    ],
+    "_timeRate" : 0
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

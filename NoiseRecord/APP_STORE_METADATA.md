@@ -53,6 +53,26 @@ Enable **Crashlytics** and **Google Analytics** in [Firebase Console](https://co
 
 App Store Connect privacy questionnaire: declare **Advertising Data** and **Device ID** for third-party advertising (AdMob).
 
+## In-App Purchase (Remove Ads)
+
+| Field | Value |
+|-------|-------|
+| Product ID | `com.decibelpro.removeads.lifetime` |
+| Type | Non-Consumable (lifetime) |
+| Reference price | $2.99 (marketing strikethrough $3.99 in-app) |
+| Manager | `IAPManager` (StoreKit 2) |
+| Local testing | [`DecibelPro.storekit`](DecibelPro.storekit) — linked in **NoiseRecord** scheme Run options |
+
+**App Store Connect checklist**
+
+1. Create IAP under app bundle **`com.goodcraft.NoiseRecord`** (must match Xcode `PRODUCT_BUNDLE_IDENTIFIER`).
+2. Product ID must exactly match `com.decibelpro.removeads.lifetime`.
+3. Set price tier ($2.99), add localization, status **Cleared for Sale**.
+4. Sign **Paid Applications Agreement**.
+5. For sandbox: create Sandbox Tester; clear purchase history before re-testing non-consumable.
+
+**Analytics events:** `iap_lifecycle` (step: `purchase_verified`, `purchase_user_cancelled`, `product_load_not_found`, etc.)
+
 
 > DecibelPro uses the `audio` background mode to continue real-time noise monitoring and voice-activated recording when the app is in the background. Users explicitly enable background monitoring in the Voice tab. The app does not play music or unrelated audio in the background.
 

@@ -101,6 +101,23 @@ nonisolated enum AppTelemetry {
         logEvent("ad_hot_fail", parameters: ["message": message])
     }
 
+    /// Structured IAP lifecycle logs for StoreKit troubleshooting.
+    static func logIAPLifecycle(
+        step: String,
+        metadata: [String: String] = [:]
+    ) {
+        var parameters: [String: Any] = ["step": step]
+        for (key, value) in metadata {
+            parameters[key] = value
+        }
+
+        let metadataSummary = metadata.isEmpty
+            ? ""
+            : " " + metadata.map { "\($0.key)=\($0.value)" }.sorted().joined(separator: " ")
+        log("iap.\(step)\(metadataSummary)")
+        logEvent("iap_lifecycle", parameters: parameters)
+    }
+
     /// Structured ad lifecycle logs for cold/hot start troubleshooting.
     static func logAdLifecycle(
         channel: String,

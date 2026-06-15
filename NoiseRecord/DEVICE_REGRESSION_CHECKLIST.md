@@ -59,6 +59,27 @@ Run on a **physical iPhone** before submitting to App Review.
 - [ ] Privacy Policy and Terms of Service open in Safari; Support opens Mail to music.player.250617@gmail.com
 - [ ] Clear Measurement History works
 
+## In-App Purchase (Remove Ads)
+
+Product ID: `com.decibelpro.removeads.lifetime` (Non-Consumable) · Bundle ID: `com.goodcraft.NoiseRecord`
+
+### Local StoreKit testing (simulator / Xcode Run)
+
+- [ ] `DecibelPro.storekit` visible in Xcode Project Navigator (if Scheme dropdown is empty, file is not registered in the project)
+- [ ] Scheme **NoiseRecord** → Run → Options → StoreKit Configuration = `DecibelPro.storekit`
+- [ ] Settings banner shows **Store price loaded from App Store** (green), not marketing fallback
+- [ ] Purchase completes → success alert → banner disappears → `isAdsRemoved` true
+- [ ] Cancel purchase → **Purchase Cancelled** alert (not silent)
+- [ ] Restore Purchases works after reinstall / new simulator
+
+### App Store Connect sandbox (optional, after ASC setup)
+
+- [ ] IAP created under app `com.goodcraft.NoiseRecord`, type Non-Consumable, price $2.99, Cleared for Sale
+- [ ] Paid Applications Agreement active in ASC
+- [ ] Sandbox tester created; signed in on device/simulator (Settings → App Store → Sandbox Account)
+- [ ] Clear sandbox purchase history before re-testing non-consumable (Settings → Developer → Sandbox Account → Manage)
+- [ ] If purchase spins then stops: check Xcode console for `iap.purchase_user_cancelled` vs `iap.purchase_verified`
+
 ## Storage & Recovery
 
 - [ ] Measurement samples pruned (no unbounded growth after long session)
