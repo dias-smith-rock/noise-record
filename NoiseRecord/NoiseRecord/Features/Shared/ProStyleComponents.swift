@@ -233,10 +233,30 @@ struct ProEmptyState: View {
 
 // MARK: - Tab header
 
+/// 已购永久免广告时，显示在 Tab 标题右侧的标识。
+struct ProTabNoAdsBadge: View {
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "hand.raised.slash.fill")
+                .font(.caption2.weight(.semibold))
+            Text(L10n.noAdsBadge)
+                .font(.caption.weight(.semibold))
+        }
+        .foregroundStyle(.green)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(Color.green.opacity(0.14))
+        .clipShape(Capsule())
+        .accessibilityLabel(L10n.noAdsBadge)
+    }
+}
+
 struct ProTabHeader<Trailing: View>: View {
     let title: String
     var theme: ModeVisualTheme
     @ViewBuilder var trailing: () -> Trailing
+
+    @Bindable private var iap = IAPManager.shared
 
     init(
         title: String,
@@ -250,9 +270,15 @@ struct ProTabHeader<Trailing: View>: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Text(title)
-                .font(.title3.bold())
-                .lineLimit(1)
+            HStack(spacing: 8) {
+                Text(title)
+                    .font(.title3.bold())
+                    .lineLimit(1)
+
+                if iap.isAdsRemoved {
+                    ProTabNoAdsBadge()
+                }
+            }
 
             Spacer(minLength: 8)
 

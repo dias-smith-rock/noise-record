@@ -13,6 +13,7 @@ nonisolated enum L10n {
     static var ok: String { localized("common.ok") }
     static var cancel: String { localized("common.cancel") }
     static var close: String { localized("common.close") }
+    static var noAdsBadge: String { localized("iap.noAdsBadge") }
     static var done: String { localized("common.done") }
     static var save: String { localized("common.save") }
     static var delete: String { localized("common.delete") }

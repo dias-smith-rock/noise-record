@@ -446,6 +446,11 @@ NEW_STRINGS = {
         "zh-Hans": "收到未知的购买结果。",
         "zh-Hant": "收到未知的購買結果。",
     },
+    "iap.noAdsBadge": {
+        "en": "No Ads",
+        "zh-Hans": "免广告",
+        "zh-Hant": "免廣告",
+    },
 }
 
 
