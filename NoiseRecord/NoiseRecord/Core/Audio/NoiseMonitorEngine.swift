@@ -276,6 +276,17 @@ final class NoiseMonitorEngine {
             try audioEngine.start()
             isMonitoring = true
             AppTelemetry.setMonitoringActive(true)
+            Task {
+                await LiveActivityManager.shared.startLiveActivity(
+                    measurementModeName: LiveActivityContentBuilder.measurementModeName(
+                        isHighSensitivity: isHighSensitivityMode
+                    ),
+                    weightingBadge: LiveActivityContentBuilder.initialWeightingBadge(
+                        isHighSensitivity: isHighSensitivityMode
+                    ),
+                    isHighSensitivityMode: isHighSensitivityMode
+                )
+            }
         } catch {
             setUserError(L10n.errorEngineStartFailed(error.localizedDescription), context: "engine_start")
         }
@@ -358,6 +369,9 @@ final class NoiseMonitorEngine {
         minDB = 0
         sessionMinDB = 120
         AppTelemetry.setMonitoringActive(false)
+        Task {
+            await LiveActivityManager.shared.endLiveActivity()
+        }
     }
 
     func resetStatistics() {
@@ -648,6 +662,15 @@ final class NoiseMonitorEngine {
             recordingState: state,
             spectrum: spectrumCopy,
             history: historySnapshot
+        )
+
+        LiveActivityManager.shared.pushAudioBufferUpdate(
+            currentDB: snapshotSmoothed,
+            isHighSensitivity: isHighSensitivityMode,
+            weightingType: weightingType,
+            voiceActivatedEnabled: voiceActivatedEnabled,
+            recordingState: state,
+            historyTail: historySnapshot
         )
 
         Task { @MainActor in

@@ -241,6 +241,51 @@ NEW_STRINGS = {
         "zh-Hans": "以后再说",
         "zh-Hant": "以後再說",
     },
+    "liveActivity.scene.whisper": {
+        "en": "Whisper quiet",
+        "zh-Hans": "悄悄话",
+        "zh-Hant": "悄悄話",
+    },
+    "liveActivity.scene.conversation": {
+        "en": "Normal conversation",
+        "zh-Hans": "正常交谈",
+        "zh-Hant": "正常交談",
+    },
+    "liveActivity.scene.traffic": {
+        "en": "Busy traffic",
+        "zh-Hans": "繁忙交通",
+        "zh-Hant": "繁忙交通",
+    },
+    "liveActivity.scene.drill": {
+        "en": "Power drill",
+        "zh-Hans": "电钻施工",
+        "zh-Hant": "電鑽施工",
+    },
+    "liveActivity.status.monitoringStandard": {
+        "en": "Monitoring in standard mode…",
+        "zh-Hans": "正在标准模式监测中…",
+        "zh-Hant": "正在標準模式監測中…",
+    },
+    "liveActivity.status.monitoringHighSensitivity": {
+        "en": "High-sensitivity monitoring…",
+        "zh-Hans": "正在高灵敏侦测中…",
+        "zh-Hant": "正在高靈敏偵測中…",
+    },
+    "liveActivity.status.voiceRecording": {
+        "en": "Voice-triggered recording active",
+        "zh-Hans": "声控录音已唤醒",
+        "zh-Hant": "聲控錄音已喚醒",
+    },
+    "liveActivity.status.voiceStandby": {
+        "en": "Voice standby, still monitoring…",
+        "zh-Hans": "声控待命，持续监测中…",
+        "zh-Hant": "聲控待命，持續監測中…",
+    },
+    "liveActivity.status.ended": {
+        "en": "Monitoring stopped",
+        "zh-Hans": "监测已停止",
+        "zh-Hant": "監測已停止",
+    },
 }
 
 

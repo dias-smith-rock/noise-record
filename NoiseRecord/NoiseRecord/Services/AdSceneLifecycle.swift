@@ -8,6 +8,8 @@ enum AdSceneLifecycle {
     private static var wasInBackground = false
 
     static func handleScenePhase(_ phase: ScenePhase) {
+        guard AdMobConfig.adsEnabled else { return }
+
         switch phase {
         case .active:
             AppTelemetry.logAdLifecycle(

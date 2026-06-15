@@ -63,6 +63,11 @@ struct ContentView: View {
             TabBarAppearanceUpdater.applyTabTitles()
             refreshMonitorTabIconIfNeeded()
         }
+        .onOpenURL { url in
+            guard url.scheme == LiveActivityDeepLink.scheme,
+                  url.host == LiveActivityDeepLink.monitorHost else { return }
+            selectedTab = .monitor
+        }
         .task(id: engine.isMonitoring) {
             guard engine.isMonitoring else {
                 TabBarMonitorIconUpdater.apply(frame: nil, isAnimating: false)

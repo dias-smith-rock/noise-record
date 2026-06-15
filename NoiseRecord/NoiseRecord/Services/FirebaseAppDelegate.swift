@@ -27,6 +27,11 @@ final class FirebaseAppDelegate: NSObject, UIApplicationDelegate {
 
     @MainActor
     private func startAdMob() {
+        guard AdMobConfig.adsEnabled else {
+            AppTelemetry.logAdLifecycle(channel: "bootstrap", step: "admob_skipped_debug")
+            return
+        }
+
         LaunchPerformance.mark(.launchAdMobStartRequested)
         AppTelemetry.logAdLifecycle(channel: "bootstrap", step: "admob_start_requested")
 

@@ -5,11 +5,13 @@ nonisolated enum AdMobConfig {
 
     #if DEBUG
     static let isDebugBuild = true
-    /// Google test ad units for debug builds.
+    static let adsEnabled = false
+    /// Google test ad units (unused while `adsEnabled` is false in debug).
     static let coldStartAppOpen = "ca-app-pub-3940256099942544/5575463023"
     static let hotStartInterstitial = "ca-app-pub-3940256099942544/4411468910"
     #else
     static let isDebugBuild = false
+    static let adsEnabled = true
     static let coldStartAppOpen = "ca-app-pub-2283581832994740/5926550020"
     static let hotStartInterstitial = "ca-app-pub-2283581832994740/7790296034"
     #endif

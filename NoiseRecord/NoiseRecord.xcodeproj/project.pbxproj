@@ -10,6 +10,7 @@
 		DD3C32F22FDD826700B8AC17 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = FB002ANALYTICS000000001 /* FirebaseAnalytics */; };
 		DD3C32F32FDD826700B8AC17 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = FB003CRASHLYTICS000001 /* FirebaseCrashlytics */; };
 		DD3C341D2FDD873200B8AC17 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = ADMOB002PRODUCT0001 /* GoogleMobileAds */; };
+		LAEXTCPYFILE00000000001 /* DecibelProLiveActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = LAEXTREF000000000001 /* DecibelProLiveActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -20,12 +21,44 @@
 			remoteGlobalIDString = DD3C1F972FD969F500B8AC17;
 			remoteInfo = NoiseRecord;
 		};
+		LAEXTPRX00000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DD3C1F902FD969F500B8AC17 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = LAEXTTGT000000000001;
+			remoteInfo = DecibelProLiveActivityExtension;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		LAEXTCPY00000000000001 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				LAEXTCPYFILE00000000001 /* DecibelProLiveActivity.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		DD3C1F982FD969F500B8AC17 /* NoiseRecord.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NoiseRecord.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		TEST001TESTS00000000000001 /* NoiseRecordTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NoiseRecordTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		LAEXTREF000000000001 /* DecibelProLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; name = DecibelProLiveActivity.appex; path = DecibelProLiveActivityExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		LAEXTEXC00000000000001 /* Exceptions for "DecibelProLiveActivity" folder in "DecibelProLiveActivityExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = LAEXTTGT000000000001 /* DecibelProLiveActivityExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		DD3C1F9A2FD969F500B8AC17 /* NoiseRecord */ = {
@@ -33,9 +66,22 @@
 			path = NoiseRecord;
 			sourceTree = "<group>";
 		};
+		SHARED000000000000000001 /* SharedLiveActivity */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SharedLiveActivity;
+			sourceTree = "<group>";
+		};
 		TEST002TESTS00000000000001 /* NoiseRecordTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = NoiseRecordTests;
+			sourceTree = "<group>";
+		};
+		LAEXTGRP00000000000001 /* DecibelProLiveActivity */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				LAEXTEXC00000000000001 /* Exceptions for "DecibelProLiveActivity" folder in "DecibelProLiveActivityExtension" target */,
+			);
+			path = DecibelProLiveActivity;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -58,6 +104,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		LAEXTFRM00000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -65,6 +118,8 @@
 			isa = PBXGroup;
 			children = (
 				DD3C1F9A2FD969F500B8AC17 /* NoiseRecord */,
+				SHARED000000000000000001 /* SharedLiveActivity */,
+				LAEXTGRP00000000000001 /* DecibelProLiveActivity */,
 				TEST002TESTS00000000000001 /* NoiseRecordTests */,
 				DD3C1F992FD969F500B8AC17 /* Products */,
 			);
@@ -74,6 +129,7 @@
 			isa = PBXGroup;
 			children = (
 				DD3C1F982FD969F500B8AC17 /* NoiseRecord.app */,
+				LAEXTREF000000000001 /* DecibelProLiveActivity.appex */,
 				TEST001TESTS00000000000001 /* NoiseRecordTests.xctest */,
 			);
 			name = Products;
@@ -90,13 +146,16 @@
 				DD3C1F952FD969F500B8AC17 /* Frameworks */,
 				DD3C1F962FD969F500B8AC17 /* Resources */,
 				FB004CRASHSCRIPT00001 /* Upload Crashlytics Symbols */,
+				LAEXTCPY00000000000001 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				LAEXTDEP00000000000001 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				DD3C1F9A2FD969F500B8AC17 /* NoiseRecord */,
+				SHARED000000000000000001 /* SharedLiveActivity */,
 			);
 			name = NoiseRecord;
 			packageProductDependencies = (
@@ -130,6 +189,30 @@
 			productName = NoiseRecordTests;
 			productReference = TEST001TESTS00000000000001 /* NoiseRecordTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
+		};
+
+		LAEXTTGT000000000001 /* DecibelProLiveActivityExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = LAEXTCFGLIST0000000001 /* Build configuration list for PBXNativeTarget "DecibelProLiveActivityExtension" */;
+			buildPhases = (
+				LAEXTSRC00000000000001 /* Sources */,
+				LAEXTFRM00000000000001 /* Frameworks */,
+				LAEXTRES00000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				SHARED000000000000000001 /* SharedLiveActivity */,
+				LAEXTGRP00000000000001 /* DecibelProLiveActivity */,
+			);
+			name = DecibelProLiveActivityExtension;
+			packageProductDependencies = (
+			);
+			productName = DecibelProLiveActivityExtension;
+			productReference = LAEXTREF000000000001 /* DecibelProLiveActivity.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -173,6 +256,7 @@
 			projectRoot = "";
 			targets = (
 				DD3C1F972FD969F500B8AC17 /* NoiseRecord */,
+				LAEXTTGT000000000001 /* DecibelProLiveActivityExtension */,
 				TEST003TESTS00000000000001 /* NoiseRecordTests */,
 			);
 		};
@@ -187,6 +271,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		TEST006TESTS00000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		LAEXTRES00000000000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -237,6 +328,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		LAEXTSRC00000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -244,6 +342,11 @@
 			isa = PBXTargetDependency;
 			target = DD3C1F972FD969F500B8AC17 /* NoiseRecord */;
 			targetProxy = TEST007TESTS00000000000001 /* PBXContainerItemProxy */;
+		};
+		LAEXTDEP00000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = LAEXTTGT000000000001 /* DecibelProLiveActivityExtension */;
+			targetProxy = LAEXTPRX00000000000001 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -387,6 +490,8 @@
 				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is required to record evidence video with decibel overlays.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Location is used to embed GPS coordinates in evidence video.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone access is required to measure noise and record voice-activated audio.";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UIBackgroundModes = audio;
@@ -432,6 +537,8 @@
 				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is required to record evidence video with decibel overlays.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Location is used to embed GPS coordinates in evidence video.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone access is required to measure noise and record voice-activated audio.";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UIBackgroundModes = audio;
@@ -452,6 +559,61 @@
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+
+		LAEXTDBG00000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = 34878H47P6;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = DecibelProLiveActivity/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.goodcraft.NoiseRecord.liveactivity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		LAEXTREL00000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = 34878H47P6;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = DecibelProLiveActivity/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.goodcraft.NoiseRecord.liveactivity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
@@ -523,6 +685,15 @@
 			buildConfigurations = (
 				TEST009TESTS00000000000001 /* Debug */,
 				TEST010TESTS00000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		LAEXTCFGLIST0000000001 /* Build configuration list for PBXNativeTarget "DecibelProLiveActivityExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				LAEXTDBG00000000000001 /* Debug */,
+				LAEXTREL00000000000001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

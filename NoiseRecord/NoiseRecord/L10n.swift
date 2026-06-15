@@ -231,6 +231,19 @@ nonisolated enum L10n {
     static var noiseRiskModerate: String { localized("noiseRisk.moderate") }
     static var noiseRiskLoud: String { localized("noiseRisk.loud") }
     static var noiseRiskDangerous: String { localized("noiseRisk.dangerous") }
+
+    // MARK: - Live Activity
+
+    static var liveActivitySceneWhisper: String { localized("liveActivity.scene.whisper") }
+    static var liveActivitySceneConversation: String { localized("liveActivity.scene.conversation") }
+    static var liveActivitySceneTraffic: String { localized("liveActivity.scene.traffic") }
+    static var liveActivitySceneDrill: String { localized("liveActivity.scene.drill") }
+    static var liveActivityStatusMonitoringStandard: String { localized("liveActivity.status.monitoringStandard") }
+    static var liveActivityStatusMonitoringHighSensitivity: String { localized("liveActivity.status.monitoringHighSensitivity") }
+    static var liveActivityStatusVoiceRecording: String { localized("liveActivity.status.voiceRecording") }
+    static var liveActivityStatusVoiceStandby: String { localized("liveActivity.status.voiceStandby") }
+    static var liveActivityStatusEnded: String { localized("liveActivity.status.ended") }
+
     static var gaugeHighSensitivityHint: String { localized("gauge.highSensitivity.hint") }
     static var spectrumLoading: String { localized("spectrum.loading") }
 
