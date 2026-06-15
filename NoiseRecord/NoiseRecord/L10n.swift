@@ -292,20 +292,6 @@ nonisolated enum L10n {
     static var appReviewPromptMessage: String { localized("appReview.prompt.message") }
     static var appReviewRateNow: String { localized("appReview.rateNow") }
     static var appReviewLater: String { localized("appReview.later") }
-
-    // MARK: - Widget
-
-    static var widgetLiveTitle: String { localized("widget.live.title") }
-    static var widgetStatsTitle: String { localized("widget.stats.title") }
-    static var widgetStatusMonitoring: String { localized("widget.status.monitoring") }
-    static var widgetStatusIdle: String { localized("widget.status.idle") }
-    static var widgetPlaceholderStart: String { localized("widget.placeholder.start") }
-    static var widgetIntentStart: String { localized("widget.intent.start") }
-    static var widgetIntentStop: String { localized("widget.intent.stop") }
-
-    static func widgetLastUpdated(_ relative: String) -> String {
-        String(format: localized("widget.lastUpdated"), relative)
-    }
     static var settingsPrivacyPolicy: String { localized("settings.privacyPolicy") }
     static var settingsTermsOfService: String { localized("settings.termsOfService") }
     static var settingsSupport: String { localized("settings.support") }

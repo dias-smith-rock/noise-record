@@ -276,7 +276,6 @@ final class NoiseMonitorEngine {
             try audioEngine.start()
             isMonitoring = true
             AppTelemetry.setMonitoringActive(true)
-            WidgetSnapshotPublisher.publishFromEngine(self, force: true)
         } catch {
             setUserError(L10n.errorEngineStartFailed(error.localizedDescription), context: "engine_start")
         }
@@ -359,7 +358,6 @@ final class NoiseMonitorEngine {
         minDB = 0
         sessionMinDB = 120
         AppTelemetry.setMonitoringActive(false)
-        WidgetSnapshotPublisher.publishStoppedState(from: self)
     }
 
     func resetStatistics() {
@@ -673,7 +671,6 @@ final class NoiseMonitorEngine {
             latestSpectrum = spectrum
         }
         history = snapshot.history
-        WidgetSnapshotPublisher.publishFromEngine(self)
     }
 
     private func setUserError(_ message: String, context: String) {
