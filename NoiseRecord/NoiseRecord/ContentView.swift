@@ -16,6 +16,7 @@ struct ContentView: View {
     @State private var mountedTabs: Set<MainTab> = [.monitor]
     @State private var hasUnreadFiles = false
     @State private var showAppReviewPrompt = false
+    @State private var suppressNextTabSelectionAd = false
     @Bindable private var appearance = AppAppearanceSettings.shared
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
@@ -50,6 +51,11 @@ struct ContentView: View {
             TabBarAppearanceUpdater.applyTabTitles()
         }
         .onChange(of: selectedTab) { _, tab in
+            if suppressNextTabSelectionAd {
+                suppressNextTabSelectionAd = false
+            } else {
+                AdSceneLifecycle.recordFirstInteraction(source: "tab_switch")
+            }
             if tab == .video {
                 VideoTabPerformance.beginSession()
                 VideoTabPerformance.mark(.tabSelected)
@@ -66,6 +72,7 @@ struct ContentView: View {
         .onOpenURL { url in
             guard url.scheme == LiveActivityDeepLink.scheme,
                   url.host == LiveActivityDeepLink.monitorHost else { return }
+            suppressNextTabSelectionAd = true
             selectedTab = .monitor
         }
         .task(id: engine.isMonitoring) {

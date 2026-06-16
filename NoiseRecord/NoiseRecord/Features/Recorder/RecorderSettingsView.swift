@@ -115,6 +115,7 @@ struct RecorderSettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Button(L10n.recorderMonitoringRequiredStart) {
+                    AdSceneLifecycle.recordFirstInteraction(source: "monitor_start_from_voice")
                     Task { await engine.requestPermissionAndStart() }
                 }
                 .buttonStyle(.borderedProminent)

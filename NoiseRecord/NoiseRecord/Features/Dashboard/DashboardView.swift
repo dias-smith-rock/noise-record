@@ -45,6 +45,7 @@ struct DashboardView: View {
                 theme: theme,
                 isDestructive: engine.isMonitoring
             ) {
+                AdSceneLifecycle.recordFirstInteraction(source: "monitor_toggle")
                 Task {
                     if engine.isMonitoring {
                         handleStopMonitoringTapped()
