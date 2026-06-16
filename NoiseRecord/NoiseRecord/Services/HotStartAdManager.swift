@@ -15,7 +15,7 @@ final class HotStartAdManager: NSObject {
     }
 
     func loadAd() {
-        guard AdMobConfig.adsEnabled else { return }
+        guard AdMobConfig.adsEnabled, AdConsentManager.canRequestAds else { return }
 
         if isLoadingAd {
             AppTelemetry.logAdLifecycle(channel: "hot", step: "load_skipped_already_loading")
@@ -69,7 +69,7 @@ final class HotStartAdManager: NSObject {
     }
 
     func showAdIfAvailable(retryCount: Int = 0) {
-        guard AdMobConfig.adsEnabled else { return }
+        guard AdMobConfig.adsEnabled, AdConsentManager.canRequestAds else { return }
 
         if isShowingAd {
             AppTelemetry.logAdLifecycle(channel: "hot", step: "show_skipped_already_showing")

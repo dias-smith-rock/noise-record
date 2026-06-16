@@ -20,6 +20,7 @@ final class FirebaseAppDelegate: NSObject, UIApplicationDelegate {
 
         Task { @MainActor in
             await LaunchPerformance.whenFirstInteractive()
+            guard await AdConsentManager.gatherConsentIfNeeded() else { return }
             startAdMob()
         }
         return true
@@ -29,6 +30,11 @@ final class FirebaseAppDelegate: NSObject, UIApplicationDelegate {
     private func startAdMob() {
         guard AdMobConfig.adsEnabled else {
             AppTelemetry.logAdLifecycle(channel: "bootstrap", step: "admob_skipped_debug")
+            return
+        }
+
+        guard AdConsentManager.canRequestAds else {
+            AppTelemetry.logAdLifecycle(channel: "bootstrap", step: "admob_skipped_no_consent")
             return
         }
 

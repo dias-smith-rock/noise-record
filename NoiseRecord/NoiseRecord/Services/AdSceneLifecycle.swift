@@ -48,7 +48,9 @@ enum AdSceneLifecycle {
             pendingPresentation = nil
             hasPresentedSinceForeground = false
             AppTelemetry.logAdLifecycle(channel: "lifecycle", step: "scene_entered_background")
-            HotStartAdManager.shared.loadAd()
+            if AdConsentManager.canRequestAds {
+                HotStartAdManager.shared.loadAd()
+            }
 
         case .inactive:
             AppTelemetry.logAdLifecycle(channel: "lifecycle", step: "scene_inactive")
@@ -61,6 +63,7 @@ enum AdSceneLifecycle {
     /// Call when the user performs their first intentional action after foregrounding.
     static func recordFirstInteraction(source: String) {
         guard AdMobConfig.adsEnabled else { return }
+        guard AdConsentManager.canRequestAds else { return }
         guard !hasPresentedSinceForeground, let pending = pendingPresentation else { return }
 
         pendingPresentation = nil

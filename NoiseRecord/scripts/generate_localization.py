@@ -22,7 +22,7 @@ LOCALES = [
 ]
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-L10N_SWIFT = REPO_ROOT / "NoiseRecord" / "Shared" / "L10n.swift"
+L10N_SWIFT = REPO_ROOT / "NoiseRecord" / "L10n.swift"
 OUT_LOCALIZABLE = REPO_ROOT / "NoiseRecord" / "Localizable.xcstrings"
 OUT_INFOPLIST = REPO_ROOT / "NoiseRecord" / "InfoPlist.xcstrings"
 
@@ -62,6 +62,7 @@ INFOPLIST_KEYS = [
     "NSCameraUsageDescription",
     "NSMicrophoneUsageDescription",
     "NSLocationWhenInUseUsageDescription",
+    "NSUserTrackingUsageDescription",
 ]
 
 LOCALIZED_KEY_RE = re.compile(r'String\(localized:\s*"([^"]+)"\)')
@@ -2456,6 +2457,28 @@ CATALOG_JSON = """{
     "fr": "La position sert à intégrer les coordonnées GPS dans la preuve vidéo.",
     "hi": "साक्ष्य वीडियो में GPS निर्देशांक जोड़ने के लिए स्थान का उपयोग होता है।",
     "ru": "Геопозиция используется для встраивания GPS-координат в видеодоказательство."
+  },
+  "NSUserTrackingUsageDescription": {
+    "en": "This identifier is used to deliver personalized ads and measure ad performance.",
+    "zh-Hans": "此标识符用于投放个性化广告并衡量广告效果。",
+    "zh-Hant": "此識別碼用於投放個人化廣告並衡量廣告成效。",
+    "es": "Este identificador se usa para mostrar anuncios personalizados y medir su rendimiento.",
+    "pt": "Este identificador é usado para exibir anúncios personalizados e medir o desempenho dos anúncios.",
+    "ar": "يُستخدم هذا المعرّف لتقديم إعلانات مخصصة وقياس أداء الإعلانات.",
+    "fr": "Cet identifiant sert à diffuser des publicités personnalisées et à mesurer leurs performances.",
+    "hi": "यह पहचानकर्ता व्यक्तिगत विज्ञापन देने और विज्ञापन प्रदर्शन मापने के लिए उपयोग होता है।",
+    "ru": "Этот идентификатор используется для показа персонализированной рекламы и оценки её эффективности."
+  },
+  "settings.privacyChoices": {
+    "en": "Ad Privacy Choices",
+    "zh-Hans": "广告隐私选项",
+    "zh-Hant": "廣告隱私選項",
+    "es": "Opciones de privacidad de anuncios",
+    "pt": "Opções de privacidade de anúncios",
+    "ar": "خيارات خصوصية الإعلانات",
+    "fr": "Choix de confidentialité des annonces",
+    "hi": "विज्ञापन गोपनीयता विकल्प",
+    "ru": "Настройки конфиденциальности рекламы"
   }
 }"""
 

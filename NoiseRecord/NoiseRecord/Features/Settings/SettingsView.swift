@@ -25,6 +25,7 @@ struct SettingsView: View {
     @State private var displayedUserAdjustment: Float = DeviceCalibrationStore.userAdjustment
     @State private var displayedTotalOffset: Float = DeviceCalibrationStore.totalOffset
     @State private var showAppReviewPrompt = false
+    @State private var showsPrivacyChoices = false
 
     private var measurementMode: AcousticMeasurementMode {
         AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
@@ -164,6 +165,16 @@ struct SettingsView: View {
                 }
 
                 Link(L10n.settingsPrivacyPolicy, destination: LegalURLs.privacyPolicy)
+                if showsPrivacyChoices {
+                    Button {
+                        Task {
+                            try? await AdConsentManager.presentPrivacyOptions()
+                            refreshPrivacyChoicesVisibility()
+                        }
+                    } label: {
+                        Label(L10n.settingsPrivacyChoices, systemImage: "hand.raised")
+                    }
+                }
                 Link(L10n.settingsTermsOfService, destination: LegalURLs.termsOfService)
                 Link(destination: SupportContact.mailtoURL) {
                     LabeledContent(L10n.settingsSupport, value: SupportContact.email)
@@ -184,11 +195,13 @@ struct SettingsView: View {
         .onAppear {
             refreshCalibrationDisplay()
             refreshMeasurementSampleCount()
+            refreshPrivacyChoicesVisibility()
         }
         .onChange(of: isTabActive) { _, isActive in
             if isActive {
                 refreshCalibrationDisplay()
                 refreshMeasurementSampleCount()
+                refreshPrivacyChoicesVisibility()
             }
         }
         .onChange(of: scenePhase) { _, phase in
@@ -275,6 +288,10 @@ struct SettingsView: View {
         calibrationReference = DeviceCalibrationStore.referenceSPL
         displayedUserAdjustment = DeviceCalibrationStore.userAdjustment
         displayedTotalOffset = DeviceCalibrationStore.totalOffset
+    }
+
+    private func refreshPrivacyChoicesVisibility() {
+        showsPrivacyChoices = AdMobConfig.adsEnabled && AdConsentManager.isPrivacyOptionsRequired
     }
 
     private func formatDB(_ value: Float) -> String {

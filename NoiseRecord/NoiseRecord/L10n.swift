@@ -307,6 +307,7 @@ nonisolated enum L10n {
     static var appReviewRateNow: String { localized("appReview.rateNow") }
     static var appReviewLater: String { localized("appReview.later") }
     static var settingsPrivacyPolicy: String { localized("settings.privacyPolicy") }
+    static var settingsPrivacyChoices: String { localized("settings.privacyChoices") }
     static var settingsTermsOfService: String { localized("settings.termsOfService") }
     static var settingsSupport: String { localized("settings.support") }
     static var settingsDisclaimerTitle: String { localized("settings.disclaimer.title") }
