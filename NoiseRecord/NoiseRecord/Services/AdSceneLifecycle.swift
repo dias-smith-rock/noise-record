@@ -20,6 +20,8 @@ enum AdSceneLifecycle {
 
         switch phase {
         case .active:
+            AdMobBootstrap.scheduleConsentAndAdMobStartIfNeeded()
+
             AppTelemetry.logAdLifecycle(
                 channel: "lifecycle",
                 step: "scene_became_active",

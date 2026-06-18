@@ -1,8 +1,9 @@
-import GoogleMobileAds
 import UIKit
 
 /// App bootstrap: AdMob lifecycle (Firebase configured in `NoiseRecordApp.init`).
 final class FirebaseAppDelegate: NSObject, UIApplicationDelegate {
+    private var didBecomeActiveObserver: NSObjectProtocol?
+
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
@@ -18,53 +19,28 @@ final class FirebaseAppDelegate: NSObject, UIApplicationDelegate {
             ]
         )
 
-        Task { @MainActor in
-            await LaunchPerformance.whenFirstInteractive()
-            guard await AdConsentManager.gatherConsentIfNeeded() else { return }
-            startAdMob()
+        didBecomeActiveObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            Task { @MainActor in
+                AdMobBootstrap.scheduleConsentAndAdMobStartIfNeeded()
+            }
         }
+
         return true
     }
 
-    @MainActor
-    private func startAdMob() {
-        guard AdMobConfig.adsEnabled else {
-            AppTelemetry.logAdLifecycle(channel: "bootstrap", step: "admob_skipped_debug")
-            return
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        Task { @MainActor in
+            AdMobBootstrap.scheduleConsentAndAdMobStartIfNeeded()
         }
+    }
 
-        guard AdConsentManager.canRequestAds else {
-            AppTelemetry.logAdLifecycle(channel: "bootstrap", step: "admob_skipped_no_consent")
-            return
-        }
-
-        LaunchPerformance.mark(.launchAdMobStartRequested)
-        AppTelemetry.logAdLifecycle(channel: "bootstrap", step: "admob_start_requested")
-
-        MobileAds.shared.start { status in
-            Task { @MainActor in
-                LaunchPerformance.mark(.launchAdMobStartCompleted)
-                AppTelemetry.logAdLifecycle(
-                    channel: "bootstrap",
-                    step: "admob_start_completed",
-                    metadata: [
-                        "adapter_count": String(status.adapterStatusesByClassName.count),
-                    ]
-                )
-                for (adapter, adapterStatus) in status.adapterStatusesByClassName {
-                    AppTelemetry.logAdLifecycle(
-                        channel: "bootstrap",
-                        step: "admob_adapter_status",
-                        metadata: [
-                            "adapter": adapter,
-                            "state": String(describing: adapterStatus.state),
-                            "description": adapterStatus.description,
-                        ]
-                    )
-                }
-                AppOpenAdManager.shared.loadAd()
-                HotStartAdManager.shared.loadAd()
-            }
+    deinit {
+        if let didBecomeActiveObserver {
+            NotificationCenter.default.removeObserver(didBecomeActiveObserver)
         }
     }
 }

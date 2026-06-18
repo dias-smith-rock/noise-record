@@ -22,4 +22,6 @@ nonisolated enum AdMobConfig {
     static let appOpenAdTimeout: TimeInterval = 4 * 60 * 60
     static let presentationRetryDelayMs = 300
     static let maxPresentationRetries = 3
+    /// Delay after scene active / didBecomeActive before UMP (and ATT) presentation.
+    static let consentPresentationDelaySeconds: TimeInterval = 1.0
 }
