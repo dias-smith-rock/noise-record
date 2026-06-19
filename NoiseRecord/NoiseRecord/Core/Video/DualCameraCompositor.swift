@@ -14,7 +14,7 @@ enum DualCameraCompositor {
 
         copyPixelBuffer(from: back, to: output)
 
-        guard let frontImage = cgImage(from: front) else { return }
+        guard let frontImage = cgImage(from: front, mirrored: true) else { return }
 
         CVPixelBufferLockBaseAddress(output, [])
         defer { CVPixelBufferUnlockBaseAddress(output, []) }
@@ -52,16 +52,10 @@ enum DualCameraCompositor {
 
         context.addPath(UIBezierPath(roundedRect: pipRect, cornerRadius: cornerRadius).cgPath)
         context.clip()
-
-        // CGImage draws upside-down in a Y-flipped context; compensate at draw time.
-        context.translateBy(x: pipRect.midX, y: pipRect.midY)
-        context.scaleBy(x: 1, y: -1)
-        context.draw(
-            frontImage,
-            in: CGRect(x: -pipWidth / 2, y: -pipHeight / 2, width: pipWidth, height: pipHeight)
-        )
+        context.draw(frontImage, in: pipRect)
         context.restoreGState()
 
+        // Subtle border around PiP
         context.saveGState()
         context.translateBy(x: 0, y: CGFloat(height))
         context.scaleBy(x: 1, y: -1)
@@ -97,7 +91,7 @@ enum DualCameraCompositor {
         }
     }
 
-    private static func cgImage(from pixelBuffer: CVPixelBuffer) -> CGImage? {
+    private static func cgImage(from pixelBuffer: CVPixelBuffer, mirrored: Bool) -> CGImage? {
         CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly)
         defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly) }
 
@@ -115,8 +109,25 @@ enum DualCameraCompositor {
             bytesPerRow: bytesPerRow,
             space: colorSpace,
             bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
-        ) else { return nil }
+        ), var image = context.makeImage() else { return nil }
 
-        return context.makeImage()
+        if mirrored {
+            let flipContext = CGContext(
+                data: nil,
+                width: width,
+                height: height,
+                bitsPerComponent: 8,
+                bytesPerRow: 0,
+                space: colorSpace,
+                bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
+            )
+            flipContext?.translateBy(x: CGFloat(width), y: 0)
+            flipContext?.scaleBy(x: -1, y: 1)
+            flipContext?.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+            if let flipped = flipContext?.makeImage() {
+                image = flipped
+            }
+        }
+        return image
     }
 }

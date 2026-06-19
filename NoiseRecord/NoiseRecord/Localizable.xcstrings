@@ -17911,29 +17911,6 @@
         }
       }
     },
-    "video.recording.cameraSwitchLocked" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Camera cannot be switched while recording."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "录制中无法切换摄像头"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "錄製中無法切換鏡頭"
-          }
-        }
-      }
-    },
     "video.error.monitoringStartFailed" : {
       "extractionState" : "manual",
       "localizations" : {

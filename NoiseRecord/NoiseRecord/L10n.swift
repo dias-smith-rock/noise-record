@@ -107,7 +107,6 @@ nonisolated enum L10n {
     static var videoSwitchCamera: String { localized("video.button.switchCamera") }
     static var videoDualCamera: String { localized("video.button.dualCamera") }
     static var videoDualCameraHint: String { localized("video.dualCamera.hint") }
-    static var videoRecordingCameraSwitchLocked: String { localized("video.recording.cameraSwitchLocked") }
     static var videoStopAndSave: String { localized("video.button.stopAndSave") }
     static var videoWatermarkTitle: String { localized("video.tips.watermarkTitle") }
     static var videoWatermarkBody: String { localized("video.tips.watermarkBody") }
