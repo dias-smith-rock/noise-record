@@ -313,7 +313,7 @@ struct VideoEvidenceView: View {
                 isPreviewActive: coordinator.isPreviewReady,
                 detachGeneration: coordinator.previewDetachGeneration,
                 isFrontCamera: { coordinator.cameraPosition == .front },
-                zoomGesturesEnabled: coordinator.isSessionReady && coordinator.isPreviewReady,
+                zoomGesturesEnabled: !coordinator.isDualCameraEnabled,
                 currentZoom: { previewZoomFactor },
                 onZoomChange: { factor in
                     coordinator.recorder.setZoomFactor(factor) { applied in
@@ -337,7 +337,7 @@ struct VideoEvidenceView: View {
                 }
             }
 
-            if previewZoomFactor > 1.05 {
+            if previewZoomFactor > 1.05, !coordinator.isDualCameraEnabled {
                 Text(String(format: "%.1fx", previewZoomFactor))
                     .font(.caption.bold())
                     .foregroundStyle(.white)
