@@ -25,7 +25,7 @@ struct CameraPreviewView: UIViewRepresentable {
         VideoTabPerformance.mark(.previewViewCreated)
         let view = DualPreviewUIView()
         view.isUserInteractionEnabled = zoomGesturesEnabled
-        syncZoomGestures(on: view, coordinator: context.coordinator, enabled: zoomGesturesEnabled)
+        attachGestures(to: view, coordinator: context.coordinator, enabled: zoomGesturesEnabled)
         return view
     }
 
@@ -48,51 +48,15 @@ struct CameraPreviewView: UIViewRepresentable {
         context.coordinator.isFrontCamera = isFrontCamera
         context.coordinator.currentZoom = currentZoom
         context.coordinator.onZoomChange = onZoomChange
-        context.coordinator.isDualCamera = isDualCamera
-        syncZoomGestures(on: uiView, coordinator: context.coordinator, enabled: zoomGesturesEnabled)
     }
 
-    private func syncZoomGestures(on view: DualPreviewUIView, coordinator: Coordinator, enabled: Bool) {
-        if enabled {
-            if !coordinator.zoomGesturesAttached {
-                attachGestures(to: view, coordinator: coordinator)
-                coordinator.zoomGesturesAttached = true
-                AppTelemetry.logVideoZoomLifecycle(
-                    step: "gestures_attached",
-                    metadata: coordinator.zoomGestureMetadata(
-                        gesturesEnabled: true,
-                        gestureCount: view.gestureRecognizers?.count ?? 0
-                    )
-                )
-            }
-        } else if coordinator.zoomGesturesAttached {
-            detachGestures(from: view, coordinator: coordinator)
-            coordinator.zoomGesturesAttached = false
-            AppTelemetry.logVideoZoomLifecycle(
-                step: "gestures_detached",
-                metadata: coordinator.zoomGestureMetadata(gesturesEnabled: false)
-            )
-        }
-
-        if coordinator.lastLoggedGesturesEnabled != enabled {
-            coordinator.lastLoggedGesturesEnabled = enabled
-            AppTelemetry.logVideoZoomLifecycle(
-                step: "gestures_enabled_changed",
-                metadata: coordinator.zoomGestureMetadata(
-                    gesturesEnabled: enabled,
-                    gestureCount: view.gestureRecognizers?.count ?? 0
-                )
-            )
-        }
-    }
-
-    private func attachGestures(to view: DualPreviewUIView, coordinator: Coordinator) {
+    private func attachGestures(to view: DualPreviewUIView, coordinator: Coordinator, enabled: Bool) {
+        guard enabled else { return }
         let pinch = UIPinchGestureRecognizer(
             target: coordinator,
             action: #selector(Coordinator.handlePinch(_:))
         )
         view.addGestureRecognizer(pinch)
-        coordinator.pinchRecognizer = pinch
 
         let doubleTap = UITapGestureRecognizer(
             target: coordinator,
@@ -100,29 +64,12 @@ struct CameraPreviewView: UIViewRepresentable {
         )
         doubleTap.numberOfTapsRequired = 2
         view.addGestureRecognizer(doubleTap)
-        coordinator.doubleTapRecognizer = doubleTap
-    }
-
-    private func detachGestures(from view: DualPreviewUIView, coordinator: Coordinator) {
-        if let pinch = coordinator.pinchRecognizer {
-            view.removeGestureRecognizer(pinch)
-            coordinator.pinchRecognizer = nil
-        }
-        if let doubleTap = coordinator.doubleTapRecognizer {
-            view.removeGestureRecognizer(doubleTap)
-            coordinator.doubleTapRecognizer = nil
-        }
     }
 
     final class Coordinator: NSObject {
         var isFrontCamera: () -> Bool
         var currentZoom: () -> CGFloat
         var onZoomChange: (CGFloat) -> Void
-        var isDualCamera = false
-        var zoomGesturesAttached = false
-        var lastLoggedGesturesEnabled: Bool?
-        weak var pinchRecognizer: UIPinchGestureRecognizer?
-        weak var doubleTapRecognizer: UITapGestureRecognizer?
         private var pinchStartZoom: CGFloat = 1.0
 
         init(
@@ -135,31 +82,10 @@ struct CameraPreviewView: UIViewRepresentable {
             self.onZoomChange = onZoomChange
         }
 
-        func zoomGestureMetadata(
-            gesturesEnabled: Bool,
-            gestureCount: Int? = nil
-        ) -> [String: String] {
-            var metadata: [String: String] = [
-                "dual": String(isDualCamera),
-                "gestures_enabled": String(gesturesEnabled),
-                "gestures_attached": String(zoomGesturesAttached),
-            ]
-            if let gestureCount {
-                metadata["gesture_count"] = String(gestureCount)
-            }
-            return metadata
-        }
-
         @objc func handlePinch(_ gesture: UIPinchGestureRecognizer) {
             switch gesture.state {
             case .began:
                 pinchStartZoom = currentZoom()
-                AppTelemetry.logVideoZoomLifecycle(
-                    step: "gesture_pinch_began",
-                    metadata: zoomGestureMetadata(gesturesEnabled: true).merging([
-                        "start_zoom": String(format: "%.2f", pinchStartZoom),
-                    ]) { current, _ in current }
-                )
             case .changed:
                 onZoomChange(pinchStartZoom * gesture.scale)
             default:
@@ -169,15 +95,7 @@ struct CameraPreviewView: UIViewRepresentable {
 
         @objc func handleDoubleTap(_ gesture: UITapGestureRecognizer) {
             let zoom = currentZoom()
-            let requested = zoom > 1.05 ? 1.0 : 2.0
-            AppTelemetry.logVideoZoomLifecycle(
-                step: "gesture_double_tap",
-                metadata: zoomGestureMetadata(gesturesEnabled: true).merging([
-                    "current_zoom": String(format: "%.2f", zoom),
-                    "requested": String(format: "%.2f", requested),
-                ]) { current, _ in current }
-            )
-            onZoomChange(requested)
+            onZoomChange(zoom > 1.05 ? 1.0 : 2.0)
         }
     }
 }

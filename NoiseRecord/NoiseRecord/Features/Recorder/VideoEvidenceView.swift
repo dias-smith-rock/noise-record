@@ -316,27 +316,7 @@ struct VideoEvidenceView: View {
                 zoomGesturesEnabled: coordinator.isSessionReady && coordinator.isPreviewReady,
                 currentZoom: { previewZoomFactor },
                 onZoomChange: { factor in
-                    AppTelemetry.logVideoZoomLifecycle(
-                        step: "ui_zoom_request",
-                        metadata: [
-                            "dual": String(coordinator.isDualCameraEnabled),
-                            "recording": String(coordinator.isRecording),
-                            "preview_ready": String(coordinator.isPreviewReady),
-                            "session_ready": String(coordinator.isSessionReady),
-                            "requested": String(format: "%.2f", factor),
-                            "current_ui_zoom": String(format: "%.2f", previewZoomFactor),
-                        ]
-                    )
                     coordinator.recorder.setZoomFactor(factor) { applied in
-                        AppTelemetry.logVideoZoomLifecycle(
-                            step: "ui_zoom_applied",
-                            metadata: [
-                                "dual": String(coordinator.isDualCameraEnabled),
-                                "recording": String(coordinator.isRecording),
-                                "requested": String(format: "%.2f", factor),
-                                "applied": String(format: "%.2f", applied),
-                            ]
-                        )
                         previewZoomFactor = applied
                     }
                 }
