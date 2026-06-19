@@ -7,7 +7,7 @@ enum DualCameraCompositor {
     private static let pipMarginRatio: CGFloat = 0.04
     private static let pipCornerRadiusRatio: CGFloat = 0.02
 
-    /// Composites a mirrored front-camera PiP into the top-right of the back-camera frame.
+    /// Composites a mirrored front-camera PiP into the top-left of the back-camera frame.
     static func composite(back: CVPixelBuffer, front: CVPixelBuffer, into output: CVPixelBuffer) {
         let signpost = PerformanceSignpost.begin(.dualCameraComposite)
         defer { PerformanceSignpost.end(.dualCameraComposite, signpost) }
@@ -42,12 +42,7 @@ enum DualCameraCompositor {
         let margin = CGFloat(width) * pipMarginRatio
         let pipWidth = CGFloat(width) * pipWidthRatio
         let pipHeight = pipWidth * CGFloat(frontImage.height) / CGFloat(frontImage.width)
-        let pipRect = CGRect(
-            x: CGFloat(width) - margin - pipWidth,
-            y: margin,
-            width: pipWidth,
-            height: pipHeight
-        )
+        let pipRect = CGRect(x: margin, y: margin, width: pipWidth, height: pipHeight)
         let cornerRadius = CGFloat(width) * pipCornerRadiusRatio
 
         context.addPath(UIBezierPath(roundedRect: pipRect, cornerRadius: cornerRadius).cgPath)

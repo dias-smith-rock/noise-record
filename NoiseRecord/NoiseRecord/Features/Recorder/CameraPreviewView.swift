@@ -132,12 +132,7 @@ final class DualPreviewUIView: UIView {
         let margin = bounds.width * 0.04
         let pipWidth = bounds.width * 0.28
         let pipHeight = pipWidth * 4 / 3
-        pipPreviewLayer.frame = CGRect(
-            x: bounds.width - margin - pipWidth,
-            y: margin,
-            width: pipWidth,
-            height: pipHeight
-        )
+        pipPreviewLayer.frame = CGRect(x: margin, y: margin, width: pipWidth, height: pipHeight)
     }
 
     func detachFromSession() {
