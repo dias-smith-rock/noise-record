@@ -393,4 +393,50 @@ extension View {
     func proTabNavigationChrome() -> some View {
         toolbar(.hidden, for: .navigationBar)
     }
+
+    func proToast(message: Binding<String?>) -> some View {
+        modifier(ProToastModifier(message: message))
+    }
+}
+
+private struct ProToastModifier: ViewModifier {
+    @Binding var message: String?
+    @State private var dismissTask: Task<Void, Never>?
+
+    func body(content: Content) -> some View {
+        ZStack {
+            content
+
+            if let message {
+                VStack {
+                    Spacer()
+                    Text(message)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.primary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 12)
+                        .background(.ultraThinMaterial, in: Capsule())
+                        .shadow(color: .black.opacity(0.12), radius: 10, y: 4)
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 28)
+                }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .zIndex(1)
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: message)
+        .onChange(of: message) { _, newValue in
+            dismissTask?.cancel()
+            guard newValue != nil else { return }
+            dismissTask = Task { @MainActor in
+                try? await Task.sleep(for: .seconds(2))
+                guard !Task.isCancelled else { return }
+                message = nil
+            }
+        }
+        .onDisappear {
+            dismissTask?.cancel()
+        }
+    }
 }

@@ -202,6 +202,29 @@
         }
       }
     },
+    "NSPhotoLibraryAddUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo library access is required to save evidence videos to your album."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要相册权限以将取证视频保存到相册。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要相簿權限以將取證影片儲存到相簿。"
+          }
+        }
+      }
+    },
     "NSUserTrackingUsageDescription" : {
       "extractionState" : "manual",
       "localizations" : {

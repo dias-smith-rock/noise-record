@@ -520,7 +520,7 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         let margin: CGFloat = 40 * scale
         let cardRect = CGRect(
             x: CGFloat(width) - margin - cardWidth,
-            y: margin,
+            y: CGFloat(height) - margin - cardHeight,
             width: cardWidth,
             height: cardHeight
         )

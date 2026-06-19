@@ -285,6 +285,15 @@ nonisolated enum L10n {
     static var permissionCameraDeniedMessage: String { localized("permission.camera.denied.message") }
     static var permissionLocationDeniedTitle: String { localized("permission.location.denied.title") }
     static var permissionLocationDeniedMessage: String { localized("permission.location.denied.message") }
+    static var permissionPhotosDeniedTitle: String { localized("permission.photos.denied.title") }
+    static var permissionPhotosDeniedMessage: String { localized("permission.photos.denied.message") }
+    static var playerSaveToPhotos: String { localized("player.saveToPhotos") }
+    static var playerSavedVideoToPhotos: String { localized("player.savedToPhotos.video") }
+    static var playerSavedPhotoToPhotos: String { localized("player.savedToPhotos.photo") }
+
+    static func playerSavedItemsToPhotos(_ count: Int) -> String {
+        String(format: localized("player.savedToPhotos.batch"), count)
+    }
     static var recorderMonitoringRequiredTitle: String { localized("recorder.monitoringRequired.title") }
     static var recorderMonitoringRequiredMessage: String { localized("recorder.monitoringRequired.message") }
     static var recorderMonitoringRequiredStart: String { localized("recorder.monitoringRequired.start") }
@@ -293,6 +302,7 @@ nonisolated enum L10n {
     static var dashboardExportCSVFailed: String { localized("dashboard.exportCSV.failed") }
     static var filesRenameFailed: String { localized("files.rename.failed") }
     static var filesBatchShare: String { localized("files.batchShare") }
+    static var filesBatchSaveToPhotos: String { localized("files.batchSaveToPhotos") }
     static var filesFileHash: String { localized("files.fileHash") }
     static var filesExportRecordingsCSV: String { localized("files.exportRecordingsCSV") }
     static var filesExportRecordingsCSVFailed: String { localized("files.exportRecordingsCSV.failed") }

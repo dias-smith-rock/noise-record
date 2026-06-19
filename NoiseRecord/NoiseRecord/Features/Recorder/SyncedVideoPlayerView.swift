@@ -10,6 +10,10 @@ struct SyncedVideoPlayerView: View {
     let onDismiss: () -> Void
 
     @State private var player: AVPlayer?
+    @State private var isSavingToPhotos = false
+    @State private var showPhotoPermissionDenied = false
+    @State private var saveErrorMessage: String?
+    @State private var toastMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -21,10 +25,37 @@ struct SyncedVideoPlayerView: View {
                     ToolbarItem(placement: .cancellationAction) {
                         Button(L10n.done, action: onDismiss)
                     }
+                    ToolbarItem(placement: .primaryAction) {
+                        Button {
+                            Task { await saveVideoToPhotoLibrary() }
+                        } label: {
+                            if isSavingToPhotos {
+                                ProgressView()
+                            } else {
+                                Image(systemName: "square.and.arrow.down")
+                            }
+                        }
+                        .accessibilityLabel(L10n.playerSaveToPhotos)
+                        .disabled(isSavingToPhotos)
+                    }
                 }
                 .onAppear(perform: startPlayback)
                 .onDisappear(perform: stopPlayback)
         }
+        .permissionDeniedAlert(
+            isPresented: $showPhotoPermissionDenied,
+            title: L10n.permissionPhotosDeniedTitle,
+            message: L10n.permissionPhotosDeniedMessage
+        )
+        .alert(L10n.errorTitle, isPresented: Binding(
+            get: { saveErrorMessage != nil },
+            set: { if !$0 { saveErrorMessage = nil } }
+        )) {
+            Button(L10n.ok, role: .cancel) { saveErrorMessage = nil }
+        } message: {
+            Text(saveErrorMessage ?? "")
+        }
+        .proToast(message: $toastMessage)
     }
 
     private func startPlayback() {
@@ -43,5 +74,25 @@ struct SyncedVideoPlayerView: View {
     private func stopPlayback() {
         player?.pause()
         player = nil
+    }
+
+    @MainActor
+    private func saveVideoToPhotoLibrary() async {
+        guard !isSavingToPhotos else { return }
+        isSavingToPhotos = true
+        defer { isSavingToPhotos = false }
+
+        let authorized = await PhotoLibrarySaver.requestAddOnlyAccess()
+        guard authorized else {
+            showPhotoPermissionDenied = true
+            return
+        }
+
+        do {
+            let kind = try await PhotoLibrarySaver.saveFile(at: url)
+            toastMessage = PhotoLibrarySaver.successMessage(for: kind)
+        } catch {
+            saveErrorMessage = error.localizedDescription
+        }
     }
 }

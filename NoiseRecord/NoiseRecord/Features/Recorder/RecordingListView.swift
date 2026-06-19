@@ -82,6 +82,9 @@ struct RecordingListView: View {
     @State private var showDeleteConfirm = false
     @State private var playbackErrorMessage: String?
     @State private var renameErrorMessage: String?
+    @State private var toastMessage: String?
+    @State private var showPhotoPermissionDenied = false
+    @State private var saveToPhotosErrorMessage: String?
     private var measurementMode: AcousticMeasurementMode {
         AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
     }
@@ -204,6 +207,20 @@ struct RecordingListView: View {
         } message: {
             Text(renameErrorMessage ?? "")
         }
+        .permissionDeniedAlert(
+            isPresented: $showPhotoPermissionDenied,
+            title: L10n.permissionPhotosDeniedTitle,
+            message: L10n.permissionPhotosDeniedMessage
+        )
+        .alert(L10n.errorTitle, isPresented: Binding(
+            get: { saveToPhotosErrorMessage != nil },
+            set: { if !$0 { saveToPhotosErrorMessage = nil } }
+        )) {
+            Button(L10n.ok, role: .cancel) { saveToPhotosErrorMessage = nil }
+        } message: {
+            Text(saveToPhotosErrorMessage ?? "")
+        }
+        .proToast(message: $toastMessage)
     }
 
     private var pageHeader: some View {
@@ -256,6 +273,18 @@ struct RecordingListView: View {
                 .buttonStyle(.bordered)
                 .accessibilityLabel(L10n.filesBatchShare)
                 .disabled(selectedCount == 0)
+
+                if selectedTab == .video {
+                    Button {
+                        Task { await saveSelectedToPhotos() }
+                    } label: {
+                        Image(systemName: "square.and.arrow.down")
+                            .font(.headline)
+                    }
+                    .buttonStyle(.bordered)
+                    .accessibilityLabel(L10n.filesBatchSaveToPhotos)
+                    .disabled(selectedCount == 0)
+                }
 
                 Button(role: .destructive) {
                     showDeleteConfirm = true
@@ -312,6 +341,7 @@ struct RecordingListView: View {
                         isSelected: selectedVideoIDs.contains(video.id),
                         onPlay: { playVideo(video) },
                         onShare: { shareMedia(video) },
+                        onSaveToPhotos: { Task { await saveVideoToPhotos(video) } },
                         onDelete: { deleteVideo(video) },
                         onRename: { beginRename(.video(video)) },
                         onToggleSelection: { toggleVideoSelection(video.id) }
@@ -604,6 +634,54 @@ struct RecordingListView: View {
         SharePresenter.present(items: [session.fileURL])
     }
 
+    @MainActor
+    private func saveVideoToPhotos(_ session: VideoEvidenceSession) async {
+        guard session.fileExists else {
+            playbackErrorMessage = L10n.filesVideoNotFound(session.fileName)
+            return
+        }
+
+        let authorized = await PhotoLibrarySaver.requestAddOnlyAccess()
+        guard authorized else {
+            showPhotoPermissionDenied = true
+            return
+        }
+
+        do {
+            let kind = try await PhotoLibrarySaver.saveFile(at: session.fileURL)
+            toastMessage = PhotoLibrarySaver.successMessage(for: kind)
+        } catch {
+            saveToPhotosErrorMessage = error.localizedDescription
+        }
+    }
+
+    @MainActor
+    private func saveSelectedToPhotos() async {
+        guard selectedTab == .video else { return }
+
+        let items = videoSessions.filter { selectedVideoIDs.contains($0.id) && $0.fileExists }
+        guard !items.isEmpty else { return }
+
+        let authorized = await PhotoLibrarySaver.requestAddOnlyAccess()
+        guard authorized else {
+            showPhotoPermissionDenied = true
+            return
+        }
+
+        let urls = items.map(\.fileURL)
+        do {
+            if urls.count == 1, let url = urls.first {
+                let kind = try await PhotoLibrarySaver.saveFile(at: url)
+                toastMessage = PhotoLibrarySaver.successMessage(for: kind)
+            } else {
+                try await PhotoLibrarySaver.saveFiles(at: urls)
+                toastMessage = L10n.playerSavedItemsToPhotos(urls.count)
+            }
+        } catch {
+            saveToPhotosErrorMessage = error.localizedDescription
+        }
+    }
+
     private func shareSelected() {
         let urls: [URL]
         switch selectedTab {
@@ -754,6 +832,7 @@ private struct MediaListCard: View {
     let isSelected: Bool
     let onPlay: () -> Void
     let onShare: () -> Void
+    var onSaveToPhotos: (() -> Void)?
     let onDelete: () -> Void
     let onRename: () -> Void
     let onToggleSelection: () -> Void
@@ -817,6 +896,11 @@ private struct MediaListCard: View {
                         Button(action: onShare) {
                             Label(L10n.share, systemImage: "square.and.arrow.up")
                         }
+                        if let onSaveToPhotos {
+                            Button(action: onSaveToPhotos) {
+                                Label(L10n.playerSaveToPhotos, systemImage: "square.and.arrow.down")
+                            }
+                        }
                         Button {
                             onRename()
                         } label: {
@@ -847,6 +931,11 @@ private struct MediaListCard: View {
             if !isSelectionMode {
                 Button(action: onShare) {
                     Label(L10n.share, systemImage: "square.and.arrow.up")
+                }
+                if let onSaveToPhotos {
+                    Button(action: onSaveToPhotos) {
+                        Label(L10n.playerSaveToPhotos, systemImage: "square.and.arrow.down")
+                    }
                 }
                 Button(action: onRename) {
                     Label(L10n.rename, systemImage: "pencil")

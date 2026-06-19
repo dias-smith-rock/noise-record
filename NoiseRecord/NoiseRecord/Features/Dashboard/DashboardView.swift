@@ -57,7 +57,8 @@ struct DashboardView: View {
                     }
                 }
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .padding(.horizontal, 16)
             .padding(.top, 8)
             .padding(.bottom, 4)
         }
