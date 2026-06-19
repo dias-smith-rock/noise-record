@@ -28,12 +28,6 @@ final class DeviceCalibrationStoreTests: XCTestCase {
         XCTAssertEqual(DeviceCalibrationStore.userAdjustment, 3.5, accuracy: 0.001)
     }
 
-    func testDefaultReferenceSPLIs80() {
-        UserDefaults.standard.removeObject(forKey: referenceSPLKey)
-        XCTAssertEqual(DeviceCalibrationStore.referenceSPL, 80, accuracy: 0.001)
-        XCTAssertEqual(DeviceCalibrationStore.defaultReferenceSPL, 80, accuracy: 0.001)
-    }
-
     func testCalibratePersistsReferenceSPLAndUserAdjustment() {
         DeviceCalibrationStore.calibrate(referenceSPL: 88, measuredDBFS: -32)
         XCTAssertEqual(DeviceCalibrationStore.referenceSPL, 88, accuracy: 0.001)

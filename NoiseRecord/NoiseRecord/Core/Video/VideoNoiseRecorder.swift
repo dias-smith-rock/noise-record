@@ -7,8 +7,6 @@ import UIKit
 enum VideoNoiseRecorderError: LocalizedError {
     case cameraUnavailable
     case cannotSwitchCameraWhileRecording
-    case cannotToggleDualCameraWhileRecording
-    case dualCameraUnsupported
     case microphoneUnavailable
     case writerSetupFailed(String)
     case notRecording
@@ -19,8 +17,6 @@ enum VideoNoiseRecorderError: LocalizedError {
         switch self {
         case .cameraUnavailable: L10n.errorVideoCameraUnavailable
         case .cannotSwitchCameraWhileRecording: L10n.errorVideoCannotSwitchCameraWhileRecording
-        case .cannotToggleDualCameraWhileRecording: L10n.errorVideoCannotToggleDualCameraWhileRecording
-        case .dualCameraUnsupported: L10n.errorVideoDualCameraUnsupported
         case .microphoneUnavailable: L10n.errorVideoMicUnavailable
         case .writerSetupFailed(let msg): L10n.errorVideoWriterSetupFailed(msg)
         case .notRecording: L10n.errorVideoNotRecording
@@ -34,7 +30,7 @@ enum VideoNoiseRecorderError: LocalizedError {
 final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
     let dataBridge = NoiseDataBridge()
 
-    private var captureSession: AVCaptureSession = AVCaptureSession()
+    private let captureSession = AVCaptureSession()
     private let sessionQueue = DispatchQueue(label: "com.noiseapp.capture.session")
     private let videoQueue = DispatchQueue(label: "com.noiseapp.videoQueue")
     private let writerQueue = DispatchQueue(label: "com.noiseapp.writerQueue")
@@ -46,20 +42,6 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
     private var videoDevice: AVCaptureDevice?
     private var currentCameraPosition: AVCaptureDevice.Position = .back
     private let maxUserZoomFactor: CGFloat = 5.0
-
-    private var backVideoInput: AVCaptureDeviceInput?
-    private var frontVideoInput: AVCaptureDeviceInput?
-    private var backVideoDevice: AVCaptureDevice?
-    private var frontVideoDevice: AVCaptureDevice?
-    private var backVideoOutput: AVCaptureVideoDataOutput?
-    private var frontVideoOutput: AVCaptureVideoDataOutput?
-    private(set) var backPreviewVideoPort: AVCaptureInput.Port?
-    private(set) var frontPreviewVideoPort: AVCaptureInput.Port?
-    private(set) var isDualCameraEnabled = false
-
-    private var latestFrontSampleBuffer: CMSampleBuffer?
-    private var latestFrontTimestamp = CMTime.invalid
-    private let frontFrameMaxAge: Double = 0.05
 
     private var isPreviewConfigured = false
     private var recordingOutputsAttached = false
@@ -91,10 +73,6 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
 
     var onRecordingFinished: ((Result<URL, Error>) -> Void)?
 
-    static var isMultiCamSupported: Bool {
-        AVCaptureMultiCamSession.isMultiCamSupported
-    }
-
     // MARK: - Session setup
 
     func configureSession() async throws {
@@ -106,7 +84,7 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
                 }
                 do {
                     if !self.isPreviewConfigured {
-                        try self.setupSingleCamPreviewSessionLocked(position: .back)
+                        try self.setupPreviewSessionLocked()
                         self.isPreviewConfigured = true
                     }
                     continuation.resume()
@@ -148,60 +126,9 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
 
     var captureSessionForPreview: AVCaptureSession { captureSession }
 
-    func setDualCameraEnabled(_ enabled: Bool, completion: ((Result<Void, Error>) -> Void)? = nil) {
-        sessionQueue.async { [weak self] in
-            guard let self else { return }
-            guard enabled != self.isDualCameraEnabled else {
-                DispatchQueue.main.async { completion?(.success(())) }
-                return
-            }
-            guard !self.isRecording else {
-                DispatchQueue.main.async {
-                    completion?(.failure(VideoNoiseRecorderError.cannotToggleDualCameraWhileRecording))
-                }
-                return
-            }
-            if enabled, !Self.isMultiCamSupported {
-                DispatchQueue.main.async {
-                    completion?(.failure(VideoNoiseRecorderError.dualCameraUnsupported))
-                }
-                return
-            }
-
-            let wasRunning = self.isSessionRunning
-            if wasRunning {
-                self.captureSession.stopRunning()
-                self.isSessionRunning = false
-            }
-
-            do {
-                if enabled {
-                    try self.setupMultiCamPreviewSessionLocked()
-                } else {
-                    self.captureSession = AVCaptureSession()
-                    try self.setupSingleCamPreviewSessionLocked(position: .back)
-                }
-                self.isPreviewConfigured = true
-                if wasRunning {
-                    self.captureSession.startRunning()
-                    self.isSessionRunning = true
-                }
-                DispatchQueue.main.async { completion?(.success(())) }
-            } catch {
-                DispatchQueue.main.async { completion?(.failure(error)) }
-            }
-        }
-    }
-
     func setZoomFactor(_ factor: CGFloat, completion: ((CGFloat) -> Void)? = nil) {
         sessionQueue.async { [weak self] in
             guard let self else { return }
-            guard !self.isDualCameraEnabled else {
-                if let completion {
-                    DispatchQueue.main.async { completion(1.0) }
-                }
-                return
-            }
             let applied = self.applyZoomLocked(factor)
             if let completion {
                 DispatchQueue.main.async {
@@ -214,12 +141,6 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
     func switchCamera(completion: ((Result<AVCaptureDevice.Position, Error>) -> Void)? = nil) {
         sessionQueue.async { [weak self] in
             guard let self else { return }
-            guard !self.isDualCameraEnabled else {
-                DispatchQueue.main.async {
-                    completion?(.failure(VideoNoiseRecorderError.cannotSwitchCameraWhileRecording))
-                }
-                return
-            }
             guard !self.isRecording else {
                 DispatchQueue.main.async {
                     completion?(.failure(VideoNoiseRecorderError.cannotSwitchCameraWhileRecording))
@@ -237,7 +158,7 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
                 }
                 try self.addVideoInputLocked(position: newPosition)
                 _ = self.applyZoomLocked(1.0)
-                self.configureSingleVideoConnectionLocked()
+                self.configureVideoConnectionLocked()
 
                 DispatchQueue.main.async {
                     completion?(.success(newPosition))
@@ -267,7 +188,7 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         }
     }
 
-    private func setupSingleCamPreviewSessionLocked(position: AVCaptureDevice.Position) throws {
+    private func setupPreviewSessionLocked() throws {
         captureSession.beginConfiguration()
         defer { captureSession.commitConfiguration() }
 
@@ -275,87 +196,12 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         captureSession.outputs.forEach { captureSession.removeOutput($0) }
 
         captureSession.sessionPreset = .high
-        try addVideoInputLocked(position: position)
+        try addVideoInputLocked(position: .back)
 
-        clearDualCameraStateLocked()
         videoOutput = nil
         audioInput = nil
         audioOutput = nil
         recordingOutputsAttached = false
-        isDualCameraEnabled = false
-    }
-
-    private func setupMultiCamPreviewSessionLocked() throws {
-        guard Self.isMultiCamSupported else {
-            throw VideoNoiseRecorderError.dualCameraUnsupported
-        }
-        guard let backDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
-              let frontDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front) else {
-            throw VideoNoiseRecorderError.cameraUnavailable
-        }
-
-        let multiSession = AVCaptureMultiCamSession()
-        multiSession.beginConfiguration()
-        defer { multiSession.commitConfiguration() }
-
-        let backInput = try AVCaptureDeviceInput(device: backDevice)
-        let frontInput = try AVCaptureDeviceInput(device: frontDevice)
-        guard multiSession.canAddInput(backInput), multiSession.canAddInput(frontInput) else {
-            throw VideoNoiseRecorderError.dualCameraUnsupported
-        }
-
-        multiSession.addInputWithNoConnections(backInput)
-        multiSession.addInputWithNoConnections(frontInput)
-
-        let backPort = backInput.ports(
-            for: .video,
-            sourceDeviceType: backDevice.deviceType,
-            sourceDevicePosition: .back
-        ).first
-        let frontPort = frontInput.ports(
-            for: .video,
-            sourceDeviceType: frontDevice.deviceType,
-            sourceDevicePosition: .front
-        ).first
-        guard backPort != nil, frontPort != nil else {
-            throw VideoNoiseRecorderError.cameraUnavailable
-        }
-
-        captureSession = multiSession
-        backVideoInput = backInput
-        frontVideoInput = frontInput
-        backVideoDevice = backDevice
-        frontVideoDevice = frontDevice
-        videoDevice = backDevice
-        currentCameraPosition = .back
-        backPreviewVideoPort = backPort
-        frontPreviewVideoPort = frontPort
-
-        videoInput = nil
-        videoOutput = nil
-        backVideoOutput = nil
-        frontVideoOutput = nil
-        audioInput = nil
-        audioOutput = nil
-        recordingOutputsAttached = false
-        isDualCameraEnabled = true
-    }
-
-    private func clearDualCameraStateLocked() {
-        backVideoInput = nil
-        frontVideoInput = nil
-        backVideoDevice = nil
-        frontVideoDevice = nil
-        backVideoOutput = nil
-        frontVideoOutput = nil
-        backPreviewVideoPort = nil
-        frontPreviewVideoPort = nil
-        clearFrontFrameCacheLocked()
-    }
-
-    private func clearFrontFrameCacheLocked() {
-        latestFrontSampleBuffer = nil
-        latestFrontTimestamp = .invalid
     }
 
     private func addVideoInputLocked(position: AVCaptureDevice.Position) throws {
@@ -372,14 +218,7 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
 
     private func attachRecordingOutputsLocked() throws {
         guard !recordingOutputsAttached else { return }
-        if isDualCameraEnabled {
-            try attachDualRecordingOutputsLocked()
-        } else {
-            try attachSingleRecordingOutputsLocked()
-        }
-    }
 
-    private func attachSingleRecordingOutputsLocked() throws {
         captureSession.beginConfiguration()
         defer { captureSession.commitConfiguration() }
 
@@ -398,65 +237,7 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         }
         captureSession.addOutput(videoOut)
         videoOutput = videoOut
-        configureSingleVideoConnectionLocked()
-        recordingOutputsAttached = true
-    }
-
-    private func attachDualRecordingOutputsLocked() throws {
-        guard let multiSession = captureSession as? AVCaptureMultiCamSession,
-              let backPort = backPreviewVideoPort,
-              let frontPort = frontPreviewVideoPort else {
-            throw VideoNoiseRecorderError.cameraUnavailable
-        }
-
-        multiSession.beginConfiguration()
-        defer { multiSession.commitConfiguration() }
-
-        let backOut = AVCaptureVideoDataOutput()
-        backOut.alwaysDiscardsLateVideoFrames = true
-        backOut.videoSettings = [
-            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
-        ]
-        backOut.setSampleBufferDelegate(self, queue: videoQueue)
-
-        let frontOut = AVCaptureVideoDataOutput()
-        frontOut.alwaysDiscardsLateVideoFrames = true
-        frontOut.videoSettings = [
-            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
-        ]
-        frontOut.setSampleBufferDelegate(self, queue: videoQueue)
-
-        guard multiSession.canAddOutput(backOut), multiSession.canAddOutput(frontOut) else {
-            throw VideoNoiseRecorderError.cameraUnavailable
-        }
-
-        multiSession.addOutputWithNoConnections(backOut)
-        multiSession.addOutputWithNoConnections(frontOut)
-
-        let backConnection = AVCaptureConnection(inputPorts: [backPort], output: backOut)
-        let frontConnection = AVCaptureConnection(inputPorts: [frontPort], output: frontOut)
-        guard multiSession.canAddConnection(backConnection),
-              multiSession.canAddConnection(frontConnection) else {
-            throw VideoNoiseRecorderError.cameraUnavailable
-        }
-
-        if backConnection.isVideoRotationAngleSupported(90) {
-            backConnection.videoRotationAngle = 90
-        }
-        if frontConnection.isVideoRotationAngleSupported(90) {
-            frontConnection.videoRotationAngle = 90
-        }
-        if frontConnection.isVideoMirroringSupported {
-            frontConnection.automaticallyAdjustsVideoMirroring = false
-            frontConnection.isVideoMirrored = true
-        }
-
-        multiSession.addConnection(backConnection)
-        multiSession.addConnection(frontConnection)
-
-        backVideoOutput = backOut
-        frontVideoOutput = frontOut
-        videoOutput = backOut
+        configureVideoConnectionLocked()
         recordingOutputsAttached = true
     }
 
@@ -464,25 +245,19 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         guard recordingOutputsAttached else { return }
 
         captureSession.beginConfiguration()
-        if let backVideoOutput {
-            captureSession.removeOutput(backVideoOutput)
+        if let videoOutput {
+            captureSession.removeOutput(videoOutput)
         }
-        if let frontVideoOutput, frontVideoOutput !== backVideoOutput {
-            captureSession.removeOutput(frontVideoOutput)
-        }
-        if !isDualCameraEnabled, captureSession.canSetSessionPreset(.high) {
+        if captureSession.canSetSessionPreset(.high) {
             captureSession.sessionPreset = .high
         }
         captureSession.commitConfiguration()
 
-        backVideoOutput = nil
-        frontVideoOutput = nil
         videoOutput = nil
         recordingOutputsAttached = false
-        clearFrontFrameCacheLocked()
     }
 
-    private func configureSingleVideoConnectionLocked() {
+    private func configureVideoConnectionLocked() {
         guard let connection = videoOutput?.connection(with: .video) else { return }
         if connection.isVideoRotationAngleSupported(90) {
             connection.videoRotationAngle = 90
@@ -573,7 +348,6 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
                     self.noiseTimelineSamples.removeAll()
                     self.lastTimelineSampleTime = -1
                     self.pendingAudioSamples.removeAll()
-                    self.clearFrontFrameCacheLocked()
                     self.tearDownWriter()
                     continuation.resume()
                 }
@@ -596,7 +370,6 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
 
         guard sessionStarted, let writer = assetWriter, let url = outputURL else {
             tearDownWriter()
-            clearFrontFrameCacheLocked()
             sessionQueue.async { [weak self] in
                 self?.detachAudioCaptureLocked()
                 self?.detachRecordingOutputsLocked()
@@ -617,7 +390,6 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
                 completion(.success(url))
             }
             self.tearDownWriter()
-            self.clearFrontFrameCacheLocked()
             self.sessionQueue.async {
                 self.detachAudioCaptureLocked()
                 self.detachRecordingOutputsLocked()
@@ -793,15 +565,7 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         return cachedMetaText
     }
 
-    private func processFrontVideoSample(_ sampleBuffer: CMSampleBuffer) {
-        writerQueue.async { [weak self] in
-            guard let self, self.isRecording, self.isDualCameraEnabled else { return }
-            self.latestFrontSampleBuffer = self.copySampleBuffer(sampleBuffer)
-            self.latestFrontTimestamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-        }
-    }
-
-    private func processBackVideoSample(_ sampleBuffer: CMSampleBuffer) {
+    private func processVideoSample(_ sampleBuffer: CMSampleBuffer) {
         writerQueue.async { [weak self] in
             let signpost = PerformanceSignpost.begin(.processVideoSample)
             defer { PerformanceSignpost.end(.processVideoSample, signpost) }
@@ -840,43 +604,26 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
             guard CVPixelBufferPoolCreatePixelBuffer(nil, pool, &outputBuffer) == kCVReturnSuccess,
                   let outputBuffer else { return }
 
-            if self.isDualCameraEnabled,
-               let frontSample = self.latestFrontSampleBuffer,
-               let frontBuffer = CMSampleBufferGetImageBuffer(frontSample),
-               self.latestFrontTimestamp.isValid,
-               abs(CMTimeGetSeconds(CMTimeSubtract(timestamp, self.latestFrontTimestamp))) <= self.frontFrameMaxAge {
-                DualCameraCompositor.composite(back: sourceBuffer, front: frontBuffer, into: outputBuffer)
-            } else {
-                self.copyPixelBuffer(from: sourceBuffer, to: outputBuffer)
+            CVPixelBufferLockBaseAddress(sourceBuffer, .readOnly)
+            CVPixelBufferLockBaseAddress(outputBuffer, [])
+            let rowCount = CVPixelBufferGetHeight(sourceBuffer)
+            let copyBytes = min(
+                CVPixelBufferGetBytesPerRow(sourceBuffer),
+                CVPixelBufferGetBytesPerRow(outputBuffer)
+            )
+            if let src = CVPixelBufferGetBaseAddress(sourceBuffer),
+               let dst = CVPixelBufferGetBaseAddress(outputBuffer) {
+                for row in 0..<rowCount {
+                    memcpy(dst.advanced(by: row * CVPixelBufferGetBytesPerRow(outputBuffer)),
+                           src.advanced(by: row * CVPixelBufferGetBytesPerRow(sourceBuffer)),
+                           copyBytes)
+                }
             }
+            CVPixelBufferUnlockBaseAddress(outputBuffer, [])
+            CVPixelBufferUnlockBaseAddress(sourceBuffer, .readOnly)
 
             self.drawWatermark(on: outputBuffer, captureDate: Date())
             adaptor.append(outputBuffer, withPresentationTime: timestamp)
-        }
-    }
-
-    private func copyPixelBuffer(from source: CVPixelBuffer, to destination: CVPixelBuffer) {
-        CVPixelBufferLockBaseAddress(source, .readOnly)
-        CVPixelBufferLockBaseAddress(destination, [])
-        defer {
-            CVPixelBufferUnlockBaseAddress(destination, [])
-            CVPixelBufferUnlockBaseAddress(source, .readOnly)
-        }
-
-        let rowCount = CVPixelBufferGetHeight(source)
-        let copyBytes = min(
-            CVPixelBufferGetBytesPerRow(source),
-            CVPixelBufferGetBytesPerRow(destination)
-        )
-        guard let src = CVPixelBufferGetBaseAddress(source),
-              let dst = CVPixelBufferGetBaseAddress(destination) else { return }
-
-        for row in 0..<rowCount {
-            memcpy(
-                dst.advanced(by: row * CVPixelBufferGetBytesPerRow(destination)),
-                src.advanced(by: row * CVPixelBufferGetBytesPerRow(source)),
-                copyBytes
-            )
         }
     }
 
@@ -917,10 +664,8 @@ extension VideoNoiseRecorder: AVCaptureVideoDataOutputSampleBufferDelegate, AVCa
         didOutput sampleBuffer: CMSampleBuffer,
         from connection: AVCaptureConnection
     ) {
-        if let frontVideoOutput, output === frontVideoOutput {
-            processFrontVideoSample(sampleBuffer)
-        } else if output is AVCaptureVideoDataOutput {
-            processBackVideoSample(sampleBuffer)
+        if output is AVCaptureVideoDataOutput {
+            processVideoSample(sampleBuffer)
         } else if output is AVCaptureAudioDataOutput {
             processAudioSample(sampleBuffer)
         }

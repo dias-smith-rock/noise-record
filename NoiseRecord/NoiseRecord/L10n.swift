@@ -105,8 +105,6 @@ nonisolated enum L10n {
     static var videoAutoMonitoringHint: String { localized("video.hint.autoMonitoring") }
     static var videoStartRecording: String { localized("video.button.startRecording") }
     static var videoSwitchCamera: String { localized("video.button.switchCamera") }
-    static var videoDualCamera: String { localized("video.button.dualCamera") }
-    static var videoDualCameraHint: String { localized("video.dualCamera.hint") }
     static var videoStopAndSave: String { localized("video.button.stopAndSave") }
     static var videoWatermarkTitle: String { localized("video.tips.watermarkTitle") }
     static var videoWatermarkBody: String { localized("video.tips.watermarkBody") }
@@ -273,8 +271,6 @@ nonisolated enum L10n {
     static var errorPlaybackStartFailed: String { localized("error.playback.startFailed") }
     static var errorVideoCameraUnavailable: String { localized("error.video.cameraUnavailable") }
     static var errorVideoCannotSwitchCameraWhileRecording: String { localized("error.video.cannotSwitchCameraWhileRecording") }
-    static var errorVideoCannotToggleDualCameraWhileRecording: String { localized("error.video.cannotToggleDualCameraWhileRecording") }
-    static var errorVideoDualCameraUnsupported: String { localized("error.video.dualCameraUnsupported") }
     static var errorVideoMicUnavailable: String { localized("error.video.microphoneUnavailable") }
     static var errorVideoNotRecording: String { localized("error.video.notRecording") }
     static var errorVideoWriterAddTrackFailed: String { localized("error.video.writerAddTrackFailed") }

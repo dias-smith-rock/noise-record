@@ -17,7 +17,7 @@ struct DeviceCalibrationStore: Sendable {
     private static let weightingKey = "settings.weighting"
     private static let highSensitivityKey = "settings.highSensitivityMode"
 
-    static let defaultReferenceSPL: Float = 80
+    static let defaultReferenceSPL: Float = 94
 
     /// Baseline offset for quiet-room display ~30–40 dBA in measurement mode.
     static let defaultOffset: Float = 115.0
@@ -79,7 +79,7 @@ struct DeviceCalibrationStore: Sendable {
         }
     }
 
-    /// Last reference SPL used for calibration (default 80 dB for everyday environments; use 94 dB with a professional calibrator).
+    /// Last reference SPL used for calibration (e.g. 94 dB from a sound-level meter).
     static var referenceSPL: Float {
         get {
             guard UserDefaults.standard.object(forKey: referenceSPLKey) != nil else {
