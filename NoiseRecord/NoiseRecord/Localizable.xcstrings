@@ -3675,6 +3675,52 @@
         }
       }
     },
+    "error.video.cannotToggleDualCameraWhileRecording" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cannot toggle dual camera while recording."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "录制过程中无法切换双摄模式。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "錄製過程中無法切換雙攝模式。"
+          }
+        }
+      }
+    },
+    "error.video.dualCameraUnsupported" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This device does not support dual-camera recording."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此设备不支持双摄录像。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此裝置不支援雙攝錄影。"
+          }
+        }
+      }
+    },
     "error.video.finishFailed" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -17815,6 +17861,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "切換鏡頭"
+          }
+        }
+      }
+    },
+    "video.button.dualCamera" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dual camera"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "双摄"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "雙攝"
+          }
+        }
+      }
+    },
+    "video.dualCamera.hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Front + back PiP recording"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "前后双摄画中画录制"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "前後雙攝畫中畫錄製"
           }
         }
       }

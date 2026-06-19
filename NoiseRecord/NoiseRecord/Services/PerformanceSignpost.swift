@@ -8,8 +8,9 @@ nonisolated enum PerformanceSignpost {
     enum Interval: String {
         case processBuffer = "processBuffer"
         case publishUI = "publishUI"
-        case processVideoSample = "processVideoSample"
         case drawWatermark = "drawWatermark"
+        case dualCameraComposite = "dualCameraComposite"
+        case processVideoSample = "processVideoSample"
         case tabBarIconApply = "tabBarIconApply"
         case persistMeasurement = "persistMeasurement"
         case launchSwiftDataInit = "launchSwiftDataInit"

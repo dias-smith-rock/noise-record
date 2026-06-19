@@ -18,6 +18,9 @@ final class VideoEvidenceCoordinator {
     var peakDB: Float = 0
     var sessionPeakDB: Float = 0
     var cameraPosition: AVCaptureDevice.Position = .back
+    var isDualCameraEnabled = false
+    var isMultiCamSupported = false
+    var previewDetachGeneration = 0
 
     func configure(backgroundMonitoringEnabled: Bool, isMonitoring: Bool) async {
         let configureSignpost = VideoTabPerformance.begin(.configureTotal)
@@ -25,6 +28,7 @@ final class VideoEvidenceCoordinator {
 
         isSessionReady = false
         isPreviewReady = false
+        isMultiCamSupported = VideoNoiseRecorder.isMultiCamSupported
 
         do {
             let audioSignpost = VideoTabPerformance.begin(.audioSession)
@@ -98,13 +102,16 @@ final class VideoEvidenceCoordinator {
         locationProvider.stopUpdating()
         isSessionReady = false
         isPreviewReady = false
-        recorder.pausePreview()
+        previewDetachGeneration += 1
+        DispatchQueue.main.async { [weak self] in
+            self?.recorder.pausePreview()
+        }
         VideoTabPerformance.end(.teardown, teardownSignpost)
         VideoTabPerformance.mark(.teardownDone)
     }
 
     func switchCamera() {
-        guard isSessionReady, !isRecording else { return }
+        guard isSessionReady, !isRecording, !isDualCameraEnabled else { return }
         recorder.switchCamera { [weak self] result in
             guard let self else { return }
             switch result {
@@ -112,6 +119,36 @@ final class VideoEvidenceCoordinator {
                 self.cameraPosition = position
             case .failure(let error):
                 self.errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    func setDualCameraEnabled(_ enabled: Bool) {
+        guard isSessionReady, !isRecording else { return }
+        if enabled, !isMultiCamSupported {
+            errorMessage = L10n.errorVideoDualCameraUnsupported
+            return
+        }
+
+        isPreviewReady = false
+        previewDetachGeneration += 1
+
+        DispatchQueue.main.async { [weak self] in
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.recorder.setDualCameraEnabled(enabled) { [weak self] result in
+                    guard let self else { return }
+                    switch result {
+                    case .success:
+                        self.isDualCameraEnabled = enabled
+                        self.cameraPosition = .back
+                        self.isPreviewReady = true
+                    case .failure(let error):
+                        self.isDualCameraEnabled = false
+                        self.errorMessage = error.localizedDescription
+                        self.isPreviewReady = true
+                    }
+                }
             }
         }
     }
@@ -268,7 +305,13 @@ struct VideoEvidenceView: View {
         ZStack(alignment: .bottomLeading) {
             CameraPreviewView(
                 session: coordinator.recorder.captureSessionForPreview,
+                isDualCamera: coordinator.isDualCameraEnabled,
+                backPreviewPort: coordinator.recorder.backPreviewVideoPort,
+                frontPreviewPort: coordinator.recorder.frontPreviewVideoPort,
+                isPreviewActive: coordinator.isPreviewReady,
+                detachGeneration: coordinator.previewDetachGeneration,
                 isFrontCamera: { coordinator.cameraPosition == .front },
+                zoomGesturesEnabled: !coordinator.isDualCameraEnabled,
                 currentZoom: { previewZoomFactor },
                 onZoomChange: { factor in
                     coordinator.recorder.setZoomFactor(factor) { applied in
@@ -292,7 +335,7 @@ struct VideoEvidenceView: View {
                 }
             }
 
-            if previewZoomFactor > 1.05 {
+            if previewZoomFactor > 1.05, !coordinator.isDualCameraEnabled {
                 Text(String(format: "%.1fx", previewZoomFactor))
                     .font(.caption.bold())
                     .foregroundStyle(.white)
@@ -305,21 +348,58 @@ struct VideoEvidenceView: View {
                     .allowsHitTesting(false)
             }
 
-            Button {
-                coordinator.switchCamera()
-                previewZoomFactor = 1.0
-            } label: {
-                Image(systemName: "arrow.triangle.2.circlepath.camera")
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .padding(10)
-                    .background(.black.opacity(0.55))
-                    .clipShape(Circle())
+            HStack(spacing: 10) {
+                if !coordinator.isDualCameraEnabled {
+                    Button {
+                        coordinator.switchCamera()
+                        previewZoomFactor = 1.0
+                    } label: {
+                        Image(systemName: "arrow.triangle.2.circlepath.camera")
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .padding(10)
+                            .background(.black.opacity(0.55))
+                            .clipShape(Circle())
+                    }
+                    .accessibilityLabel(L10n.videoSwitchCamera)
+                    .disabled(!coordinator.isSessionReady || !coordinator.isPreviewReady || coordinator.isRecording)
+                }
+
+                Button {
+                    coordinator.setDualCameraEnabled(!coordinator.isDualCameraEnabled)
+                    previewZoomFactor = 1.0
+                } label: {
+                    Image(systemName: coordinator.isDualCameraEnabled ? "camera.on.rectangle.fill" : "camera.on.rectangle")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(coordinator.isDualCameraEnabled ? theme.accent : .white)
+                        .padding(10)
+                        .background(.black.opacity(0.55))
+                        .clipShape(Circle())
+                }
+                .accessibilityLabel(L10n.videoDualCamera)
+                .disabled(
+                    !coordinator.isSessionReady
+                        || !coordinator.isPreviewReady
+                        || coordinator.isRecording
+                        || !coordinator.isMultiCamSupported
+                )
             }
-            .accessibilityLabel(L10n.videoSwitchCamera)
-            .disabled(!coordinator.isSessionReady || !coordinator.isPreviewReady || coordinator.isRecording)
             .padding(12)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+            if coordinator.isDualCameraEnabled {
+                Text(L10n.videoDualCameraHint)
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.9))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(.black.opacity(0.55))
+                    .clipShape(Capsule())
+                    .padding(.horizontal, 12)
+                    .padding(.top, 60)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .allowsHitTesting(false)
+            }
 
             if coordinator.isRecording {
                 HStack(spacing: 8) {
