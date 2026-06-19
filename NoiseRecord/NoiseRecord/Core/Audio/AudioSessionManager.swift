@@ -82,6 +82,18 @@ struct AudioSessionManager {
         }
     }
 
+    /// 独占播放：监测已停止时使用，走 `.playback` 大扬声器链路。
+    static func configureForExclusivePlayback() throws {
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(.playback, mode: .default, options: [])
+            try session.setActive(true)
+            try? session.overrideOutputAudioPort(.speaker)
+        } catch {
+            throw AudioSessionError.configurationFailed(error.localizedDescription)
+        }
+    }
+
     static func restoreMeasurementIfMonitoring(_ isMonitoring: Bool, backgroundEnabled: Bool = false) {
         guard isMonitoring else { return }
         try? BackgroundAudioSession.activateForMeasurement(backgroundEnabled: backgroundEnabled)

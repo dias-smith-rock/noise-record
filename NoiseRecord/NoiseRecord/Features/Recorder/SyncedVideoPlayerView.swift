@@ -5,9 +5,8 @@ import SwiftUI
 struct SyncedVideoPlayerView: View {
     let url: URL
     let title: String
-    let coexistingWithMonitoring: Bool
-    let backgroundMonitoringEnabled: Bool
     let onDismiss: () -> Void
+    let onPlaybackFinished: () -> Void
 
     @State private var player: AVPlayer?
     @State private var isSavingToPhotos = false
@@ -23,7 +22,9 @@ struct SyncedVideoPlayerView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button(L10n.done, action: onDismiss)
+                        Button(L10n.done) {
+                            finishPlaybackAndDismiss()
+                        }
                     }
                     ToolbarItem(placement: .primaryAction) {
                         Button {
@@ -41,6 +42,11 @@ struct SyncedVideoPlayerView: View {
                 }
                 .onAppear(perform: startPlayback)
                 .onDisappear(perform: stopPlayback)
+                .onReceive(NotificationCenter.default.publisher(for: .AVPlayerItemDidPlayToEndTime)) { notification in
+                    guard let item = notification.object as? AVPlayerItem,
+                          item === player?.currentItem else { return }
+                    onPlaybackFinished()
+                }
         }
         .permissionDeniedAlert(
             isPresented: $showPhotoPermissionDenied,
@@ -59,11 +65,6 @@ struct SyncedVideoPlayerView: View {
     }
 
     private func startPlayback() {
-        try? AudioSessionManager.configureForPlayback(
-            coexistingWithMonitoring: coexistingWithMonitoring,
-            backgroundEnabled: backgroundMonitoringEnabled
-        )
-
         let item = AVPlayerItem(url: url)
         let avPlayer = AVPlayer(playerItem: item)
         avPlayer.volume = 1.0
@@ -74,6 +75,11 @@ struct SyncedVideoPlayerView: View {
     private func stopPlayback() {
         player?.pause()
         player = nil
+    }
+
+    private func finishPlaybackAndDismiss() {
+        onPlaybackFinished()
+        onDismiss()
     }
 
     @MainActor

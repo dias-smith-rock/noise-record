@@ -10,7 +10,8 @@ struct ContentView: View {
         case settings
     }
 
-    @State private var engine = NoiseMonitorEngine()
+    @State private var engine: NoiseMonitorEngine
+    @State private var audioStateManager: AudioStateManager
     @State private var videoCoordinator = VideoEvidenceCoordinator()
     @State private var selectedTab: MainTab = .monitor
     @State private var mountedTabs: Set<MainTab> = [.monitor]
@@ -20,6 +21,12 @@ struct ContentView: View {
     @Bindable private var appearance = AppAppearanceSettings.shared
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
+
+    init() {
+        let engine = NoiseMonitorEngine()
+        _engine = State(wrappedValue: engine)
+        _audioStateManager = State(wrappedValue: AudioStateManager(engine: engine))
+    }
 
     var body: some View {
         let _ = appearance.languageRefreshID
@@ -97,16 +104,24 @@ struct ContentView: View {
             showAppReviewPrompt = true
         }
         .appReviewPrompt(isPresented: $showAppReviewPrompt)
+        .onChange(of: engine.isMonitoring) { _, isMonitoring in
+            if isMonitoring {
+                audioStateManager.noteMonitoringStarted()
+            }
+        }
         .onChange(of: scenePhase) { _, phase in
             switch phase {
             case .inactive:
                 AppTelemetry.log("scene_inactive")
+                guard audioStateManager.allowsAutomaticMonitoringRecovery else { return }
                 engine.prepareForBackgroundIfNeeded()
             case .background:
                 AppTelemetry.logEvent("scene_background")
+                guard audioStateManager.allowsAutomaticMonitoringRecovery else { return }
                 engine.handleDidEnterBackground()
             case .active:
                 AppTelemetry.logEvent("scene_active")
+                guard audioStateManager.allowsAutomaticMonitoringRecovery else { return }
                 engine.handleDidBecomeActive()
                 refreshUnreadBadge()
             @unknown default:
@@ -118,7 +133,11 @@ struct ContentView: View {
     @ViewBuilder
     private var monitorTab: some View {
         tabRoot(for: .monitor) {
-            DashboardView(engine: engine, isTabActive: selectedTab == .monitor)
+            DashboardView(
+                engine: engine,
+                audioStateManager: audioStateManager,
+                isTabActive: selectedTab == .monitor
+            )
         }
         .tag(MainTab.monitor)
         .tabItem {
@@ -142,6 +161,7 @@ struct ContentView: View {
         tabRoot(for: .video) {
             VideoEvidenceView(
                 engine: engine,
+                audioStateManager: audioStateManager,
                 coordinator: videoCoordinator,
                 isTabActive: selectedTab == .video
             )
@@ -155,7 +175,11 @@ struct ContentView: View {
     @ViewBuilder
     private var filesTab: some View {
         tabRoot(for: .files) {
-            RecordingListView(engine: engine, isTabActive: selectedTab == .files)
+            RecordingListView(
+                engine: engine,
+                audioStateManager: audioStateManager,
+                isTabActive: selectedTab == .files
+            )
         }
         .badge(hasUnreadFiles ? "" : nil)
         .tag(MainTab.files)

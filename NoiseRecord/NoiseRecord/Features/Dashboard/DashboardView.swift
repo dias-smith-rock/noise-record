@@ -6,6 +6,7 @@ struct DashboardView: View {
     private static let measurementPersistInterval: TimeInterval = 5
 
     @Bindable var engine: NoiseMonitorEngine
+    @Bindable var audioStateManager: AudioStateManager
     let isTabActive: Bool
     @Environment(\.modelContext) private var modelContext
     @State private var shareReport: SilenceRatingReport?
@@ -40,23 +41,26 @@ struct DashboardView: View {
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             ProFloatingActionButton(
-                title: engine.isMonitoring ? L10n.dashboardStop : L10n.dashboardStart,
-                systemImage: engine.isMonitoring ? "stop.circle.fill" : "play.circle.fill",
+                title: monitorActionTitle,
+                systemImage: monitorActionSymbol,
                 theme: theme,
-                isDestructive: engine.isMonitoring
+                isDestructive: audioStateManager.appAudioState == .monitoring
             ) {
+                guard audioStateManager.appAudioState != .playing else { return }
                 AdSceneLifecycle.recordFirstInteraction(source: "monitor_toggle")
                 Task {
-                    if engine.isMonitoring {
+                    switch audioStateManager.appAudioState {
+                    case .monitoring:
                         handleStopMonitoringTapped()
-                    } else {
-                        await engine.requestPermissionAndStart()
-                        if engine.isMonitoring {
-                            AppTelemetry.logMonitorStart()
-                        }
+                    case .idle:
+                        await audioStateManager.manuallyResumeMonitoring()
+                    case .playing:
+                        break
                     }
                 }
             }
+            .disabled(audioStateManager.appAudioState == .playing)
+            .opacity(audioStateManager.appAudioState == .playing ? 0.5 : 1)
             .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.horizontal, 16)
             .padding(.top, 8)
@@ -195,6 +199,22 @@ struct DashboardView: View {
         .padding()
     }
 
+    private var monitorActionTitle: String {
+        switch audioStateManager.appAudioState {
+        case .monitoring: L10n.dashboardStop
+        case .idle: L10n.dashboardStart
+        case .playing: L10n.dashboardPlayingPlaceholder
+        }
+    }
+
+    private var monitorActionSymbol: String {
+        switch audioStateManager.appAudioState {
+        case .monitoring: "stop.circle.fill"
+        case .idle: "play.circle.fill"
+        case .playing: "speaker.wave.2.fill"
+        }
+    }
+
     private var stopRecordingPromptMessage: String {
         let total = engine.currentSessionRecordingCount + engine.deferredRecordingsForStopPrompt.count
         if total > 1 {
@@ -208,7 +228,7 @@ struct DashboardView: View {
         if needsSavePrompt {
             engine.prepareStopWithSavePrompt()
         }
-        engine.stopMonitoring()
+        audioStateManager.stopMonitoringManually()
         if needsSavePrompt {
             Task { @MainActor in
                 await Task.yield()

@@ -62,6 +62,7 @@ private enum RenameTarget: Identifiable {
 
 struct RecordingListView: View {
     @Bindable var engine: NoiseMonitorEngine
+    @Bindable var audioStateManager: AudioStateManager
     let isTabActive: Bool
     @Query(sort: \RecordingSession.startedAt, order: .reverse) private var sessions: [RecordingSession]
     @Query(sort: \VideoEvidenceSession.startedAt, order: .reverse) private var videoSessions: [VideoEvidenceSession]
@@ -157,17 +158,17 @@ struct RecordingListView: View {
         .proTabNavigationChrome()
         .fullScreenCover(isPresented: Binding(
             get: { presentedVideoURL != nil },
-            set: { if !$0 { dismissVideoPlayer() } }
+            set: { if !$0 { finishVideoPlaybackFromSwipe() } }
         )) {
             if let url = presentedVideoURL {
                 SyncedVideoPlayerView(
                     url: url,
                     title: presentedVideoTitle ?? url.lastPathComponent,
-                    coexistingWithMonitoring: engine.isMonitoring,
-                    backgroundMonitoringEnabled: engine.backgroundMonitoringEnabled,
                     onDismiss: {
-                        dismissVideoPlayer()
-                        restoreMonitoringAudioSession()
+                        clearVideoPresentation()
+                    },
+                    onPlaybackFinished: {
+                        audioStateManager.handlePlaybackFinished()
                     }
                 )
             }
@@ -492,25 +493,25 @@ struct RecordingListView: View {
             playbackErrorMessage = L10n.filesVideoNotFound(session.fileName)
             return
         }
-        audioPlayerController.stop(restoreSession: true)
-        try? AudioSessionManager.configureForPlayback(
-            coexistingWithMonitoring: engine.isMonitoring,
-            backgroundEnabled: engine.backgroundMonitoringEnabled
-        )
+        audioPlayerController.stop(restoreIdleState: true)
+        do {
+            try audioStateManager.prepareAndStartPlayback()
+        } catch {
+            playbackErrorMessage = error.localizedDescription
+            return
+        }
         presentedVideoURL = session.fileURL
         presentedVideoTitle = session.fileName
     }
 
-    private func dismissVideoPlayer() {
+    private func clearVideoPresentation() {
         presentedVideoURL = nil
         presentedVideoTitle = nil
     }
 
-    private func restoreMonitoringAudioSession() {
-        AudioSessionManager.restoreMeasurementIfMonitoring(
-            engine.isMonitoring,
-            backgroundEnabled: engine.backgroundMonitoringEnabled
-        )
+    private func finishVideoPlaybackFromSwipe() {
+        audioStateManager.handlePlaybackFinished()
+        clearVideoPresentation()
     }
 
     private func toggleAudioPlayback(_ session: RecordingSession) {
@@ -523,14 +524,22 @@ struct RecordingListView: View {
             playbackErrorMessage = L10n.filesAudioNotFound(session.fileName)
             return
         }
-        if let error = audioPlayerController.togglePlayback(
-            for: session,
-            coexistingWithMonitoring: engine.isMonitoring,
-            backgroundMonitoringEnabled: engine.backgroundMonitoringEnabled,
-            onRestoreSession: {
-                restoreMonitoringAudioSession()
-            }
-        ) {
+        if audioPlayerController.playingID == session.id {
+            audioPlayerController.stop(restoreIdleState: true)
+            return
+        }
+
+        do {
+            try audioStateManager.prepareAndStartPlayback()
+        } catch {
+            playbackErrorMessage = error.localizedDescription
+            return
+        }
+
+        if let error = audioPlayerController.togglePlayback(for: session, onPlaybackFinished: {
+            audioStateManager.handlePlaybackFinished()
+        }) {
+            audioStateManager.handlePlaybackFinished()
             playbackErrorMessage = error
         }
     }
@@ -710,7 +719,7 @@ struct RecordingListView: View {
 
     private func deleteVideo(_ session: VideoEvidenceSession) {
         if presentedVideoURL == session.fileURL {
-            dismissVideoPlayer()
+            finishVideoPlaybackFromSwipe()
         }
         try? FileManager.default.removeItem(at: session.fileURL)
         VideoNoiseTimelineStore.remove(for: session.fileURL)

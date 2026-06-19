@@ -44,6 +44,9 @@ nonisolated enum L10n {
     static var dashboardExportCSV: String { localized("dashboard.button.exportCSV") }
     static var dashboardStop: String { localized("dashboard.button.stop") }
     static var dashboardStart: String { localized("dashboard.button.start") }
+    static var dashboardPlayingPlaceholder: String { localized("dashboard.playing.placeholder") }
+    static var dashboardIdleHint: String { localized("dashboard.idle.hint") }
+    static var dashboardResumeMonitoring: String { localized("dashboard.idle.resume") }
     static var dashboardFooterHighSensitivity: String { localized("dashboard.footer.highSensitivity") }
     static var dashboardFooterStandard: String { localized("dashboard.footer.standard") }
     static var dashboardStopPromptTitle: String { localized("dashboard.stopPrompt.title") }

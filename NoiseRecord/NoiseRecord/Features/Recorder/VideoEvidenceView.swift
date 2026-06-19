@@ -138,6 +138,7 @@ final class VideoEvidenceCoordinator {
 
 struct VideoEvidenceView: View {
     @Bindable var engine: NoiseMonitorEngine
+    @Bindable var audioStateManager: AudioStateManager
     @Bindable var coordinator: VideoEvidenceCoordinator
     let isTabActive: Bool
     @Environment(\.modelContext) private var modelContext
@@ -190,13 +191,13 @@ struct VideoEvidenceView: View {
                 lastNoiseSync = .distantPast
                 coordinator.syncNoise(from: engine)
                 VideoTabPerformance.mark(.syncNoiseDone)
-                engine.restoreMonitoringAfterExternalSession()
+                audioStateManager.restoreMonitoringPipelineIfNeeded()
                 VideoTabPerformance.mark(.restoreMonitoringDone)
                 VideoTabPerformance.mark(.taskActiveComplete)
             } else {
                 VideoTabPerformance.mark(.taskInactiveBegin)
                 coordinator.teardown()
-                engine.restoreMonitoringAfterExternalSession()
+                audioStateManager.restoreMonitoringPipelineIfNeeded()
                 VideoTabPerformance.mark(.taskInactiveComplete)
             }
         }
@@ -246,18 +247,17 @@ struct VideoEvidenceView: View {
         }
         .fullScreenCover(isPresented: Binding(
             get: { presentedVideoURL != nil },
-            set: { if !$0 { presentedVideoURL = nil; presentedVideoTitle = nil } }
+            set: { if !$0 { finishPresentedVideoFromSwipe() } }
         )) {
             if let url = presentedVideoURL {
                 SyncedVideoPlayerView(
                     url: url,
                     title: presentedVideoTitle ?? url.lastPathComponent,
-                    coexistingWithMonitoring: engine.isMonitoring,
-                    backgroundMonitoringEnabled: engine.backgroundMonitoringEnabled,
                     onDismiss: {
-                        presentedVideoURL = nil
-                        presentedVideoTitle = nil
-                        engine.restoreMonitoringAfterExternalSession()
+                        clearPresentedVideo()
+                    },
+                    onPlaybackFinished: {
+                        audioStateManager.handlePlaybackFinished()
                     }
                 )
             }
@@ -382,8 +382,15 @@ struct VideoEvidenceView: View {
                         .foregroundStyle(theme.accent)
                         .multilineTextAlignment(.center)
                     Button(L10n.videoPreviewRecording) {
-                        presentedVideoURL = savedVideoURL
-                        presentedVideoTitle = savedVideoURL.lastPathComponent
+                        Task {
+                            do {
+                                try audioStateManager.prepareAndStartPlayback()
+                                presentedVideoURL = savedVideoURL
+                                presentedVideoTitle = savedVideoURL.lastPathComponent
+                            } catch {
+                                coordinator.errorMessage = error.localizedDescription
+                            }
+                        }
                     }
                     .buttonStyle(.bordered)
                 }
@@ -451,7 +458,7 @@ struct VideoEvidenceView: View {
 
     private func handleRecordingFinished(_ result: Result<URL, Error>) {
         engine.endTemporaryHighSensitivityForVideoIfNeeded()
-        engine.restoreMonitoringAfterExternalSession()
+        audioStateManager.restoreMonitoringPipelineIfNeeded()
         switch result {
         case .success(let url):
             let started = coordinator.recordingStartedAt ?? Date()
@@ -472,5 +479,15 @@ struct VideoEvidenceView: View {
         case .failure(let error):
             coordinator.errorMessage = error.localizedDescription
         }
+    }
+
+    private func clearPresentedVideo() {
+        presentedVideoURL = nil
+        presentedVideoTitle = nil
+    }
+
+    private func finishPresentedVideoFromSwipe() {
+        audioStateManager.handlePlaybackFinished()
+        clearPresentedVideo()
     }
 }

@@ -374,6 +374,14 @@ final class NoiseMonitorEngine {
         }
     }
 
+    /// 为媒体播放让路：完全停止引擎与 tap，并清零仪表显示（不自动恢复）。
+    func suspendMonitoringForPlayback() {
+        if isMonitoring {
+            stopMonitoring()
+        }
+        resetStatistics()
+    }
+
     func resetStatistics() {
         currentDB = 0
         lastDBFS = 0

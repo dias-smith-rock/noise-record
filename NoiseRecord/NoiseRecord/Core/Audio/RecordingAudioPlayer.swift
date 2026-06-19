@@ -7,28 +7,22 @@ final class RecordingAudioPlayer: NSObject, AVAudioPlayerDelegate {
     private(set) var playingID: UUID?
     private(set) var lastErrorMessage: String?
     private var player: AVAudioPlayer?
-    private var onRestoreSession: (() -> Void)?
+    private var onPlaybackFinished: (() -> Void)?
 
     func togglePlayback(
         for session: RecordingSession,
-        coexistingWithMonitoring: Bool,
-        backgroundMonitoringEnabled: Bool,
-        onRestoreSession: @escaping () -> Void
+        onPlaybackFinished: @escaping () -> Void
     ) -> String? {
         if playingID == session.id {
-            stop(restoreSession: true)
+            stop(restoreIdleState: true)
             return nil
         }
 
-        stop(restoreSession: false)
-        self.onRestoreSession = onRestoreSession
+        stop(restoreIdleState: false)
+        self.onPlaybackFinished = onPlaybackFinished
         lastErrorMessage = nil
 
         do {
-            try AudioSessionManager.configureForPlayback(
-                coexistingWithMonitoring: coexistingWithMonitoring,
-                backgroundEnabled: backgroundMonitoringEnabled
-            )
             let player = try AVAudioPlayer(contentsOf: session.fileURL)
             player.delegate = self
             player.volume = 1.0
@@ -46,22 +40,22 @@ final class RecordingAudioPlayer: NSObject, AVAudioPlayerDelegate {
             playingID = nil
             let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
             lastErrorMessage = message
-            onRestoreSession()
+            onPlaybackFinished()
             return message
         }
     }
 
-    func stopIfPlaying(id: UUID, restoreSession: Bool = true) {
+    func stopIfPlaying(id: UUID, restoreIdleState: Bool = true) {
         guard playingID == id else { return }
-        stop(restoreSession: restoreSession)
+        stop(restoreIdleState: restoreIdleState)
     }
 
-    func stop(restoreSession: Bool = true) {
+    func stop(restoreIdleState: Bool = true) {
         player?.stop()
         player = nil
         playingID = nil
-        if restoreSession {
-            onRestoreSession?()
+        if restoreIdleState {
+            onPlaybackFinished?()
         }
     }
 
@@ -69,7 +63,7 @@ final class RecordingAudioPlayer: NSObject, AVAudioPlayerDelegate {
         Task { @MainActor in
             self.player = nil
             self.playingID = nil
-            self.onRestoreSession?()
+            self.onPlaybackFinished?()
         }
     }
 }
