@@ -188,6 +188,7 @@ struct VideoEvidenceView: View {
     @State private var showLocationPermissionDenied = false
     @State private var didPromptLocationDenied = false
     @State private var lastNoiseSync = Date.distantPast
+    @State private var toastMessage: String?
 
     private var measurementMode: AcousticMeasurementMode {
         AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
@@ -216,6 +217,7 @@ struct VideoEvidenceView: View {
         }
         .proTabBackground(theme: theme)
         .proTabNavigationChrome()
+        .proToast(message: $toastMessage)
         .task(id: isTabActive) {
             if isTabActive {
                 VideoTabPerformance.mark(.taskActiveBegin)
@@ -348,44 +350,45 @@ struct VideoEvidenceView: View {
                     .allowsHitTesting(false)
             }
 
-            HStack(spacing: 10) {
-                if !coordinator.isDualCameraEnabled {
+            if !coordinator.isRecording {
+                HStack(spacing: 10) {
+                    if !coordinator.isDualCameraEnabled {
+                        Button {
+                            coordinator.switchCamera()
+                            previewZoomFactor = 1.0
+                        } label: {
+                            Image(systemName: "arrow.triangle.2.circlepath.camera")
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(.white)
+                                .padding(10)
+                                .background(.black.opacity(0.55))
+                                .clipShape(Circle())
+                        }
+                        .accessibilityLabel(L10n.videoSwitchCamera)
+                        .disabled(!coordinator.isSessionReady || !coordinator.isPreviewReady)
+                    }
+
                     Button {
-                        coordinator.switchCamera()
+                        coordinator.setDualCameraEnabled(!coordinator.isDualCameraEnabled)
                         previewZoomFactor = 1.0
                     } label: {
-                        Image(systemName: "arrow.triangle.2.circlepath.camera")
+                        Image(systemName: coordinator.isDualCameraEnabled ? "camera.on.rectangle.fill" : "camera.on.rectangle")
                             .font(.body.weight(.semibold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(coordinator.isDualCameraEnabled ? theme.accent : .white)
                             .padding(10)
                             .background(.black.opacity(0.55))
                             .clipShape(Circle())
                     }
-                    .accessibilityLabel(L10n.videoSwitchCamera)
-                    .disabled(!coordinator.isSessionReady || !coordinator.isPreviewReady || coordinator.isRecording)
+                    .accessibilityLabel(L10n.videoDualCamera)
+                    .disabled(
+                        !coordinator.isSessionReady
+                            || !coordinator.isPreviewReady
+                            || !coordinator.isMultiCamSupported
+                    )
                 }
-
-                Button {
-                    coordinator.setDualCameraEnabled(!coordinator.isDualCameraEnabled)
-                    previewZoomFactor = 1.0
-                } label: {
-                    Image(systemName: coordinator.isDualCameraEnabled ? "camera.on.rectangle.fill" : "camera.on.rectangle")
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(coordinator.isDualCameraEnabled ? theme.accent : .white)
-                        .padding(10)
-                        .background(.black.opacity(0.55))
-                        .clipShape(Circle())
-                }
-                .accessibilityLabel(L10n.videoDualCamera)
-                .disabled(
-                    !coordinator.isSessionReady
-                        || !coordinator.isPreviewReady
-                        || coordinator.isRecording
-                        || !coordinator.isMultiCamSupported
-                )
+                .padding(12)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
-            .padding(12)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
             if coordinator.isRecording {
                 HStack(spacing: 8) {
@@ -463,6 +466,7 @@ struct VideoEvidenceView: View {
                         }
                     }
                 } else {
+                    toastMessage = L10n.videoRecordingCameraSwitchLocked
                     Task { await startEvidenceRecording() }
                 }
             } label: {
