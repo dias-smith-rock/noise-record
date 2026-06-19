@@ -196,12 +196,6 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
     func setZoomFactor(_ factor: CGFloat, completion: ((CGFloat) -> Void)? = nil) {
         sessionQueue.async { [weak self] in
             guard let self else { return }
-            guard !self.isDualCameraEnabled else {
-                if let completion {
-                    DispatchQueue.main.async { completion(1.0) }
-                }
-                return
-            }
             let applied = self.applyZoomLocked(factor)
             if let completion {
                 DispatchQueue.main.async {
@@ -251,7 +245,8 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
     }
 
     private func applyZoomLocked(_ factor: CGFloat) -> CGFloat {
-        guard let device = videoDevice else { return 1.0 }
+        let device = isDualCameraEnabled ? (backVideoDevice ?? videoDevice) : videoDevice
+        guard let device else { return 1.0 }
         let maxZoom = min(device.maxAvailableVideoZoomFactor, maxUserZoomFactor)
         let clamped = max(device.minAvailableVideoZoomFactor, min(factor, maxZoom))
         do {
