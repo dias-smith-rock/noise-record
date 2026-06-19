@@ -41,39 +41,67 @@ final class RingBuffer {
 }
 
 /// Accumulates PCM frames for writing to AVAudioFile.
+/// Thread-safe: append runs on the audio processing queue; drain runs on the file I/O queue.
 final class PCMFrameAccumulator {
     private var frames: [Float] = []
+    private let lock = NSLock()
     let sampleRate: Double
+
+    private static let drainChunkSize = 8192
 
     init(sampleRate: Double) {
         self.sampleRate = sampleRate
     }
 
     func append(_ samples: UnsafePointer<Float>, count: Int) {
+        lock.lock()
         frames.append(contentsOf: UnsafeBufferPointer(start: samples, count: count))
+        lock.unlock()
     }
 
     func appendFromArray(_ samples: [Float]) {
+        lock.lock()
         frames.append(contentsOf: samples)
+        lock.unlock()
     }
 
     func drain(into file: AVAudioFile, format: AVAudioFormat) throws {
-        guard !frames.isEmpty else { return }
-        let frameCount = AVAudioFrameCount(frames.count)
-        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else { return }
-        buffer.frameLength = frameCount
-        if let channelData = buffer.floatChannelData?[0] {
-            for i in 0..<frames.count {
-                channelData[i] = frames[i]
+        let snapshot = takeSnapshotForDrain()
+        guard !snapshot.isEmpty else { return }
+
+        var offset = 0
+        while offset < snapshot.count {
+            let chunkCount = min(Self.drainChunkSize, snapshot.count - offset)
+            let frameCount = AVAudioFrameCount(chunkCount)
+            guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else { return }
+            buffer.frameLength = frameCount
+            if let channelData = buffer.floatChannelData?[0] {
+                for i in 0..<chunkCount {
+                    channelData[i] = snapshot[offset + i]
+                }
             }
+            try file.write(from: buffer)
+            offset += chunkCount
         }
-        try file.write(from: buffer)
-        frames.removeAll(keepingCapacity: true)
     }
 
-    var isEmpty: Bool { frames.isEmpty }
+    var isEmpty: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return frames.isEmpty
+    }
 
     func reset() {
+        lock.lock()
         frames.removeAll()
+        lock.unlock()
+    }
+
+    private func takeSnapshotForDrain() -> [Float] {
+        lock.lock()
+        let snapshot = frames
+        frames.removeAll(keepingCapacity: true)
+        lock.unlock()
+        return snapshot
     }
 }
