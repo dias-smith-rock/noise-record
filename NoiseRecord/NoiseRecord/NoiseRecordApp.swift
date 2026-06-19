@@ -44,6 +44,7 @@ struct NoiseRecordApp: App {
                 }
             }
             .adSceneLifecycle()
+            .launchRemoveAdsPromo()
             .onAppear {
                 LaunchPerformance.mark(.launchWindowAppear)
             }
