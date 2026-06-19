@@ -387,20 +387,6 @@ struct VideoEvidenceView: View {
             .padding(12)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
-            if coordinator.isDualCameraEnabled {
-                Text(L10n.videoDualCameraHint)
-                    .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.9))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(.black.opacity(0.55))
-                    .clipShape(Capsule())
-                    .padding(.horizontal, 12)
-                    .padding(.top, 60)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                    .allowsHitTesting(false)
-            }
-
             if coordinator.isRecording {
                 HStack(spacing: 8) {
                     Circle().fill(.red).frame(width: 10, height: 10)
