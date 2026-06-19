@@ -196,7 +196,11 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
     func setZoomFactor(_ factor: CGFloat, completion: ((CGFloat) -> Void)? = nil) {
         sessionQueue.async { [weak self] in
             guard let self else { return }
-            let applied = self.applyZoomLocked(factor)
+            AppTelemetry.logVideoZoomLifecycle(
+                step: "set_requested",
+                metadata: self.zoomTelemetryMetadata(requested: factor)
+            )
+            let applied = self.applyZoomLocked(requested: factor)
             if let completion {
                 DispatchQueue.main.async {
                     completion(applied)
@@ -230,7 +234,7 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
                     self.captureSession.removeInput(videoInput)
                 }
                 try self.addVideoInputLocked(position: newPosition)
-                _ = self.applyZoomLocked(1.0)
+                _ = self.applyZoomLocked(requested: 1.0)
                 self.configureSingleVideoConnectionLocked()
 
                 DispatchQueue.main.async {
@@ -244,11 +248,25 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         }
     }
 
-    private func applyZoomLocked(_ factor: CGFloat) -> CGFloat {
+    private func applyZoomLocked(requested factor: CGFloat) -> CGFloat {
         let device = isDualCameraEnabled ? (backVideoDevice ?? videoDevice) : videoDevice
-        guard let device else { return 1.0 }
+        guard let device else {
+            AppTelemetry.logVideoZoomLifecycle(
+                step: "apply_no_device",
+                metadata: zoomTelemetryMetadata(
+                    requested: factor,
+                    deviceRole: isDualCameraEnabled ? "back_missing" : "single_missing"
+                )
+            )
+            return 1.0
+        }
+
         let maxZoom = min(device.maxAvailableVideoZoomFactor, maxUserZoomFactor)
         let clamped = max(device.minAvailableVideoZoomFactor, min(factor, maxZoom))
+        let deviceRole = isDualCameraEnabled
+            ? (device === backVideoDevice ? "back" : "fallback")
+            : "single"
+
         do {
             try device.lockForConfiguration()
             if device.isRampingVideoZoom {
@@ -256,10 +274,71 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
             }
             device.videoZoomFactor = clamped
             device.unlockForConfiguration()
+            AppTelemetry.logVideoZoomLifecycle(
+                step: "apply_success",
+                metadata: zoomTelemetryMetadata(
+                    requested: factor,
+                    applied: clamped,
+                    deviceRole: deviceRole,
+                    minZoom: device.minAvailableVideoZoomFactor,
+                    maxZoom: maxZoom,
+                    deviceMaxZoom: device.maxAvailableVideoZoomFactor
+                )
+            )
             return clamped
         } catch {
-            return device.videoZoomFactor
+            let current = device.videoZoomFactor
+            AppTelemetry.logVideoZoomLifecycle(
+                step: "apply_lock_failed",
+                metadata: zoomTelemetryMetadata(
+                    requested: factor,
+                    applied: current,
+                    deviceRole: deviceRole,
+                    minZoom: device.minAvailableVideoZoomFactor,
+                    maxZoom: maxZoom,
+                    deviceMaxZoom: device.maxAvailableVideoZoomFactor,
+                    error: error.localizedDescription
+                )
+            )
+            return current
         }
+    }
+
+    private func zoomTelemetryMetadata(
+        requested: CGFloat,
+        applied: CGFloat? = nil,
+        deviceRole: String? = nil,
+        minZoom: CGFloat? = nil,
+        maxZoom: CGFloat? = nil,
+        deviceMaxZoom: CGFloat? = nil,
+        error: String? = nil
+    ) -> [String: String] {
+        var metadata: [String: String] = [
+            "dual": String(isDualCameraEnabled),
+            "recording": String(isRecording),
+            "requested": String(format: "%.2f", requested),
+        ]
+        if let applied {
+            metadata["applied"] = String(format: "%.2f", applied)
+        }
+        if let deviceRole {
+            metadata["device_role"] = deviceRole
+        }
+        if let minZoom {
+            metadata["min_zoom"] = String(format: "%.2f", minZoom)
+        }
+        if let maxZoom {
+            metadata["max_zoom"] = String(format: "%.2f", maxZoom)
+        }
+        if let deviceMaxZoom {
+            metadata["device_max_zoom"] = String(format: "%.2f", deviceMaxZoom)
+        }
+        if let error {
+            metadata["error"] = error
+        }
+        metadata["has_back_device"] = String(backVideoDevice != nil)
+        metadata["has_video_device"] = String(videoDevice != nil)
+        return metadata
     }
 
     private func setupSingleCamPreviewSessionLocked(position: AVCaptureDevice.Position) throws {
@@ -334,6 +413,16 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         audioOutput = nil
         recordingOutputsAttached = false
         isDualCameraEnabled = true
+        AppTelemetry.logVideoZoomLifecycle(
+            step: "dual_session_ready",
+            metadata: [
+                "dual": "true",
+                "recording": String(isRecording),
+                "back_min_zoom": String(format: "%.2f", backDevice.minAvailableVideoZoomFactor),
+                "back_max_zoom": String(format: "%.2f", backDevice.maxAvailableVideoZoomFactor),
+                "back_current_zoom": String(format: "%.2f", backDevice.videoZoomFactor),
+            ]
+        )
     }
 
     private func clearDualCameraStateLocked() {

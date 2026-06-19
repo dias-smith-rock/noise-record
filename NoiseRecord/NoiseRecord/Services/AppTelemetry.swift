@@ -69,6 +69,23 @@ nonisolated enum AppTelemetry {
         logEvent("video_recording_start")
     }
 
+    /// Structured video zoom lifecycle logs for dual-camera zoom troubleshooting.
+    static func logVideoZoomLifecycle(
+        step: String,
+        metadata: [String: String] = [:]
+    ) {
+        var parameters: [String: Any] = ["step": step]
+        for (key, value) in metadata {
+            parameters[key] = value
+        }
+
+        let metadataSummary = metadata.isEmpty
+            ? ""
+            : " " + metadata.map { "\($0.key)=\($0.value)" }.sorted().joined(separator: " ")
+        log("video.zoom.\(step)\(metadataSummary)")
+        logEvent("video_zoom_lifecycle", parameters: parameters)
+    }
+
     static func logBackgroundRecordingStart(peakDB: Float) {
         log("background_recording_start peak_db=\(Int(peakDB))")
         logEvent(
