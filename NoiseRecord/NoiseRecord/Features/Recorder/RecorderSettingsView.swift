@@ -40,8 +40,11 @@ struct RecorderSettingsView: View {
                         theme: theme,
                         icon: "record.circle"
                     )
-                    .onChange(of: engine.voiceActivatedEnabled) { _, _ in
+                    .onChange(of: engine.voiceActivatedEnabled) { _, enabled in
                         engine.persistSettings()
+                        if enabled, engine.isMonitoring {
+                            engine.restoreMonitoringAfterExternalSession()
+                        }
                     }
                 }
 

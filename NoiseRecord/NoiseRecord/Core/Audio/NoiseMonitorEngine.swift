@@ -274,6 +274,7 @@ final class NoiseMonitorEngine {
         do {
             audioEngine.prepare()
             try audioEngine.start()
+            try primeAudioCaptureAfterEngineRunning()
             isMonitoring = true
             AppTelemetry.setMonitoringActive(true)
             Task {
@@ -288,6 +289,10 @@ final class NoiseMonitorEngine {
                 )
             }
         } catch {
+            if audioEngine.isRunning {
+                audioEngine.inputNode.removeTap(onBus: 0)
+                audioEngine.stop()
+            }
             setUserError(L10n.errorEngineStartFailed(error.localizedDescription), context: "engine_start")
         }
     }
@@ -429,6 +434,17 @@ final class NoiseMonitorEngine {
         setupAudioPipeline()
     }
 
+    /// Re-activates the session and reinstalls the tap after the engine is running,
+    /// matching the mic priming that happens when entering the video evidence tab.
+    private func primeAudioCaptureAfterEngineRunning() throws {
+        try BackgroundAudioSession.activateForMeasurement(
+            backgroundEnabled: backgroundMonitoringEnabled,
+            skipSessionActivation: false
+        )
+        audioEngine.inputNode.removeTap(onBus: 0)
+        setupAudioPipeline()
+    }
+
     /// Restores the mic pipeline after another feature (e.g. camera preview) used the audio session.
     func restoreMonitoringAfterExternalSession() {
         guard isMonitoring else { return }
@@ -456,13 +472,16 @@ final class NoiseMonitorEngine {
 
     private func recoverMonitoringPipeline(showErrorOnFailure: Bool) {
         do {
-            try reconfigureAudioSessionForCurrentState()
-            guard !audioEngine.isRunning else { return }
-            setupAudioPipeline()
-            audioEngine.prepare()
-            try audioEngine.start()
+            if audioEngine.isRunning {
+                try primeAudioCaptureAfterEngineRunning()
+            } else {
+                try reconfigureAudioSessionForCurrentState()
+                audioEngine.prepare()
+                try audioEngine.start()
+                try primeAudioCaptureAfterEngineRunning()
+            }
         } catch {
-            guard showErrorOnFailure, !audioEngine.isRunning else { return }
+            guard showErrorOnFailure else { return }
             setUserError(
                 AudioSessionError.wrap(error).localizedDescription,
                 context: "pipeline_recovery"
