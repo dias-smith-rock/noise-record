@@ -139,6 +139,23 @@ nonisolated enum AppTelemetry {
         logEvent("ad_lifecycle", parameters: parameters)
     }
 
+    /// 7 段数码管字体加载链路诊断。
+    static func logUIFontDiagnostics(
+        step: String,
+        metadata: [String: String] = [:]
+    ) {
+        var parameters: [String: Any] = ["step": step]
+        for (key, value) in metadata {
+            parameters[key] = value
+        }
+
+        let metadataSummary = metadata.isEmpty
+            ? ""
+            : " " + metadata.map { "\($0.key)=\($0.value)" }.sorted().joined(separator: " ")
+        log("ui_font.\(step)\(metadataSummary)")
+        logEvent("ui_font_diagnostics", parameters: parameters)
+    }
+
     private static func configureCrashlyticsContext() {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"

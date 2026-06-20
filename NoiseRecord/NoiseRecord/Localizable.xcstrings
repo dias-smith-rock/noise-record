@@ -2800,6 +2800,29 @@
         }
       }
     },
+    "dashboard.fullscreenLED" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open fullscreen LED display"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开全屏 LED 看板"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開啟全螢幕 LED 看板"
+          }
+        }
+      }
+    },
     "dashboard.title" : {
       "extractionState" : "manual",
       "localizations" : {

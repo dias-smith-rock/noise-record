@@ -16,6 +16,8 @@ struct DashboardView: View {
     @State private var showStopRecordingPrompt = false
     @State private var csvExportErrorMessage: String?
     @State private var measurementPersistTick = 0
+    @State private var isFullScreenPresented = false
+    @State private var environment = AmbientEnvironmentProvider()
 
     private var measurementMode: AcousticMeasurementMode {
         AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
@@ -38,6 +40,10 @@ struct DashboardView: View {
         .observesAppLanguage()
         .onAppear {
             LaunchPerformance.mark(.launchFirstInteractive)
+            environment.startUpdating()
+        }
+        .onDisappear {
+            environment.stopUpdating()
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             ProFloatingActionButton(
@@ -114,13 +120,28 @@ struct DashboardView: View {
         } message: {
             Text(stopRecordingPromptMessage)
         }
+        .fullScreenCover(isPresented: $isFullScreenPresented) {
+            FullscreenLEDView(
+                engine: engine,
+                audioStateManager: audioStateManager,
+                environment: environment,
+                mode: measurementMode,
+                onClose: { isFullScreenPresented = false }
+            )
+        }
     }
 
     private var dashboardContent: some View {
         VStack(spacing: 20) {
             EngineModeSwitchView(engine: engine)
 
-            NoiseLevelGauge(db: engine.currentDB, mode: measurementMode)
+            NoiseLevelGauge(
+                db: engine.currentDB,
+                mode: measurementMode,
+                humidityText: environment.humidityDisplay,
+                temperatureText: environment.temperatureDisplay,
+                onFullscreenTap: { isFullScreenPresented = true }
+            )
 
             HStack(spacing: 12) {
                 StatCard(title: L10n.dashboardMax, value: engine.maxDB, theme: theme)

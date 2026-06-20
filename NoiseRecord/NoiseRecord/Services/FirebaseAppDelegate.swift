@@ -38,6 +38,13 @@ final class FirebaseAppDelegate: NSObject, UIApplicationDelegate {
         }
     }
 
+    func application(
+        _ application: UIApplication,
+        supportedInterfaceOrientationsFor window: UIWindow?
+    ) -> UIInterfaceOrientationMask {
+        InterfaceOrientationLocker.supportedMask
+    }
+
     deinit {
         if let didBecomeActiveObserver {
             NotificationCenter.default.removeObserver(didBecomeActiveObserver)

@@ -5,8 +5,11 @@ struct WaveformView: View, Equatable {
     var mode: AcousticMeasurementMode = .standard
     var minDB: Float = 20
     var maxDB: Float = 100
+    var accentOverride: Color? = nil
+    var usesCardChrome: Bool = true
 
     private var theme: ModeVisualTheme { .theme(for: mode) }
+    private var strokeColor: Color { accentOverride ?? theme.accent }
 
     static func == (lhs: WaveformView, rhs: WaveformView) -> Bool {
         lhs.samples.count == rhs.samples.count
@@ -14,6 +17,7 @@ struct WaveformView: View, Equatable {
             && lhs.mode == rhs.mode
             && lhs.minDB == rhs.minDB
             && lhs.maxDB == rhs.maxDB
+            && lhs.usesCardChrome == rhs.usesCardChrome
     }
 
     var body: some View {
@@ -40,20 +44,22 @@ struct WaveformView: View, Equatable {
 
             context.stroke(
                 path,
-                with: .color(theme.accent),
+                with: .color(strokeColor),
                 style: StrokeStyle(
-                    lineWidth: theme.waveformLineWidth,
+                    lineWidth: usesCardChrome ? theme.waveformLineWidth : 2,
                     lineCap: .round,
                     lineJoin: .round
                 )
             )
         }
-        .background(Color(.secondarySystemGroupedBackground))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(theme.surfaceBorder, lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .background(usesCardChrome ? AnyShapeStyle(Color(.secondarySystemGroupedBackground)) : AnyShapeStyle(Color.clear))
+        .overlay {
+            if usesCardChrome {
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(theme.surfaceBorder, lineWidth: 1)
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: usesCardChrome ? 12 : 0))
         .drawingGroup()
     }
 }
