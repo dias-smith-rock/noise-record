@@ -121,6 +121,20 @@ enum AdSceneLifecycle {
         }
     }
 
+    /// 进入全屏 LED 看板后展示插屏广告（略作延迟，等待 fullScreenCover 呈现完成）。
+    static func showInterstitialOnFullscreenEnter() {
+        guard AdMobConfig.adsEnabled, AdConsentManager.canRequestAds else { return }
+
+        AppTelemetry.logAdLifecycle(channel: "fullscreen_led", step: "show_requested")
+        HotStartAdManager.shared.loadAd()
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(450))
+            AppTelemetry.logAdLifecycle(channel: "fullscreen_led", step: "show_presenting")
+            HotStartAdManager.shared.showAdIfAvailable()
+        }
+    }
+
     /// Call when the user performs their first intentional action after foregrounding.
     static func recordFirstInteraction(source: String) {
         guard AdMobConfig.adsEnabled else { return }

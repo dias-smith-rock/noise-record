@@ -135,6 +135,7 @@ struct DashboardView: View {
         .onChange(of: isFullScreenPresented) { _, isPresented in
             if isPresented {
                 InterfaceOrientationLocker.enterLandscapeFullscreen()
+                AdSceneLifecycle.showInterstitialOnFullscreenEnter()
             } else {
                 InterfaceOrientationLocker.exitLandscapeFullscreen()
             }
@@ -150,7 +151,10 @@ struct DashboardView: View {
                 mode: measurementMode,
                 humidityText: environment.humidityDisplay,
                 temperatureText: environment.temperatureDisplay,
-                onFullscreenTap: { isFullScreenPresented = true }
+                onFullscreenTap: {
+                    HotStartAdManager.shared.loadAd()
+                    isFullScreenPresented = true
+                }
             )
 
             HStack(spacing: 12) {
