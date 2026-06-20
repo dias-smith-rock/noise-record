@@ -2108,6 +2108,29 @@
         }
       }
     },
+    "dashboard.fullscreenLED.guide" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap here to open a landscape fullscreen LED display for easier reading."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点这里可横屏打开全屏 LED 看板，读数更清晰。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "點這裡可橫屏開啟全螢幕 LED 看板，讀數更清晰。"
+          }
+        }
+      }
+    },
     "dashboard.idle.hint" : {
       "extractionState" : "manual",
       "localizations" : {

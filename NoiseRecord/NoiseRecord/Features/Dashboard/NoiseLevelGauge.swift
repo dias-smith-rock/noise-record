@@ -5,6 +5,7 @@ struct NoiseLevelGauge: View {
     var mode: AcousticMeasurementMode = .standard
     var humidityText: String = "--"
     var temperatureText: String = "--"
+    var hidesFullscreenButton: Bool = false
     var onFullscreenTap: (() -> Void)?
 
     private var theme: ModeVisualTheme { .theme(for: mode) }
@@ -18,15 +19,17 @@ struct NoiseLevelGauge: View {
                     .frame(maxWidth: .infinity)
 
                 if let onFullscreenTap {
-                    Button(action: onFullscreenTap) {
-                        Image(systemName: "arrow.up.left.and.arrow.down.right")
-                            .font(.body.weight(.semibold))
-                            .foregroundStyle(.white)
-                            .padding(8)
-                            .background(theme.accent, in: Circle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(L10n.dashboardFullscreenLED)
+                    fullscreenButton(action: onFullscreenTap)
+                        .padding(.top, 2)
+                        .opacity(hidesFullscreenButton ? 0 : 1)
+                        .background {
+                            GeometryReader { proxy in
+                                Color.clear.preference(
+                                    key: FullscreenGuideButtonFrameKey.self,
+                                    value: proxy.frame(in: .global)
+                                )
+                            }
+                        }
                 }
             }
 
@@ -57,6 +60,18 @@ struct NoiseLevelGauge: View {
                     .multilineTextAlignment(.center)
             }
         }
+    }
+
+    private func fullscreenButton(action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: "arrow.up.left.and.arrow.down.right")
+                .font(.body.weight(.semibold))
+                .foregroundStyle(.white)
+                .padding(8)
+                .background(theme.accent, in: Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(L10n.dashboardFullscreenLED)
     }
 
     private var gaugeCircle: some View {

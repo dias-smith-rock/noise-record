@@ -18,6 +18,8 @@ struct DashboardView: View {
     @State private var csvExportErrorMessage: String?
     @State private var measurementPersistTick = 0
     @State private var isFullScreenPresented = false
+    @State private var showsFullscreenLEDGuide = false
+    @State private var fullscreenButtonFrame: CGRect = .zero
     @State private var environment = AmbientEnvironmentProvider()
 
     private var measurementMode: AcousticMeasurementMode {
@@ -44,6 +46,10 @@ struct DashboardView: View {
         .onAppear {
             LaunchPerformance.mark(.launchFirstInteractive)
             environment.startUpdating()
+            refreshFullscreenLEDGuideVisibility()
+        }
+        .onChange(of: isTabActive) { _, _ in
+            refreshFullscreenLEDGuideVisibility()
         }
         .onDisappear {
             environment.stopUpdating()
@@ -140,6 +146,24 @@ struct DashboardView: View {
                 InterfaceOrientationLocker.exitLandscapeFullscreen()
             }
         }
+        .onPreferenceChange(FullscreenGuideButtonFrameKey.self) { frame in
+            fullscreenButtonFrame = frame
+        }
+        .overlay {
+            if showsFullscreenLEDGuide, fullscreenButtonFrame.width > 0 {
+                FullscreenLEDGuideOverlay(
+                    theme: theme,
+                    buttonFrame: fullscreenButtonFrame,
+                    onDismiss: dismissFullscreenLEDGuide,
+                    onFullscreenTap: {
+                        dismissFullscreenLEDGuide()
+                        HotStartAdManager.shared.loadAd()
+                        isFullScreenPresented = true
+                    }
+                )
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: showsFullscreenLEDGuide)
     }
 
     private var dashboardContent: some View {
@@ -151,7 +175,9 @@ struct DashboardView: View {
                 mode: measurementMode,
                 humidityText: environment.humidityDisplay,
                 temperatureText: environment.temperatureDisplay,
+                hidesFullscreenButton: showsFullscreenLEDGuide,
                 onFullscreenTap: {
+                    dismissFullscreenLEDGuide()
                     HotStartAdManager.shared.loadAd()
                     isFullScreenPresented = true
                 }
@@ -256,6 +282,20 @@ struct DashboardView: View {
             return L10n.dashboardStopPromptMultiple(total)
         }
         return L10n.dashboardStopPromptInProgress
+    }
+
+    private func refreshFullscreenLEDGuideVisibility() {
+        guard isTabActive, !FullscreenLEDGuideStore.hasSeenGuide else {
+            showsFullscreenLEDGuide = false
+            return
+        }
+        showsFullscreenLEDGuide = true
+    }
+
+    private func dismissFullscreenLEDGuide() {
+        guard showsFullscreenLEDGuide else { return }
+        showsFullscreenLEDGuide = false
+        FullscreenLEDGuideStore.markSeen()
     }
 
     private func handleStopMonitoringTapped() {
