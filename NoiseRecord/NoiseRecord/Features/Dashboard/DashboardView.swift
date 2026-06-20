@@ -129,6 +129,13 @@ struct DashboardView: View {
                 onClose: { isFullScreenPresented = false }
             )
         }
+        .onChange(of: isFullScreenPresented) { _, isPresented in
+            if isPresented {
+                InterfaceOrientationLocker.enterLandscapeFullscreen()
+            } else {
+                InterfaceOrientationLocker.exitLandscapeFullscreen()
+            }
+        }
     }
 
     private var dashboardContent: some View {

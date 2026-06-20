@@ -39,15 +39,13 @@ struct FullscreenLEDView: View {
                     .padding(.horizontal, 28)
                     .padding(.top, 20)
 
-                Spacer(minLength: 12)
-
-                HStack(alignment: .bottom, spacing: 36) {
+                HStack(alignment: .center, spacing: 36) {
                     decibelPanel
                     rightMetricsPanel
                 }
                 .padding(.horizontal, 36)
-
-                Spacer(minLength: 20)
+                .padding(.vertical, 12)
+                .frame(maxHeight: .infinity)
             }
         }
         .preferredColorScheme(.dark)
@@ -58,6 +56,16 @@ struct FullscreenLEDView: View {
         .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { date in
             now = date
         }
+        .background {
+            LandscapeOrientationEnforcer()
+                .frame(width: 0, height: 0)
+        }
+    }
+
+    private enum LEDMetricTypography {
+        static let digitSize: CGFloat = 34
+        static let bodySize: CGFloat = 20
+        static let iconSize: CGFloat = 24
     }
 
     private var topStatusBar: some View {
@@ -89,11 +97,21 @@ struct FullscreenLEDView: View {
 
             Spacer()
 
-            Text(clockText)
-                .font(.system(size: 34, weight: .bold, design: .monospaced))
-                .monospacedDigit()
-                .foregroundStyle(ledAccent)
-                .shadow(color: ledAccent.opacity(0.55), radius: 6)
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                ledDigitText(
+                    clockTimeText,
+                    size: LEDMetricTypography.digitSize,
+                    color: ledAccent,
+                    shadowRadius: 6
+                )
+
+                ledBodyText(
+                    clockPeriodText,
+                    size: LEDMetricTypography.bodySize,
+                    color: ledAccent,
+                    shadowRadius: 6
+                )
+            }
         }
     }
 
@@ -102,14 +120,15 @@ struct FullscreenLEDView: View {
             let fontSize = min(100, proxy.size.width * 0.34)
 
             VStack(alignment: .leading, spacing: 8) {
-                Text(stabilizedDecibelText)
-                    .font(SegmentedDigitalFont.font(size: fontSize))
-                    .monospacedDigit()
-                    .foregroundStyle(decibelAccent)
-                    .shadow(color: decibelAccent.opacity(0.45), radius: 8)
-                    .frame(width: proxy.size.width * 0.92, alignment: .leading)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
+                ledDigitText(
+                    stabilizedDecibelText,
+                    size: fontSize,
+                    color: decibelAccent,
+                    shadowRadius: 8
+                )
+                .frame(width: proxy.size.width * 0.92, alignment: .leading)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
 
                 Text(ledUnitLabel)
                     .font(.system(size: 22, weight: .semibold, design: .monospaced))
@@ -118,11 +137,13 @@ struct FullscreenLEDView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var rightMetricsPanel: some View {
-        VStack(alignment: .trailing, spacing: 12) {
+        VStack(alignment: .trailing, spacing: 0) {
+            Spacer(minLength: 0)
+
             WaveformView(
                 samples: engine.history,
                 mode: mode,
@@ -130,7 +151,9 @@ struct FullscreenLEDView: View {
                 usesCardChrome: false
             )
             .equatable()
-            .frame(width: 280, height: 60)
+            .frame(width: 320, height: 60)
+
+            Spacer(minLength: 0)
 
             HStack(alignment: .bottom, spacing: 24) {
                 ledEnvironmentMetric(
@@ -146,28 +169,48 @@ struct FullscreenLEDView: View {
                 )
             }
         }
-        .frame(width: 280, alignment: .trailing)
+        .frame(width: 320)
+        .frame(maxHeight: .infinity, alignment: .trailing)
+    }
+
+    private func ledDigitText(
+        _ text: String,
+        size: CGFloat,
+        color: Color,
+        shadowRadius: CGFloat = 4
+    ) -> some View {
+        Text(text)
+            .font(SegmentedDigitalFont.font(size: size))
+            .monospacedDigit()
+            .foregroundStyle(color)
+            .shadow(color: color.opacity(0.45), radius: shadowRadius)
+    }
+
+    private func ledBodyText(
+        _ text: String,
+        size: CGFloat,
+        color: Color,
+        shadowRadius: CGFloat = 4
+    ) -> some View {
+        Text(text)
+            .font(.system(size: size, weight: .semibold, design: .monospaced))
+            .foregroundStyle(color)
+            .shadow(color: color.opacity(0.45), radius: shadowRadius)
     }
 
     private func ledEnvironmentMetric(symbol: String, value: String, unit: String) -> some View {
-        HStack(alignment: .bottom, spacing: 6) {
+        HStack(alignment: .bottom, spacing: 8) {
             Image(systemName: symbol)
-                .font(.system(size: 20))
+                .font(.system(size: LEDMetricTypography.iconSize))
                 .foregroundStyle(ledAccent)
                 .padding(.bottom, 2)
 
-            HStack(alignment: .bottom, spacing: 2) {
-                Text(value)
-                    .font(.system(size: 24, weight: .semibold, design: .monospaced))
-                    .monospacedDigit()
-                    .foregroundStyle(ledAccent)
-                    .shadow(color: ledAccent.opacity(0.45), radius: 4)
+            HStack(alignment: .bottom, spacing: 3) {
+                ledDigitText(value, size: LEDMetricTypography.digitSize, color: ledAccent)
 
                 if !unit.isEmpty {
-                    Text(unit)
-                        .font(.system(size: 16, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(ledAccent.opacity(0.9))
-                        .padding(.bottom, 1)
+                    ledBodyText(unit, size: LEDMetricTypography.bodySize, color: ledAccent.opacity(0.9))
+                        .padding(.bottom, 2)
                 }
             }
         }
@@ -181,12 +224,17 @@ struct FullscreenLEDView: View {
         }
     }
 
-    private var clockText: String {
+    private var clockTimeText: String {
         now.formatted(
             .dateTime
-                .hour(.defaultDigits(amPM: .abbreviated))
+                .hour(.defaultDigits(amPM: .omitted))
                 .minute(.twoDigits)
         )
+    }
+
+    private var clockPeriodText: String {
+        let hour = Calendar.current.component(.hour, from: now)
+        return hour < 12 ? "AM" : "PM"
     }
 
     private var batterySymbolName: String {

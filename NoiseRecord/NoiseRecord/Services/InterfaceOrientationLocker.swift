@@ -3,6 +3,8 @@ import UIKit
 /// 全屏 LED 看板进入/退出时的横竖屏约束。
 @MainActor
 enum InterfaceOrientationLocker {
+    private static let landscapeRetryDelaysMs: [UInt64] = [0, 120, 300, 600]
+
     static var supportedMask: UIInterfaceOrientationMask = [
         .portrait,
         .landscapeLeft,
@@ -11,7 +13,7 @@ enum InterfaceOrientationLocker {
 
     static func enterLandscapeFullscreen() {
         supportedMask = .landscape
-        requestOrientationUpdate(preferred: .landscapeRight)
+        scheduleLandscapeActivation()
     }
 
     static func exitLandscapeFullscreen() {
@@ -19,24 +21,47 @@ enum InterfaceOrientationLocker {
         requestOrientationUpdate(preferred: .portrait)
     }
 
-    private static func requestOrientationUpdate(preferred: UIInterfaceOrientation) {
-        guard let windowScene = UIApplication.shared.connectedScenes
-            .compactMap({ $0 as? UIWindowScene })
-            .first(where: { $0.activationState == .foregroundActive }) else {
-            return
+    private static func scheduleLandscapeActivation() {
+        for delayMs in landscapeRetryDelaysMs {
+            Task { @MainActor in
+                if delayMs > 0 {
+                    try? await Task.sleep(for: .milliseconds(delayMs))
+                }
+                requestOrientationUpdate(preferred: .landscapeRight)
+            }
         }
+    }
 
+    private static func requestOrientationUpdate(preferred: UIInterfaceOrientation) {
         let orientations: UIInterfaceOrientationMask = preferred.isLandscape
             ? .landscape
             : .portrait
 
-        windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: orientations)) { _ in }
-
-        for window in windowScene.windows {
-            window.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
+        if let windowScene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive }) {
+            windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: orientations)) { _ in }
         }
 
-        UIDevice.current.setValue(preferred.rawValue, forKey: "orientation")
+        invalidateOrientationChain(from: UIApplication.shared.topViewController)
+
+        if UIDevice.current.orientation.isLandscape != preferred.isLandscape {
+            UIDevice.current.setValue(preferred.rawValue, forKey: "orientation")
+        }
         UIViewController.attemptRotationToDeviceOrientation()
+    }
+
+    private static func invalidateOrientationChain(from controller: UIViewController?) {
+        var current = controller
+        while let controller = current {
+            controller.setNeedsUpdateOfSupportedInterfaceOrientations()
+            if let parent = controller.parent {
+                current = parent
+            } else if let presenting = controller.presentingViewController {
+                current = presenting
+            } else {
+                current = nil
+            }
+        }
     }
 }
