@@ -1,0 +1,305 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "—": {},
+    "dashboard.button.start": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start"
+          }
+        }
+      }
+    },
+    "dashboard.button.stop": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop"
+          }
+        }
+      }
+    },
+    "dashboard.stat.avg": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avg"
+          }
+        }
+      }
+    },
+    "dashboard.stat.leq": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leq"
+          }
+        }
+      }
+    },
+    "dashboard.stat.max": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Max"
+          }
+        }
+      }
+    },
+    "dashboard.stat.min": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Min"
+          }
+        }
+      }
+    },
+    "dashboard.title": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noise Monitor"
+          }
+        }
+      }
+    },
+    "dB": {},
+    "error.audio.activationFailed": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not activate the audio session."
+          }
+        }
+      }
+    },
+    "error.audio.permissionDenied": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microphone access was denied."
+          }
+        }
+      }
+    },
+    "error.engine.startFailed": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not start the audio engine: %1$@"
+          }
+        }
+      }
+    },
+    "mode.highSensitivity.segmentLabel": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "High Sensitivity"
+          }
+        }
+      }
+    },
+    "mode.standard.segmentLabel": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standard"
+          }
+        }
+      }
+    },
+    "noiseRisk.dangerous": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dangerous"
+          }
+        }
+      }
+    },
+    "noiseRisk.loud": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loud"
+          }
+        }
+      }
+    },
+    "noiseRisk.moderate": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moderate"
+          }
+        }
+      }
+    },
+    "noiseRisk.quiet": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quiet"
+          }
+        }
+      }
+    },
+    "permission.microphone.denied.message": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable microphone access in Settings to measure noise."
+          }
+        }
+      }
+    },
+    "permission.microphone.denied.title": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microphone Access Required"
+          }
+        }
+      }
+    },
+    "settings.disclaimer.body": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not a certified sound level meter. Watch readings are estimates for personal reference only."
+          }
+        }
+      }
+    },
+    "watch.mode.label": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mode"
+          }
+        }
+      }
+    },
+    "watch.monitoring.batteryNotice": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Watch monitoring uses more battery. Stop when finished."
+          }
+        }
+      }
+    },
+    "watch.runtime.ended": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monitoring session ended."
+          }
+        }
+      }
+    },
+    "watch.runtime.error": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monitoring stopped due to a system error."
+          }
+        }
+      }
+    },
+    "watch.runtime.expired": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Session time limit reached. Monitoring stopped."
+          }
+        }
+      }
+    },
+    "watch.runtime.resigned": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Another app took focus. Monitoring stopped."
+          }
+        }
+      }
+    },
+    "watch.runtime.suppressed": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System paused monitoring to save power."
+          }
+        }
+      }
+    },
+    "watch.runtime.willExpire": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Session will end soon."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

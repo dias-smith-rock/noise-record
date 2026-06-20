@@ -1,13 +1,4 @@
 import Foundation
-import UIKit
-
-enum WeightingType: String, CaseIterable, Codable, Sendable {
-    case a = "A"
-    case c = "C"
-    case z = "Z"
-
-    var displayName: String { localizedDisplayName }
-}
 
 struct DeviceCalibrationStore: Sendable {
     static let didChangeNotification = Notification.Name("DeviceCalibrationStore.didChange")
@@ -44,13 +35,7 @@ struct DeviceCalibrationStore: Sendable {
     ]
 
     static var deviceModelIdentifier: String {
-        var systemInfo = utsname()
-        uname(&systemInfo)
-        return withUnsafePointer(to: &systemInfo.machine) {
-            $0.withMemoryRebound(to: CChar.self, capacity: 1) {
-                String(validatingUTF8: $0) ?? "unknown"
-            }
-        }
+        HardwareIdentifier.machineIdentifier
     }
 
     /// Device hardware offset (115–118 dB range).

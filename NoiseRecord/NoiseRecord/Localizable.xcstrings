@@ -18861,6 +18861,77 @@
           }
         }
       }
+    },
+    "watch.monitoring.batteryNotice" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watch monitoring uses more battery. Stop when finished."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "手表监测会更快耗电，用完后请停止。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "手錶監測會更快耗電，用完後請停止。"
+          }
+        }
+      }
+    },
+    "watch.runtime.ended" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Monitoring session ended." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "监测会话已结束。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "監測會話已結束。" } }
+      }
+    },
+    "watch.runtime.error" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Monitoring stopped due to a system error." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "系统错误，监测已停止。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "系統錯誤，監測已停止。" } }
+      }
+    },
+    "watch.runtime.expired" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Session time limit reached. Monitoring stopped." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "会话时间已到，监测已停止。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "會話時間已到，監測已停止。" } }
+      }
+    },
+    "watch.runtime.resigned" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Another app took focus. Monitoring stopped." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "其他应用已抢占前台，监测已停止。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "其他 App 已搶佔前台，監測已停止。" } }
+      }
+    },
+    "watch.runtime.suppressed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "System paused monitoring to save power." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "系统为省电已暂停监测。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "系統為省電已暫停監測。" } }
+      }
+    },
+    "watch.runtime.willExpire" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Session will end soon." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "会话即将结束。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "會話即將結束。" } }
+      }
     }
   },
   "version" : "1.0"

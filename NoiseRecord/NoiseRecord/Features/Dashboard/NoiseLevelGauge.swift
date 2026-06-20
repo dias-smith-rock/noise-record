@@ -1,48 +1,5 @@
 import SwiftUI
 
-enum NoiseRiskLevel: Sendable {
-    case quiet
-    case moderate
-    case loud
-    case dangerous
-
-    static func from(db: Float, highSensitivity: Bool) -> NoiseRiskLevel {
-        if highSensitivity {
-            switch db {
-            case ..<45: .quiet
-            case 45..<65: .moderate
-            case 65..<85: .loud
-            default: .dangerous
-            }
-        } else {
-            switch db {
-            case ..<40: .quiet
-            case 40..<60: .moderate
-            case 60..<80: .loud
-            default: .dangerous
-            }
-        }
-    }
-
-    var color: Color {
-        switch self {
-        case .quiet: .green
-        case .moderate: .yellow
-        case .loud: .orange
-        case .dangerous: .red
-        }
-    }
-
-    var label: String {
-        switch self {
-        case .quiet: L10n.noiseRiskQuiet
-        case .moderate: L10n.noiseRiskModerate
-        case .loud: L10n.noiseRiskLoud
-        case .dangerous: L10n.noiseRiskDangerous
-        }
-    }
-}
-
 struct NoiseLevelGauge: View {
     let db: Float
     var mode: AcousticMeasurementMode = .standard

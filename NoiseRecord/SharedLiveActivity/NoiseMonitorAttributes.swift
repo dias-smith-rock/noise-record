@@ -26,16 +26,7 @@ enum LiveActivityDeepLink {
 
 enum LiveActivityStyle {
     static func decibelColorHex(for db: Float, highSensitivity: Bool) -> String {
-        let quietLimit: Float = highSensitivity ? 45 : 40
-        let moderateLimit: Float = highSensitivity ? 65 : 60
-        let loudLimit: Float = highSensitivity ? 85 : 80
-
-        switch db {
-        case ..<quietLimit: return "34C759"
-        case ..<moderateLimit: return "FFD60A"
-        case ..<loudLimit: return "FF9500"
-        default: return "FF3B30"
-        }
+        DecibelColorStyle.colorHex(for: db, highSensitivity: highSensitivity)
     }
 
     static func normalizedWaveformLevels(_ samples: [Float], fallbackDB: Float) -> [Float] {

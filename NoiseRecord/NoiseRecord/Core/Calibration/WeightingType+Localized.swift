@@ -8,4 +8,6 @@ extension WeightingType {
         case .z: AppLocalization.string( "weighting.z.displayName")
         }
     }
+
+    var displayName: String { localizedDisplayName }
 }
