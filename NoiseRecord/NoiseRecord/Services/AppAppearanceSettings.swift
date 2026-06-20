@@ -121,10 +121,43 @@ final class AppAppearanceSettings {
         }
     }
 
+    var standardAccentPreference: ModeAccentPreference {
+        didSet {
+            guard oldValue != standardAccentPreference else { return }
+            ModeAccentPersistence.save(standardAccentPreference, for: .standard)
+            accentRefreshID = UUID()
+        }
+    }
+
+    var highSensitivityAccentPreference: ModeAccentPreference {
+        didSet {
+            guard oldValue != highSensitivityAccentPreference else { return }
+            ModeAccentPersistence.save(highSensitivityAccentPreference, for: .highSensitivity)
+            accentRefreshID = UUID()
+        }
+    }
+
     private(set) var languageRefreshID = UUID()
+    private(set) var accentRefreshID = UUID()
+
+    func accentPreference(for mode: AcousticMeasurementMode) -> ModeAccentPreference {
+        mode == .standard ? standardAccentPreference : highSensitivityAccentPreference
+    }
+
+    func resolvedAccent(for mode: AcousticMeasurementMode) -> Color {
+        let builtin = ModeVisualTheme.builtinAccent(for: mode)
+        return accentPreference(for: mode).resolvedColor(builtin: builtin)
+    }
+
+    var accentSummary: String {
+        "\(standardAccentPreference.summaryLabel) / \(highSensitivityAccentPreference.summaryLabel)"
+    }
 
     private init() {
         let schemeRaw = UserDefaults.standard.string(forKey: Self.colorSchemeKey) ?? AppColorSchemePreference.system.rawValue
+        let languageRaw = UserDefaults.standard.string(forKey: AppLocalization.languageKey) ?? AppLanguage.system.rawValue
+
+        preferredLanguage = AppLanguage(rawValue: languageRaw) ?? .system
         colorSchemePreference = AppColorSchemePreference(rawValue: schemeRaw) ?? .system
 
         if let temperatureRaw = UserDefaults.standard.string(forKey: Self.temperatureUnitKey),
@@ -134,8 +167,9 @@ final class AppAppearanceSettings {
             temperatureUnitPreference = Locale.current.measurementSystem == .us ? .fahrenheit : .celsius
         }
 
-        let languageRaw = UserDefaults.standard.string(forKey: AppLocalization.languageKey) ?? AppLanguage.system.rawValue
-        preferredLanguage = AppLanguage(rawValue: languageRaw) ?? .system
+        standardAccentPreference = ModeAccentPersistence.load(for: .standard)
+        highSensitivityAccentPreference = ModeAccentPersistence.load(for: .highSensitivity)
+
         AppLocalization.setActiveLanguage(preferredLanguage)
     }
 

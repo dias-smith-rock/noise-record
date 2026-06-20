@@ -84,25 +84,14 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				NoiseRecordWatch.entitlements,
 			);
 			target = WATCHTGT00000000000001 /* NoiseRecordWatch */;
-		};
-		NOISEEXC00000000000001 /* Exceptions for "NoiseRecord" folder in "NoiseRecord" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				NoiseRecord.entitlements,
-			);
-			target = DD3C1F972FD969F500B8AC17 /* NoiseRecord */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		DD3C1F9A2FD969F500B8AC17 /* NoiseRecord */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				NOISEEXC00000000000001 /* Exceptions for "NoiseRecord" folder in "NoiseRecord" target */,
-			);
 			path = NoiseRecord;
 			sourceTree = "<group>";
 		};
@@ -119,14 +108,14 @@
 			path = SharedLiveActivity;
 			sourceTree = "<group>";
 		};
-		TEST002TESTS00000000000001 /* NoiseRecordTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = NoiseRecordTests;
-			sourceTree = "<group>";
-		};
 		SHAREDCOREGRP0000000001 /* SharedMonitorCore */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = SharedMonitorCore;
+			sourceTree = "<group>";
+		};
+		TEST002TESTS00000000000001 /* NoiseRecordTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = NoiseRecordTests;
 			sourceTree = "<group>";
 		};
 		WATCHGRP00000000000001 /* NoiseRecordWatch */ = {
@@ -296,8 +285,8 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				WATCHGRP00000000000001 /* NoiseRecordWatch */,
 				SHAREDCOREGRP0000000001 /* SharedMonitorCore */,
+				WATCHGRP00000000000001 /* NoiseRecordWatch */,
 			);
 			name = NoiseRecordWatch;
 			packageProductDependencies = (
@@ -600,12 +589,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = NoiseRecord/NoiseRecord.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = 34878H47P6;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				CODE_SIGN_ENTITLEMENTS = NoiseRecord/NoiseRecord.entitlements;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "AdMob-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = DecibelPro;
@@ -651,12 +640,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = NoiseRecord/NoiseRecord.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = 34878H47P6;
 				ENABLE_PREVIEWS = NO;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				CODE_SIGN_ENTITLEMENTS = NoiseRecord/NoiseRecord.entitlements;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "AdMob-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = DecibelPro;

@@ -334,6 +334,13 @@ nonisolated enum L10n {
     static var settingsAppearanceHeader: String { localized("settings.appearance.header") }
     static var settingsLanguage: String { localized("settings.language") }
     static var settingsTheme: String { localized("settings.theme") }
+    static var settingsAccentColor: String { localized("settings.accentColor") }
+    static var settingsAccentColorFooter: String { localized("settings.accentColor.footer") }
+    static var settingsAccentColorSource: String { localized("settings.accentColor.source") }
+    static var settingsAccentColorAutomatic: String { localized("settings.accentColor.automatic") }
+    static var settingsAccentColorPreset: String { localized("settings.accentColor.preset") }
+    static var settingsAccentCustom: String { localized("settings.accentColor.custom") }
+    static var settingsAccentPreview: String { localized("settings.accentColor.preview") }
     static var settingsTemperatureUnit: String { localized("settings.temperature.unit") }
     static var settingsTemperatureCelsius: String { localized("settings.temperature.celsius") }
     static var settingsTemperatureFahrenheit: String { localized("settings.temperature.fahrenheit") }

@@ -43,6 +43,7 @@ struct SettingsView: View {
 
     var body: some View {
         let _ = appearance.languageRefreshID
+        let _ = appearance.accentRefreshID
 
         VStack(spacing: 0) {
             ProTabHeader(title: L10n.settingsTitle, theme: theme)
@@ -65,6 +66,12 @@ struct SettingsView: View {
                     }
                 }
 
+                NavigationLink {
+                    AccentColorSettingsView(appearance: appearance)
+                } label: {
+                    LabeledContent(L10n.settingsAccentColor, value: appearance.accentSummary)
+                }
+
                 Picker(L10n.settingsTemperatureUnit, selection: $appearance.temperatureUnitPreference) {
                     ForEach(TemperatureUnitPreference.allCases) { unit in
                         Text(unit.displayName).tag(unit)
@@ -74,7 +81,10 @@ struct SettingsView: View {
             } header: {
                 Text(L10n.settingsAppearanceHeader)
             } footer: {
-                Text(L10n.settingsTemperatureFooter)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(L10n.settingsAccentColorFooter)
+                    Text(L10n.settingsTemperatureFooter)
+                }
             }
 
             Section {

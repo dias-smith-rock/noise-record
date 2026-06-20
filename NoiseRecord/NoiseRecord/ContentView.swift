@@ -30,6 +30,7 @@ struct ContentView: View {
 
     var body: some View {
         let _ = appearance.languageRefreshID
+        let _ = appearance.accentRefreshID
         let locale = AppLocalization.resolvedLocale(for: appearance.preferredLanguage)
 
         TabView(selection: $selectedTab) {

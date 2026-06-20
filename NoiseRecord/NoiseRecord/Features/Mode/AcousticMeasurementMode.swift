@@ -40,20 +40,39 @@ struct ModeVisualTheme {
     var badgeBackground: Color { accent.opacity(0.12) }
     var surfaceBorder: Color { Color.primary.opacity(0.08) }
 
-    static func theme(for mode: AcousticMeasurementMode) -> ModeVisualTheme {
+    static func builtinAccent(for mode: AcousticMeasurementMode) -> Color {
+        switch mode {
+        case .standard:
+            Color(red: 0.16, green: 0.52, blue: 0.68)
+        case .highSensitivity:
+            Color(red: 0.90, green: 0.46, blue: 0.14)
+        }
+    }
+
+    static func builtinTheme(for mode: AcousticMeasurementMode) -> ModeVisualTheme {
         switch mode {
         case .standard:
             ModeVisualTheme(
-                accent: Color(red: 0.16, green: 0.52, blue: 0.68),
+                accent: builtinAccent(for: .standard),
                 cardTint: Color(.secondarySystemGroupedBackground),
                 waveformLineWidth: 2
             )
         case .highSensitivity:
             ModeVisualTheme(
-                accent: Color(red: 0.90, green: 0.46, blue: 0.14),
+                accent: builtinAccent(for: .highSensitivity),
                 cardTint: Color(.secondarySystemGroupedBackground),
                 waveformLineWidth: 2.25
             )
         }
+    }
+
+    static func theme(for mode: AcousticMeasurementMode) -> ModeVisualTheme {
+        let base = builtinTheme(for: mode)
+        let accent = AppAppearanceSettings.shared.resolvedAccent(for: mode)
+        return ModeVisualTheme(
+            accent: accent,
+            cardTint: base.cardTint,
+            waveformLineWidth: base.waveformLineWidth
+        )
     }
 }
