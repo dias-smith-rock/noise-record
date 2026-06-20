@@ -211,6 +211,8 @@ Download DecibelPro today — measure noise, record proof, and document sound le
 
 *Character count: ~1,850 / 4,000 — room for future feature bullets (e.g. Apple Watch).*
 
+**Apple Watch (v1.1+):** Standalone noise monitoring on wrist — current dB, session stats, standard / high-sensitivity modes. Not a certified sound level meter; readings are reference estimates only.
+
 ### ASO keyword map
 
 | Search intent | Covered in |

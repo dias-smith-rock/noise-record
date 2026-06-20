@@ -85,6 +85,19 @@ Product ID: `com.decibelpro.removeads.lifetime` (Non-Consumable) · Bundle ID: `
 - [ ] Measurement samples pruned (no unbounded growth after long session)
 - [ ] Reinstall app — existing media paths repaired when files remain in Documents (if applicable)
 
+## Apple Watch (Standalone)
+
+> Requires watchOS simulator runtime in Xcode **or** paired Apple Watch hardware. Build watch target: `xcodebuild -scheme NoiseRecordWatch -sdk watchos`.
+
+- [ ] Install DecibelPro on Apple Watch from companion iPhone app
+- [ ] Quiet room: standard mode reads ~30–40 dBA
+- [ ] High-sensitivity mode reads higher than standard in same environment
+- [ ] Start / Stop monitoring 20× without audio engine leaks or crashes
+- [ ] Extended Runtime session keeps monitoring while screen stays on
+- [ ] System ends session → engine stops and notice appears
+- [ ] Deny microphone → permission message is understandable
+- [ ] Watch works without iPhone Bluetooth connection (true standalone)
+
 ## Sign-off
 
 | Tester | Device | iOS | Date | Pass |
