@@ -154,6 +154,7 @@ struct SettingsView: View {
                         )
                     }
                     showCalibrationAlert = true
+                    AppTelemetry.logProductEvent("calibration_updated")
                 }
                 .disabled(!engine.isMonitoring)
 
@@ -297,6 +298,9 @@ struct SettingsView: View {
             )
         }
         showResetAlert = true
+        if abs(previousAdjustment) >= 0.05 {
+            AppTelemetry.logProductEvent("calibration_reset")
+        }
     }
 
     private func refreshMeasurementSampleCount() {

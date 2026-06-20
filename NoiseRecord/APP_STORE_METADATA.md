@@ -28,14 +28,53 @@ Use this when submitting **DecibelPro** v1.0.
 
 | Service | SDK | Purpose |
 |---------|-----|---------|
-| Firebase Analytics | `FirebaseAnalytics` | Event logging (`app_launch`, `monitoring_state`, `app_error`, etc.) |
-| Firebase Crashlytics | `FirebaseCrashlytics` | Crash reports + breadcrumb logs |
+| Firebase Analytics | `FirebaseAnalytics` | Product + commercial summary events (`product_*`, `commercial_*`) |
+| Firebase Crashlytics | `FirebaseCrashlytics` | Crash reports + breadcrumb logs (incl. ad/IAP debug steps) |
 
 - Config: [`NoiseRecord/GoogleService-Info.plist`](NoiseRecord/GoogleService-Info.plist)
-- Bootstrap: `FirebaseAppDelegate` + `AppTelemetry`
+- Bootstrap: `FirebaseAppDelegate` + [`AppTelemetry`](NoiseRecord/Services/AppTelemetry.swift)
 - dSYM upload: **Upload Crashlytics Symbols** build phase (Release Archive)
 
 Enable **Crashlytics** and **Google Analytics** in [Firebase Console](https://console.firebase.google.com/) for project `noiserecord-a7860` if not already on.
+
+### Analytics — product events (`product_*`)
+
+| Event | When | Parameters |
+|-------|------|------------|
+| `product_monitoring_stop` | User stops monitoring | — |
+| `product_mode_changed` | Standard ↔ High Sensitivity | `mode` |
+| `product_weighting_changed` | A/C/Z weighting change | `weighting` |
+| `product_fullscreen_led_open` | Fullscreen LED opened | `mode` |
+| `product_fullscreen_led_close` | Fullscreen LED closed | — |
+| `product_onboarding_dismissed` | Fullscreen button guide dismissed | `method`: got_it \| tap_button \| tap_scrim |
+| `product_calibration_updated` | User calibrates SPL | — |
+| `product_calibration_reset` | User resets calibration | — |
+| `product_accent_color_changed` | Theme color changed | `target_mode`, `choice` |
+| `product_language_changed` | App language changed | `language` |
+| `product_permission_denied` | Microphone permission denied | `type`: microphone |
+| `product_live_activity_started` | Live Activity started | `mode` |
+
+Legacy product events retained: `monitor_start`, `monitoring_state`, `video_recording_start`, `background_recording_start`, `app_launch`, `app_error`, `launch_milestone`.
+
+### Analytics — commercial summary (`commercial_*`)
+
+| Event | When |
+|-------|------|
+| `commercial_ad_show` | Ad presented (cold / hot / fullscreen_led channel) |
+| `commercial_ad_dismiss` | Ad dismissed |
+| `commercial_ad_fail` | Ad load/show failed |
+| `commercial_iap_purchase_success` | IAP purchase verified |
+| `commercial_iap_restore_success` | IAP restore succeeded |
+| `commercial_iap_product_missing` | StoreKit product not found |
+
+Ad/IAP intermediate steps (`load_skipped_*`, `armed_*`, `consent_*`, etc.) are **Crashlytics breadcrumbs only** — not sent to Analytics.
+
+### Crashlytics breadcrumbs only
+
+- `ad.{channel}.{step}` — full ad lifecycle
+- `iap.{step}` — full IAP lifecycle
+- `ui_font.{step}` — LED font diagnostics
+- `scene_active` / `scene_background` / `scene_inactive`
 
 ## AdMob
 
@@ -50,7 +89,7 @@ Enable **Crashlytics** and **Google Analytics** in [Firebase Console](https://co
 - Consent: `AdConsentManager` — UMP GDPR + IDFA Explainer (ATT triggered by UMP, not manual)
 - Managers: `AppOpenAdManager` (cold), `HotStartAdManager` (hot)
 - Debug builds use [Google test ad units](https://developers.google.com/admob/ios/test-ads)
-- Analytics events: `ad_cold_load/show/fail`, `ad_hot_load/fail`, `ad_lifecycle` channel `consent`
+- Analytics events: `commercial_ad_show` / `commercial_ad_dismiss` / `commercial_ad_fail` (channel in params); ad debug steps are Crashlytics breadcrumbs only
 
 ### AdMob Privacy & messaging (manual — required before Release)
 
@@ -95,7 +134,7 @@ App Store Connect privacy questionnaire: declare **Advertising Data** and **Devi
 4. Sign **Paid Applications Agreement**.
 5. For sandbox: create Sandbox Tester; clear purchase history before re-testing non-consumable.
 
-**Analytics events:** `iap_lifecycle` (step: `purchase_verified`, `purchase_user_cancelled`, `product_load_not_found`, etc.)
+**Analytics events:** `commercial_iap_purchase_success`, `commercial_iap_restore_success`, `commercial_iap_product_missing`; other IAP steps are Crashlytics breadcrumbs only.
 
 
 > DecibelPro uses the `audio` background mode to continue real-time noise monitoring and voice-activated recording when the app is in the background. Users explicitly enable background monitoring in the Voice tab. The app does not play music or unrelated audio in the background.

@@ -102,6 +102,10 @@ final class AppAppearanceSettings {
         didSet {
             guard oldValue != preferredLanguage else { return }
             Self.persistLanguage(preferredLanguage)
+            AppTelemetry.logProductEvent(
+                "language_changed",
+                parameters: ["language": preferredLanguage.rawValue]
+            )
             languageRefreshID = UUID()
             DispatchQueue.main.async {
                 TabBarAppearanceUpdater.applyTabTitles()
@@ -125,6 +129,13 @@ final class AppAppearanceSettings {
         didSet {
             guard oldValue != standardAccentPreference else { return }
             ModeAccentPersistence.save(standardAccentPreference, for: .standard)
+            AppTelemetry.logProductEvent(
+                "accent_color_changed",
+                parameters: [
+                    "target_mode": "standard",
+                    "choice": standardAccentPreference.choice.rawValue,
+                ]
+            )
             accentRefreshID = UUID()
         }
     }
@@ -133,6 +144,13 @@ final class AppAppearanceSettings {
         didSet {
             guard oldValue != highSensitivityAccentPreference else { return }
             ModeAccentPersistence.save(highSensitivityAccentPreference, for: .highSensitivity)
+            AppTelemetry.logProductEvent(
+                "accent_color_changed",
+                parameters: [
+                    "target_mode": "high_sensitivity",
+                    "choice": highSensitivityAccentPreference.choice.rawValue,
+                ]
+            )
             accentRefreshID = UUID()
         }
     }

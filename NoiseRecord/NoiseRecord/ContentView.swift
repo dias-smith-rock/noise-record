@@ -117,11 +117,11 @@ struct ContentView: View {
                 guard audioStateManager.allowsAutomaticMonitoringRecovery else { return }
                 engine.prepareForBackgroundIfNeeded()
             case .background:
-                AppTelemetry.logEvent("scene_background")
+                AppTelemetry.log("scene_background")
                 guard audioStateManager.allowsAutomaticMonitoringRecovery else { return }
                 engine.handleDidEnterBackground()
             case .active:
-                AppTelemetry.logEvent("scene_active")
+                AppTelemetry.log("scene_active")
                 guard audioStateManager.allowsAutomaticMonitoringRecovery else { return }
                 engine.handleDidBecomeActive()
                 refreshUnreadBadge()

@@ -5,6 +5,9 @@ import Foundation
 
 /// Firebase Analytics + Crashlytics bootstrap and logging helpers.
 nonisolated enum AppTelemetry {
+    static let maxAnalyticsParameterCount = 5
+    static let maxAnalyticsParameterLength = 100
+
     static func configure() {
         guard FirebaseApp.app() == nil else { return }
         FirebaseApp.configure()
@@ -31,14 +34,79 @@ nonisolated enum AppTelemetry {
         #endif
     }
 
+    static func logProductEvent(
+        _ action: String,
+        parameters: [String: String] = [:]
+    ) {
+        let eventName = "product_\(action)"
+        let metadataSummary = parameters.isEmpty
+            ? ""
+            : " " + parameters.map { "\($0.key)=\($0.value)" }.sorted().joined(separator: " ")
+        log("product.\(action)\(metadataSummary)")
+        logEvent(eventName, parameters: sanitizedAnalyticsParameters(parameters))
+    }
+
+    static func logCommercialEvent(
+        domain: String,
+        outcome: String,
+        metadata: [String: String] = [:]
+    ) {
+        let eventName = "commercial_\(domain)_\(outcome)"
+        let metadataSummary = metadata.isEmpty
+            ? ""
+            : " " + metadata.map { "\($0.key)=\($0.value)" }.sorted().joined(separator: " ")
+        log("commercial.\(domain).\(outcome)\(metadataSummary)")
+        logEvent(eventName, parameters: sanitizedAnalyticsParameters(metadata))
+    }
+
+    static func sanitizedAnalyticsParameters(_ parameters: [String: String]) -> [String: Any]? {
+        guard !parameters.isEmpty else { return nil }
+        var sanitized: [String: Any] = [:]
+        for (index, entry) in parameters.sorted(by: { $0.key < $1.key }).prefix(maxAnalyticsParameterCount).enumerated() {
+            sanitized[entry.key] = truncatedAnalyticsValue(entry.value)
+            if index >= maxAnalyticsParameterCount - 1 { break }
+        }
+        return sanitized
+    }
+
+    static func truncatedAnalyticsValue(_ value: String) -> String {
+        String(value.prefix(maxAnalyticsParameterLength))
+    }
+
+    static func commercialAdOutcome(for step: String) -> String? {
+        switch step {
+        case "show_presenting":
+            return "show"
+        case "dismissed":
+            return "dismiss"
+        case "load_failed", "load_failed_empty_ad", "show_failed":
+            return "fail"
+        default:
+            return nil
+        }
+    }
+
+    static func commercialIAPOutcome(for step: String) -> String? {
+        switch step {
+        case "purchase_verified":
+            return "purchase_success"
+        case "restore_succeeded":
+            return "restore_success"
+        case "product_load_not_found":
+            return "product_missing"
+        default:
+            return nil
+        }
+    }
+
     static func recordError(_ error: Error, context: String) {
         log("\(context): \(error.localizedDescription)")
         Crashlytics.crashlytics().record(error: error)
         logEvent(
             "app_error",
             parameters: [
-                "context": context,
-                "message": error.localizedDescription,
+                "context": truncatedAnalyticsValue(context),
+                "message": truncatedAnalyticsValue(error.localizedDescription),
             ]
         )
     }
@@ -48,8 +116,8 @@ nonisolated enum AppTelemetry {
         logEvent(
             "app_error",
             parameters: [
-                "context": context,
-                "message": message,
+                "context": truncatedAnalyticsValue(context),
+                "message": truncatedAnalyticsValue(message),
             ]
         )
     }
@@ -78,27 +146,41 @@ nonisolated enum AppTelemetry {
     }
 
     static func logAdColdLoad() {
-        logEvent("ad_cold_load")
+        log("ad.cold.load")
     }
 
     static func logAdColdShow() {
-        logEvent("ad_cold_show")
+        logCommercialEvent(domain: "ad", outcome: "show", metadata: ["channel": "cold"])
     }
 
     static func logAdColdFail(_ message: String) {
-        logEvent("ad_cold_fail", parameters: ["message": message])
+        logCommercialEvent(
+            domain: "ad",
+            outcome: "fail",
+            metadata: [
+                "channel": "cold",
+                "message": message,
+            ]
+        )
     }
 
     static func logAdHotLoad() {
-        logEvent("ad_hot_load")
+        log("ad.hot.load")
     }
 
     static func logAdHotShow() {
-        logEvent("ad_hot_show")
+        logCommercialEvent(domain: "ad", outcome: "show", metadata: ["channel": "hot"])
     }
 
     static func logAdHotFail(_ message: String) {
-        logEvent("ad_hot_fail", parameters: ["message": message])
+        logCommercialEvent(
+            domain: "ad",
+            outcome: "fail",
+            metadata: [
+                "channel": "hot",
+                "message": message,
+            ]
+        )
     }
 
     /// Structured IAP lifecycle logs for StoreKit troubleshooting.
@@ -106,16 +188,16 @@ nonisolated enum AppTelemetry {
         step: String,
         metadata: [String: String] = [:]
     ) {
-        var parameters: [String: Any] = ["step": step]
-        for (key, value) in metadata {
-            parameters[key] = value
-        }
-
         let metadataSummary = metadata.isEmpty
             ? ""
             : " " + metadata.map { "\($0.key)=\($0.value)" }.sorted().joined(separator: " ")
         log("iap.\(step)\(metadataSummary)")
-        logEvent("iap_lifecycle", parameters: parameters)
+
+        if let outcome = commercialIAPOutcome(for: step) {
+            var commercialMetadata = metadata
+            commercialMetadata["step"] = step
+            logCommercialEvent(domain: "iap", outcome: outcome, metadata: commercialMetadata)
+        }
     }
 
     /// Structured ad lifecycle logs for cold/hot start troubleshooting.
@@ -124,19 +206,17 @@ nonisolated enum AppTelemetry {
         step: String,
         metadata: [String: String] = [:]
     ) {
-        var parameters: [String: Any] = [
-            "channel": channel,
-            "step": step,
-        ]
-        for (key, value) in metadata {
-            parameters[key] = value
-        }
-
         let metadataSummary = metadata.isEmpty
             ? ""
             : " " + metadata.map { "\($0.key)=\($0.value)" }.sorted().joined(separator: " ")
         log("ad.\(channel).\(step)\(metadataSummary)")
-        logEvent("ad_lifecycle", parameters: parameters)
+
+        if let outcome = commercialAdOutcome(for: step) {
+            var commercialMetadata = metadata
+            commercialMetadata["channel"] = channel
+            commercialMetadata["step"] = step
+            logCommercialEvent(domain: "ad", outcome: outcome, metadata: commercialMetadata)
+        }
     }
 
     /// 7 段数码管字体加载链路诊断。
@@ -144,16 +224,10 @@ nonisolated enum AppTelemetry {
         step: String,
         metadata: [String: String] = [:]
     ) {
-        var parameters: [String: Any] = ["step": step]
-        for (key, value) in metadata {
-            parameters[key] = value
-        }
-
         let metadataSummary = metadata.isEmpty
             ? ""
             : " " + metadata.map { "\($0.key)=\($0.value)" }.sorted().joined(separator: " ")
         log("ui_font.\(step)\(metadataSummary)")
-        logEvent("ui_font_diagnostics", parameters: parameters)
     }
 
     private static func configureCrashlyticsContext() {

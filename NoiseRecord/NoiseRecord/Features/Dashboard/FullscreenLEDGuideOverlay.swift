@@ -15,6 +15,7 @@ struct FullscreenLEDGuideOverlay: View {
     let theme: ModeVisualTheme
     let buttonFrame: CGRect
     let onDismiss: () -> Void
+    var onGuideDismiss: () -> Void = {}
     let onFullscreenTap: () -> Void
 
     private let scrimOpacity: Double = 0.58
@@ -109,7 +110,7 @@ struct FullscreenLEDGuideOverlay: View {
                 .foregroundStyle(.primary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Button(L10n.gotIt, action: onDismiss)
+            Button(L10n.gotIt, action: onGuideDismiss)
                 .font(.subheadline.bold())
                 .foregroundStyle(theme.accent)
         }

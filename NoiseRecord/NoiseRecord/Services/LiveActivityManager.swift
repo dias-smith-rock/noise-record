@@ -57,6 +57,12 @@ final class LiveActivityManager {
             lastDeliveredAt = .now
             lastDeliveredDecibel = 0
             logger.info("Live Activity started.")
+            AppTelemetry.logProductEvent(
+                "live_activity_started",
+                parameters: [
+                    "mode": isHighSensitivityMode ? "high_sensitivity" : "standard",
+                ]
+            )
         } catch {
             logger.error("Failed to start Live Activity: \(error.localizedDescription, privacy: .public)")
         }

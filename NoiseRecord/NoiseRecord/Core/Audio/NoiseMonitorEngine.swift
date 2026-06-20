@@ -25,7 +25,14 @@ final class NoiseMonitorEngine {
     /// When enabled, bypasses A/C weighting and measures raw PCM (Z-weighting).
     var isHighSensitivityMode: Bool = DeviceCalibrationStore.isHighSensitivityMode {
         didSet {
+            guard oldValue != isHighSensitivityMode else { return }
             DeviceCalibrationStore.isHighSensitivityMode = isHighSensitivityMode
+            AppTelemetry.logProductEvent(
+                "mode_changed",
+                parameters: [
+                    "mode": isHighSensitivityMode ? "high_sensitivity" : "standard",
+                ]
+            )
             if isMonitoring {
                 restartPipeline()
             }
@@ -198,6 +205,7 @@ final class NoiseMonitorEngine {
                 context: "mic_permission_denied"
             )
             showMicrophonePermissionDenied = true
+            AppTelemetry.logProductEvent("permission_denied", parameters: ["type": "microphone"])
             return
         }
         showMicrophonePermissionDenied = false
@@ -359,6 +367,7 @@ final class NoiseMonitorEngine {
         minDB = 0
         sessionMinDB = 120
         AppTelemetry.setMonitoringActive(false)
+        AppTelemetry.logProductEvent("monitoring_stop")
         Task {
             await LiveActivityManager.shared.endLiveActivity()
         }
@@ -395,6 +404,10 @@ final class NoiseMonitorEngine {
         weightingType = type
         DeviceCalibrationStore.weightingType = type
         weightingFilter?.updateWeighting(type)
+        AppTelemetry.logProductEvent(
+            "weighting_changed",
+            parameters: ["weighting": type.rawValue.lowercased()]
+        )
     }
 
     func persistSettings() {

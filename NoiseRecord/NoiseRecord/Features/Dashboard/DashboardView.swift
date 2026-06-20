@@ -140,9 +140,14 @@ struct DashboardView: View {
         }
         .onChange(of: isFullScreenPresented) { _, isPresented in
             if isPresented {
+                AppTelemetry.logProductEvent(
+                    "fullscreen_led_open",
+                    parameters: ["mode": measurementMode.rawValue]
+                )
                 InterfaceOrientationLocker.enterLandscapeFullscreen()
                 AdSceneLifecycle.showInterstitialOnFullscreenEnter()
             } else {
+                AppTelemetry.logProductEvent("fullscreen_led_close")
                 InterfaceOrientationLocker.exitLandscapeFullscreen()
             }
         }
@@ -154,9 +159,10 @@ struct DashboardView: View {
                 FullscreenLEDGuideOverlay(
                     theme: theme,
                     buttonFrame: fullscreenButtonFrame,
-                    onDismiss: dismissFullscreenLEDGuide,
+                    onDismiss: { dismissFullscreenLEDGuide(method: "tap_scrim") },
+                    onGuideDismiss: { dismissFullscreenLEDGuide(method: "got_it") },
                     onFullscreenTap: {
-                        dismissFullscreenLEDGuide()
+                        dismissFullscreenLEDGuide(method: "tap_button")
                         HotStartAdManager.shared.loadAd()
                         isFullScreenPresented = true
                     }
@@ -292,8 +298,14 @@ struct DashboardView: View {
         showsFullscreenLEDGuide = true
     }
 
-    private func dismissFullscreenLEDGuide() {
+    private func dismissFullscreenLEDGuide(method: String? = nil) {
         guard showsFullscreenLEDGuide else { return }
+        if let method {
+            AppTelemetry.logProductEvent(
+                "onboarding_dismissed",
+                parameters: ["method": method]
+            )
+        }
         showsFullscreenLEDGuide = false
         FullscreenLEDGuideStore.markSeen()
     }
