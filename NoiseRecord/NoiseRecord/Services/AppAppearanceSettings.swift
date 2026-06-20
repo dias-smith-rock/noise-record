@@ -70,12 +70,33 @@ enum AppColorSchemePreference: String, CaseIterable, Identifiable, Sendable {
     }
 }
 
+enum TemperatureUnitPreference: String, CaseIterable, Identifiable, Sendable {
+    case celsius
+    case fahrenheit
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .celsius:
+            AppLocalization.string("settings.temperature.celsius")
+        case .fahrenheit:
+            AppLocalization.string("settings.temperature.fahrenheit")
+        }
+    }
+
+    var usesFahrenheit: Bool {
+        self == .fahrenheit
+    }
+}
+
 @Observable
 @MainActor
 final class AppAppearanceSettings {
     static let shared = AppAppearanceSettings()
 
     private static let colorSchemeKey = "app.colorSchemePreference"
+    private static let temperatureUnitKey = "app.temperatureUnitPreference"
 
     var preferredLanguage: AppLanguage {
         didSet {
@@ -94,11 +115,24 @@ final class AppAppearanceSettings {
         }
     }
 
+    var temperatureUnitPreference: TemperatureUnitPreference {
+        didSet {
+            UserDefaults.standard.set(temperatureUnitPreference.rawValue, forKey: Self.temperatureUnitKey)
+        }
+    }
+
     private(set) var languageRefreshID = UUID()
 
     private init() {
         let schemeRaw = UserDefaults.standard.string(forKey: Self.colorSchemeKey) ?? AppColorSchemePreference.system.rawValue
         colorSchemePreference = AppColorSchemePreference(rawValue: schemeRaw) ?? .system
+
+        if let temperatureRaw = UserDefaults.standard.string(forKey: Self.temperatureUnitKey),
+           let savedUnit = TemperatureUnitPreference(rawValue: temperatureRaw) {
+            temperatureUnitPreference = savedUnit
+        } else {
+            temperatureUnitPreference = Locale.current.measurementSystem == .us ? .fahrenheit : .celsius
+        }
 
         let languageRaw = UserDefaults.standard.string(forKey: AppLocalization.languageKey) ?? AppLanguage.system.rawValue
         preferredLanguage = AppLanguage(rawValue: languageRaw) ?? .system

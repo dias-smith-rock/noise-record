@@ -7,6 +7,7 @@ struct DashboardView: View {
 
     @Bindable var engine: NoiseMonitorEngine
     @Bindable var audioStateManager: AudioStateManager
+    @Bindable private var appearance = AppAppearanceSettings.shared
     let isTabActive: Bool
     @Environment(\.modelContext) private var modelContext
     @State private var shareReport: SilenceRatingReport?
@@ -28,6 +29,8 @@ struct DashboardView: View {
     }
 
     var body: some View {
+        let _ = appearance.temperatureUnitPreference
+
         VStack(spacing: 0) {
             ProTabHeader(title: L10n.dashboardTitle, theme: theme)
 

@@ -11716,6 +11716,38 @@
         }
       }
     },
+    "settings.temperature.celsius" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Celsius °C" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "摄氏 °C" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "攝氏 °C" } }
+      }
+    },
+    "settings.temperature.fahrenheit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Fahrenheit °F" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "华氏 °F" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "華氏 °F" } }
+      }
+    },
+    "settings.temperature.footer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Applies to temperature on the monitor dashboard and fullscreen LED display." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "用于监测页与全屏 LED 看板的温度显示。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "用於監測頁與全螢幕 LED 看板的溫度顯示。" } }
+      }
+    },
+    "settings.temperature.unit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Temperature" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "温度单位" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "溫度單位" } }
+      }
+    },
     "settings.appearance.header" : {
       "extractionState" : "manual",
       "localizations" : {

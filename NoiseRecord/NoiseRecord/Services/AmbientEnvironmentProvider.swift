@@ -14,7 +14,7 @@ final class AmbientEnvironmentProvider: NSObject, CLLocationManagerDelegate {
     private var lastCoordinate: CLLocationCoordinate2D?
 
     private var usesFahrenheit: Bool {
-        Locale.current.measurementSystem == .us
+        AppAppearanceSettings.shared.temperatureUnitPreference.usesFahrenheit
     }
 
     var humidityDisplay: String {

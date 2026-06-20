@@ -7,6 +7,7 @@ struct FullscreenLEDView: View {
     @Bindable var engine: NoiseMonitorEngine
     @Bindable var audioStateManager: AudioStateManager
     @Bindable var environment: AmbientEnvironmentProvider
+    @Bindable private var appearance = AppAppearanceSettings.shared
     let mode: AcousticMeasurementMode
     let onClose: () -> Void
 
@@ -31,6 +32,8 @@ struct FullscreenLEDView: View {
     }
 
     var body: some View {
+        let _ = appearance.temperatureUnitPreference
+
         ZStack {
             Color.black.ignoresSafeArea()
 

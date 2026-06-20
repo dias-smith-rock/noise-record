@@ -64,8 +64,17 @@ struct SettingsView: View {
                         Text(preference.title).tag(preference)
                     }
                 }
+
+                Picker(L10n.settingsTemperatureUnit, selection: $appearance.temperatureUnitPreference) {
+                    ForEach(TemperatureUnitPreference.allCases) { unit in
+                        Text(unit.displayName).tag(unit)
+                    }
+                }
+                .pickerStyle(.segmented)
             } header: {
                 Text(L10n.settingsAppearanceHeader)
+            } footer: {
+                Text(L10n.settingsTemperatureFooter)
             }
 
             Section {
