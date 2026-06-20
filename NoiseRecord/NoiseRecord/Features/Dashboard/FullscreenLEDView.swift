@@ -17,12 +17,19 @@ struct FullscreenLEDView: View {
         .from(db: engine.currentDB, highSensitivity: mode.isHighSensitivity)
     }
 
-    private var ledAccent: Color {
-        Color(red: 0.18, green: 0.95, blue: 0.42)
-    }
+    private var theme: ModeVisualTheme { .theme(for: mode) }
 
+    /// 辅助读数（时间、温湿度、波形）跟随主界面模式色。
+    private var ledAccent: Color { theme.accent }
+
+    /// 主分贝数字用同色系高亮，在黑底上更易辨认。
     private var decibelAccent: Color {
-        Color(red: 0.78, green: 0.92, blue: 1.0)
+        switch mode {
+        case .standard:
+            Color(red: 0.55, green: 0.88, blue: 0.98)
+        case .highSensitivity:
+            Color(red: 1.0, green: 0.72, blue: 0.38)
+        }
     }
 
     /// 量化到 0.1 dB，减少高频刷新时的视觉抖动。
