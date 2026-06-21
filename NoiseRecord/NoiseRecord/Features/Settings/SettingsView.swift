@@ -51,6 +51,7 @@ struct SettingsView: View {
             RemoveAdsSettingsPromo(theme: theme)
                 .padding(.horizontal, 16)
                 .padding(.bottom, 8)
+                .id(appearance.languageRefreshID)
 
             Form {
             Section {

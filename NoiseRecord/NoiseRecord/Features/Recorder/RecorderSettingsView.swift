@@ -3,6 +3,7 @@ import SwiftUI
 struct RecorderSettingsView: View {
     @Bindable var engine: NoiseMonitorEngine
     let isTabActive: Bool
+    @Environment(\.appLanguageRevision) private var appLanguageRevision
     @State private var showAiClassificationError = false
     @State private var cachedCurrentDB: Float = 0
     @State private var cachedRecordingState: RecordingState = .idle
@@ -146,6 +147,7 @@ struct RecorderSettingsView: View {
 
             if engine.voiceActivatedEnabled {
                 ProRecordingStatusBadge(state: cachedRecordingState, theme: theme)
+                    .id(appLanguageRevision)
             } else {
                 Text(L10n.recorderStatusOff)
                     .font(.caption)

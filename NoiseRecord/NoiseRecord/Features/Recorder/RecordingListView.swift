@@ -67,6 +67,7 @@ struct RecordingListView: View {
     @Query(sort: \RecordingSession.startedAt, order: .reverse) private var sessions: [RecordingSession]
     @Query(sort: \VideoEvidenceSession.startedAt, order: .reverse) private var videoSessions: [VideoEvidenceSession]
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.appLanguageRevision) private var appLanguageRevision
 
     @State private var selectedTab: RecordingListTab = .audio
     @State private var sortOption: RecordingSortOption = .dateDescending
@@ -130,6 +131,7 @@ struct RecordingListView: View {
                 }
             }
             .pickerStyle(.segmented)
+            .id(appLanguageRevision)
             .padding(.horizontal, 16)
             .padding(.top, 10)
             .onChange(of: selectedTab) { _, _ in
