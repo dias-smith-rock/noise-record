@@ -158,9 +158,16 @@ Suggested screens: Monitor dashboard, Voice settings, Video recording, Files lis
 
 ## Localization
 
-App supports: English, Arabic, Spanish, French, Hindi, Portuguese, Russian, Simplified Chinese, Traditional Chinese.
+App supports **34 languages**: English, Arabic, Bulgarian, Catalan, Czech, Danish, German, Greek, Spanish, Finnish, French, Hebrew, Hindi, Croatian, Hungarian, Indonesian, Italian, Japanese, Korean, Malay, Norwegian, Dutch, Polish, Portuguese, Romanian, Russian, Slovak, Swedish, Thai, Turkish, Ukrainian, Vietnamese, Simplified Chinese, Traditional Chinese.
 
-Provide at least **English** and **Simplified Chinese** metadata in Connect.
+Provide localized App Store metadata for priority markets (at minimum **English** and **Simplified Chinese**).
+
+To regenerate or extend in-app strings:
+
+```bash
+cd scripts && python3 -m venv .venv && .venv/bin/pip install deep-translator
+.venv/bin/python expand_locales.py
+```
 
 ## Post-approval
 

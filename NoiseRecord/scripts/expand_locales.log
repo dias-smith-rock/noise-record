@@ -1,0 +1,244 @@
+Locales: 34 | Cache: 0 entries
+Expanding Localizable.xcstrings …
+  Localizable.xcstrings · ar: 39 strings
+  Localizable.xcstrings · bg: 353 strings
+    … 50/353
+    … 100/353
+    … 150/353
+    … 200/353
+    … 250/353
+    … 300/353
+    … 350/353
+  Localizable.xcstrings · ca: 353 strings
+    … 50/353
+    … 100/353
+    … 150/353
+    … 200/353
+    … 250/353
+    … 300/353
+    … 350/353
+  Localizable.xcstrings · cs: 353 strings
+    … 50/353
+    … 100/353
+    … 150/353
+    … 200/353
+    … 250/353
+    … 300/353
+    … 350/353
+  Localizable.xcstrings · da: 353 strings
+    … 50/353
+    … 100/353
+    … 150/353
+    … 200/353
+    … 250/353
+    … 300/353
+    … 350/353
+  Localizable.xcstrings · de: 353 strings
+    … 50/353
+    … 100/353
+    … 150/353
+    … 200/353
+    … 250/353
+    … 300/353
+    … 350/353
+  Localizable.xcstrings · el: 353 strings
+    … 50/353
+    … 100/353
+    … 150/353
+    … 200/353
+    … 250/353
+    … 300/353
+    … 350/353
+  Localizable.xcstrings · es: 39 strings
+  Localizable.xcstrings · fi: 353 strings
+    … 50/353
+    … 100/353
+    … 150/353
+    … 200/353
+    … 250/353
+    … 300/353
+    … 350/353
+  Localizable.xcstrings · fr: 39 strings
+  Localizable.xcstrings · he: 353 strings
+    … 50/353
+    … 100/353
+    … 150/353
+    … 200/353
+    … 250/353
+    … 300/353
+    … 350/353
+  Localizable.xcstrings · hi: 39 strings
+  Localizable.xcstrings · hr: 353 strings
+    … 50/353
+    … 100/353
+    … 150/353
+    … 200/353
+    … 250/353
+    … 300/353
+    … 350/353
+  Localizable.xcstrings · hu: 353 strings
+    … 50/353
+    … 100/353
+    … 150/353
+    … 200/353
+    … 250/353
+    … 300/353
+    … 350/353
+  Localizable.xcstrings · id: 353 strings
+    … 50/353
+    … 100/353
+    … 150/353
+    … 200/353
+    … 250/353
+    … 300/353
+    … 350/353
+  Localizable.xcstrings · it: 353 strings
+    … 50/353
+    … 100/353
+    … 150/353
+    … 200/353
+    … 250/353
+    … 300/353
+    … 350/353
+  Localizable.xcstrings · ja: 353 strings
+    … 50/353
+    … 100/353
+    … 150/353
+    … 200/353
+    … 250/353
+    … 300/353
+    … 350/353
+  Localizable.xcstrings · ko: 353 strings
+    … 50/353
+    … 100/353
+    … 150/353
+    … 200/353
+    … 250/353
+    … 300/353
+    … 350/353
+  Localizable.xcstrings · ms: 353 strings
+    … 50/353
+    … 100/353
+    … 150/353
+    … 200/353
+    … 250/353
+    … 300/353
+    … 350/353
+  Localizable.xcstrings · nb: 353 strings
+    … 50/353
+    … 100/353
+    … 150/353
+    … 200/353
+    … 250/353
+    … 300/353
+    … 350/353
+  Localizable.xcstrings · nl: 353 strings
+    … 50/353
+    … 100/353
+    … 150/353
+    … 200/353
+    … 250/353
+    … 300/353
+    … 350/353
+  Localizable.xcstrings · pl: 353 strings
+    … 50/353
+    … 100/353
+    … 150/353
+    … 200/353
+    … 250/353
+    … 300/353
+    … 350/353
+  Localizable.xcstrings · pt: 39 strings
+  Localizable.xcstrings · ro: 353 strings
+    … 50/353
+    … 100/353
+    … 150/353
+    … 200/353
+    … 250/353
+    … 300/353
+    … 350/353
+  Localizable.xcstrings · ru: 39 strings
+  Localizable.xcstrings · sk: 353 strings
+    … 50/353
+    … 100/353
+    … 150/353
+    … 200/353
+    … 250/353
+    … 300/353
+    … 350/353
+  Localizable.xcstrings · sv: 353 strings
+    … 50/353
+    … 100/353
+    … 150/353
+    … 200/353
+    … 250/353
+    … 300/353
+    … 350/353
+  Localizable.xcstrings · th: 353 strings
+    … 50/353
+    … 100/353
+    … 150/353
+    … 200/353
+    … 250/353
+    … 300/353
+    … 350/353
+  Localizable.xcstrings · tr: 353 strings
+    … 50/353
+    … 100/353
+    … 150/353
+    … 200/353
+    … 250/353
+    … 300/353
+    … 350/353
+  Localizable.xcstrings · uk: 353 strings
+    … 50/353
+    … 100/353
+    … 150/353
+    … 200/353
+    … 250/353
+    … 300/353
+    … 350/353
+  Localizable.xcstrings · vi: 353 strings
+    … 50/353
+    … 100/353
+    … 150/353
+    … 200/353
+    … 250/353
+    … 300/353
+    … 350/353
+  Localizable.xcstrings · zh-Hant: 2 strings
+Expanding InfoPlist.xcstrings …
+  InfoPlist.xcstrings · ar: 3 strings
+  InfoPlist.xcstrings · bg: 7 strings
+  InfoPlist.xcstrings · ca: 7 strings
+  InfoPlist.xcstrings · cs: 7 strings
+  InfoPlist.xcstrings · da: 7 strings
+  InfoPlist.xcstrings · de: 7 strings
+  InfoPlist.xcstrings · el: 7 strings
+  InfoPlist.xcstrings · es: 3 strings
+  InfoPlist.xcstrings · fi: 7 strings
+  InfoPlist.xcstrings · fr: 3 strings
+  InfoPlist.xcstrings · he: 7 strings
+  InfoPlist.xcstrings · hi: 3 strings
+  InfoPlist.xcstrings · hr: 7 strings
+  InfoPlist.xcstrings · hu: 7 strings
+  InfoPlist.xcstrings · id: 7 strings
+  InfoPlist.xcstrings · it: 7 strings
+  InfoPlist.xcstrings · ja: 7 strings
+  InfoPlist.xcstrings · ko: 7 strings
+  InfoPlist.xcstrings · ms: 7 strings
+  InfoPlist.xcstrings · nb: 7 strings
+  InfoPlist.xcstrings · nl: 7 strings
+  InfoPlist.xcstrings · pl: 7 strings
+  InfoPlist.xcstrings · pt: 3 strings
+  InfoPlist.xcstrings · ro: 7 strings
+  InfoPlist.xcstrings · ru: 3 strings
+  InfoPlist.xcstrings · sk: 7 strings
+  InfoPlist.xcstrings · sv: 7 strings
+  InfoPlist.xcstrings · th: 7 strings
+  InfoPlist.xcstrings · tr: 7 strings
+  InfoPlist.xcstrings · uk: 7 strings
+  InfoPlist.xcstrings · vi: 7 strings
+  InfoPlist.xcstrings · zh-Hans: 2 strings
+  InfoPlist.xcstrings · zh-Hant: 2 strings
+Done. Added 9291 localizations.

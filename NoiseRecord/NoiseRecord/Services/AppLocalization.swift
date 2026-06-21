@@ -45,7 +45,11 @@ nonisolated enum AppLocalization {
         return AppLanguage(rawValue: raw) ?? .system
     }
 
-    private static let availableResourceCodes = ["ar", "en", "es", "fr", "hi", "pt", "ru", "zh-Hans", "zh-Hant"]
+    private static let availableResourceCodes = [
+        "ar", "bg", "ca", "cs", "da", "de", "el", "en", "es", "fi", "fr", "he", "hi", "hr", "hu",
+        "id", "it", "ja", "ko", "ms", "nb", "nl", "pl", "pt", "ro", "ru", "sk", "sv", "th", "tr",
+        "uk", "vi", "zh-Hans", "zh-Hant",
+    ]
 
     private static func resourceCode(for language: AppLanguage) -> String {
         switch language {

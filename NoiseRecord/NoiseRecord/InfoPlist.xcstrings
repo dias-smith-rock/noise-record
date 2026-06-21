@@ -1,289 +1,1471 @@
 {
-  "sourceLanguage" : "en",
-  "strings" : {
-    "CFBundleDisplayName" : {
-      "comment" : "Bundle display name",
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "DecibelPro"
+  "sourceLanguage": "en",
+  "strings": {
+    "CFBundleDisplayName": {
+      "comment": "Bundle display name",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "DecibelPro"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "__المصطلح0__"
+          }
+        },
+        "bg": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "__TERMO0__"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "__เงื่อนไข0__"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DecibelPro"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "__学期0__"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "__學期0__"
           }
         }
       }
     },
-    "CFBundleName" : {
-      "comment" : "Bundle name",
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "NoiseRecord"
+    "CFBundleName": {
+      "comment": "Bundle name",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "NoiseRecord"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NoiseRecord"
+          }
+        },
+        "bg": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NoiseRecord"
+          }
+        },
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NoiseRecord"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NoiseRecord"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NoiseRecord"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NoiseRecord"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NoiseRecord"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registro de ruido"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NoiseRecord"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrement de bruit"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NoiseRecord"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "शोर रिकार्ड"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NoiseRecord"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NoiseRecord"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Catatan Kebisingan"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registrazione del rumore"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ノイズレコード"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "소음기록"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NoiseRecord"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NoiseRecord"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geluidsrecord"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapis hałasu"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registro de ruído"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NoiseRecord"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ШумРекорд"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NoiseRecord"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NoiseRecord"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "เสียงรบกวนบันทึก"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gürültü Kaydı"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NoiseRecord"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bản ghi tiếng ồn"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "噪音记录"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "噪音記錄"
           }
         }
       }
     },
-    "NSCameraUsageDescription" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "يلزم الوصول إلى الكاميرا لتسجيل فيديو دليل مع تراكب الديسيبل."
+    "NSCameraUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يلزم الوصول إلى الكاميرا لتسجيل فيديو دليل مع تراكب الديسيبل."
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Camera access is required to record evidence video with decibel overlays."
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Camera access is required to record evidence video with decibel overlays."
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se necesita la cámara para grabar vídeo de prueba con superposición de decibelios."
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se necesita la cámara para grabar vídeo de prueba con superposición de decibelios."
           }
         },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L’accès à la caméra est requis pour enregistrer une preuve vidéo avec mesures en décibels."
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’accès à la caméra est requis pour enregistrer une preuve vidéo avec mesures en décibels."
           }
         },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "डेसिबल ओवरले के साथ साक्ष्य वीडियो के लिए कैमरा एक्सेस आवश्यक है।"
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "डेसिबल ओवरले के साथ साक्ष्य वीडियो के लिए कैमरा एक्सेस आवश्यक है।"
           }
         },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "É necessário acesso à câmera para gravar vídeo de prova com sobreposição de decibéis."
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "É necessário acesso à câmera para gravar vídeo de prova com sobreposição de decibéis."
           }
         },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Нужен доступ к камере для записи видеодоказательств с наложением децибел."
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нужен доступ к камере для записи видеодоказательств с наложением децибел."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "需要相机权限以录制带分贝叠加的取证视频。"
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要相机权限以录制带分贝叠加的取证视频。"
           }
         },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "需要相機權限以錄製帶分貝疊加的取證影片。"
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要相機權限以錄製帶分貝疊加的取證影片。"
+          }
+        },
+        "bg": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Необходим е достъп до камерата за запис на доказателствено видео с децибелни наслагвания."
+          }
+        },
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cal accedir a la càmera per gravar un vídeo de proves amb superposicions de decibels."
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "K záznamu důkazního videa s decibelovými překryvy je vyžadován přístup ke kameře."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kameraadgang er påkrævet for at optage bevisvideo med decibeloverlejringer."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Für die Aufnahme von Beweisvideos mit Dezibel-Overlays ist Kamerazugriff erforderlich."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Απαιτείται πρόσβαση στην κάμερα για την εγγραφή βίντεο αποδεικτικών στοιχείων με επικαλύψεις ντεσιμπέλ."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kameran pääsy vaaditaan todistevideon tallentamiseen desibelipeittokuvalla."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "נדרשת גישה למצלמה כדי להקליט וידאו ראיות עם שכבות על דציבלים."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Potreban je pristup kameri za snimanje video dokaza s slojevima decibela."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kamera-hozzáférés szükséges ahhoz, hogy bizonyítékokat tartalmazó videót rögzíthessen decibel lefedéssel."
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Akses kamera diperlukan untuk merekam video bukti dengan hamparan desibel."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Per registrare video di prova con sovrapposizioni di decibel è necessario l'accesso alla telecamera."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "デシベルオーバーレイを使用して証拠ビデオを録画するには、カメラへのアクセスが必要です。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "데시벨 오버레이로 증거 영상을 녹화하려면 카메라 액세스가 필요합니다."
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Akses kamera diperlukan untuk merakam video bukti dengan tindanan desibel."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kameratilgang er nødvendig for å ta opp bevisvideo med desibeloverlegg."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cameratoegang is vereist om bewijsvideo met decibel-overlays op te nemen."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aby nagrać materiał dowodowy z nakładkami w decybelach, wymagany jest dostęp do kamery."
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accesul la cameră este necesar pentru a înregistra dovezi video cu suprapuneri în decibeli."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na nahrávanie dôkazového videa s prekrytím decibelov je potrebný prístup k fotoaparátu."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kameraåtkomst krävs för att spela in bevisvideo med decibelöverlagringar."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "จำเป็นต้องเข้าถึงกล้องเพื่อบันทึกวิดีโอหลักฐานที่มีการซ้อนทับเดซิเบล"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desibel katmanlarıyla kanıt videosu kaydetmek için kamera erişimi gereklidir."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Доступ до камери потрібен для запису відео доказів із накладанням децибел."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cần có quyền truy cập vào máy ảnh để ghi lại video bằng chứng với lớp phủ decibel."
           }
         }
       }
     },
-    "NSLocationWhenInUseUsageDescription" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "يُستخدم الموقع لتضمين إحداثيات GPS في فيديو الدليل."
+    "NSLocationWhenInUseUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يُستخدم الموقع لتضمين إحداثيات GPS في فيديو الدليل."
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Location is used to embed GPS coordinates in evidence video."
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location is used to embed GPS coordinates in evidence video."
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La ubicación se usa para incrustar coordenadas GPS en el vídeo de prueba."
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La ubicación se usa para incrustar coordenadas GPS en el vídeo de prueba."
           }
         },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La position sert à intégrer les coordonnées GPS dans la preuve vidéo."
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La position sert à intégrer les coordonnées GPS dans la preuve vidéo."
           }
         },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "साक्ष्य वीडियो में GPS निर्देशांक जोड़ने के लिए स्थान का उपयोग होता है।"
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "साक्ष्य वीडियो में GPS निर्देशांक जोड़ने के लिए स्थान का उपयोग होता है।"
           }
         },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A localização é usada para incorporar coordenadas GPS no vídeo de prova."
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A localização é usada para incorporar coordenadas GPS no vídeo de prova."
           }
         },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Геопозиция используется для встраивания GPS-координат в видеодоказательство."
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Геопозиция используется для встраивания GPS-координат в видеодоказательство."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使用位置信息将 GPS 坐标嵌入取证视频。"
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用位置信息将 GPS 坐标嵌入取证视频。"
           }
         },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使用位置資訊將 GPS 座標嵌入取證影片。"
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用位置資訊將 GPS 座標嵌入取證影片。"
+          }
+        },
+        "bg": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Местоположението се използва за вграждане на координати на GPS във видеоклип с доказателства."
+          }
+        },
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La ubicació s'utilitza per incrustar les coordenades GPS al vídeo de proves."
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poloha se používá k vložení souřadnic GPS do důkazního videa."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Placering bruges til at indlejre GPS koordinater i bevisvideo."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Standort wird zum Einbetten von GPS-Koordinaten in Beweisvideos verwendet."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Η τοποθεσία χρησιμοποιείται για την ενσωμάτωση συντεταγμένων GPS σε αποδεικτικό βίντεο."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sijaintia käytetään upottamaan GPS koordinaatit todistevideoon."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "המיקום משמש להטמעת קואורדינטות GPS בסרטון ראיות."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lokacija se koristi za ugrađivanje koordinata GPS u video dokaz."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A hely a GPS koordináták bizonyítékvideóba ágyazására szolgál."
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lokasi digunakan untuk menyematkan koordinat GPS dalam video bukti."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La posizione viene utilizzata per incorporare le coordinate GPS nel video delle prove."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "位置情報は、GPS 座標を証拠ビデオに埋め込むために使用されます。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "위치는 증거 영상에 GPS 좌표를 삽입하는 데 사용됩니다."
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lokasi digunakan untuk membenamkan koordinat GPS dalam video bukti."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plassering brukes til å bygge inn GPS-koordinater i bevisvideo."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Locatie wordt gebruikt om GPS coördinaten in bewijsvideo in te sluiten."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lokalizacja służy do umieszczania współrzędnych GPS w materiale wideo dowodowym."
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Locația este folosită pentru a încorpora coordonatele GPS în videoclipul cu dovezi."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poloha sa používa na vloženie súradníc GPS do dôkazového videa."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plats används för att bädda in GPS-koordinater i bevisvideo."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ตำแหน่งใช้เพื่อฝังพิกัด GPS ในวิดีโอหลักฐาน"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Konum, GPS koordinatlarını kanıt videosuna yerleştirmek için kullanılır."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Розташування використовується для вбудовування координат GPS у відео доказів."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vị trí được sử dụng để nhúng tọa độ GPS vào video bằng chứng."
           }
         }
       }
     },
-    "NSMicrophoneUsageDescription" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "يلزم الوصول إلى الميكروفون لقياس الضوضاء وتسجيل الصوت بالتفعيل الصوتي."
+    "NSMicrophoneUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يلزم الوصول إلى الميكروفون لقياس الضوضاء وتسجيل الصوت بالتفعيل الصوتي."
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Microphone access is required to measure noise and record voice-activated audio."
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microphone access is required to measure noise and record voice-activated audio."
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se necesita el micrófono para medir el ruido y grabar audio activado por voz."
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se necesita el micrófono para medir el ruido y grabar audio activado por voz."
           }
         },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L’accès au micro est requis pour mesurer le bruit et enregistrer l’audio vocal."
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’accès au micro est requis pour mesurer le bruit et enregistrer l’audio vocal."
           }
         },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "शोर मापने और वॉइस-सक्रिय ऑडियो के लिए माइक्रोफ़ोन एक्सेस आवश्यक है।"
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "शोर मापने और वॉइस-सक्रिय ऑडियो के लिए माइक्रोफ़ोन एक्सेस आवश्यक है।"
           }
         },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "É necessário acesso ao microfone para medir ruído e gravar áudio por voz."
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "É necessário acesso ao microfone para medir ruído e gravar áudio por voz."
           }
         },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Нужен доступ к микрофону для измерения шума и голосовой записи."
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нужен доступ к микрофону для измерения шума и голосовой записи."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "需要麦克风权限以测量噪声并进行声控录音。"
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要麦克风权限以测量噪声并进行声控录音。"
           }
         },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "需要麥克風權限以測量噪音並進行聲控錄音。"
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要麥克風權限以測量噪音並進行聲控錄音。"
+          }
+        },
+        "bg": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Необходим е достъп до микрофона за измерване на шума и запис на гласово активирано аудио."
+          }
+        },
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cal accedir al micròfon per mesurar el soroll i gravar l'àudio activat per veu."
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "K měření hluku a nahrávání hlasem aktivovaného zvuku je vyžadován přístup k mikrofonu."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mikrofonadgang er påkrævet for at måle støj og optage stemmeaktiveret lyd."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zur Messung von Lärm und zur Aufnahme von sprachaktiviertem Audio ist ein Mikrofonzugriff erforderlich."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Απαιτείται πρόσβαση στο μικρόφωνο για τη μέτρηση του θορύβου και την εγγραφή ήχου που ενεργοποιείται με φωνή."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mikrofonin käyttö vaaditaan kohinan mittaamiseen ja ääniaktivoidun äänen tallentamiseen."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "נדרשת גישה למיקרופון כדי למדוד רעש ולהקליט אודיו המופעל באמצעות קול."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Potreban je pristup mikrofonu za mjerenje buke i snimanje glasom aktiviranog zvuka."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A zaj méréséhez és a hangvezérelt hang rögzítéséhez mikrofon-hozzáférés szükséges."
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Akses mikrofon diperlukan untuk mengukur kebisingan dan merekam audio yang diaktifkan dengan suara."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "È necessario l'accesso al microfono per misurare il rumore e registrare l'audio ad attivazione vocale."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ノイズを測定し、音声起動オーディオを録音するには、マイクへのアクセスが必要です。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "소음을 측정하고 음성 인식 오디오를 녹음하려면 마이크 액세스가 필요합니다."
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Akses mikrofon diperlukan untuk mengukur hingar dan merakam audio yang diaktifkan suara."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mikrofontilgang er nødvendig for å måle støy og ta opp stemmeaktivert lyd."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toegang tot de microfoon is vereist om ruis te meten en spraakgestuurde audio op te nemen."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Do pomiaru hałasu i nagrywania dźwięku aktywowanego głosem wymagany jest dostęp do mikrofonu."
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accesul la microfon este necesar pentru a măsura zgomotul și a înregistra sunetul activat prin voce."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na meranie hluku a nahrávanie hlasom aktivovaného zvuku je potrebný prístup k mikrofónu."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mikrofonåtkomst krävs för att mäta brus och spela in röstaktiverat ljud."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "จำเป็นต้องเข้าถึงไมโครโฟนเพื่อวัดเสียงรบกวนและบันทึกเสียงที่สั่งงานด้วยเสียง"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gürültüyü ölçmek ve sesle etkinleştirilen sesi kaydetmek için mikrofon erişimi gerekir."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Для вимірювання шуму та запису голосового аудіо потрібен доступ до мікрофона."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cần có quyền truy cập micrô để đo tiếng ồn và ghi lại âm thanh được kích hoạt bằng giọng nói."
           }
         }
       }
     },
-    "NSPhotoLibraryAddUsageDescription" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Photo library access is required to save evidence videos to your album."
+    "NSPhotoLibraryAddUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photo library access is required to save evidence videos to your album."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "需要相册权限以将取证视频保存到相册。"
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要相册权限以将取证视频保存到相册。"
           }
         },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "需要相簿權限以將取證影片儲存到相簿。"
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要相簿權限以將取證影片儲存到相簿。"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يلزم الوصول إلى مكتبة الصور لحفظ مقاطع الفيديو الأدلة في ألبومك."
+          }
+        },
+        "bg": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Необходим е достъп до библиотека със снимки, за да запазите видеоклипове с доказателства във вашия албум."
+          }
+        },
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cal accedir a la biblioteca de fotos per desar vídeos de proves al vostre àlbum."
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "K ukládání důkazních videí do vašeho alba je vyžadován přístup do knihovny fotografií."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der kræves adgang til fotobiblioteket for at gemme bevisvideoer i dit album."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Um Beweisvideos in Ihrem Album zu speichern, ist Zugriff auf die Fotobibliothek erforderlich."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Απαιτείται πρόσβαση στη βιβλιοθήκη φωτογραφιών για την αποθήκευση αποδεικτικών βίντεο στο άλμπουμ σας."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se requiere acceso a la biblioteca de fotos para guardar videos de evidencia en su álbum."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valokuvakirjaston käyttöoikeus vaaditaan todistevideoiden tallentamiseksi albumiisi."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L'accès à la photothèque est requis pour enregistrer des vidéos de preuves dans votre album."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "נדרשת גישה לספריית התמונות כדי לשמור סרטוני ראיה באלבום שלך."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "साक्ष्य वीडियो को आपके एल्बम में सहेजने के लिए फोटो लाइब्रेरी का उपयोग आवश्यक है।"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pristup biblioteci fotografija potreban je za spremanje videozapisa dokaza u vaš album."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ahhoz, hogy a bizonyítékokat tartalmazó videókat az albumodba menthesd, a fotótárhoz hozzáférés szükséges."
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Akses perpustakaan foto diperlukan untuk menyimpan video bukti ke album Anda."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Per salvare i video delle prove nel tuo album è necessario l'accesso alla libreria fotografica."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "証拠ビデオをアルバムに保存するには、フォト ライブラリへのアクセスが必要です。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "증거영상을 앨범에 저장하기 위해서는 사진 라이브러리 접근 권한이 필요합니다."
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Akses perpustakaan foto diperlukan untuk menyimpan video bukti ke album anda."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tilgang til fotobibliotek er nødvendig for å lagre bevisvideoer i albumet ditt."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toegang tot de fotobibliotheek is vereist om bewijsvideo's in uw album op te slaan."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aby zapisać filmy dowodowe w albumie, wymagany jest dostęp do biblioteki zdjęć."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O acesso à biblioteca de fotos é necessário para salvar vídeos de evidências em seu álbum."
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accesul la biblioteca de fotografii este necesar pentru a salva videoclipurile cu dovezi în albumul dvs."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Для сохранения видеодоказательств в альбом необходим доступ к библиотеке фотографий."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na ukladanie dôkazových videí do albumu je potrebný prístup do knižnice fotografií."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tillgång till fotobibliotek krävs för att spara bevisvideor i ditt album."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "จำเป็นต้องเข้าถึงคลังภาพเพื่อบันทึกวิดีโอหลักฐานลงในอัลบั้มของคุณ"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kanıt videolarını albümünüze kaydetmek için fotoğraf kütüphanesine erişim gereklidir."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Для збереження відео доказів у вашому альбомі потрібен доступ до бібліотеки фотографій."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cần có quyền truy cập thư viện ảnh để lưu video bằng chứng vào album của bạn."
           }
         }
       }
     },
-    "NSUserTrackingUsageDescription" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "يُستخدم هذا المعرّف لتقديم إعلانات مخصصة وقياس أداء الإعلانات."
+    "NSUserTrackingUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يُستخدم هذا المعرّف لتقديم إعلانات مخصصة وقياس أداء الإعلانات."
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This identifier is used to deliver personalized ads and measure ad performance."
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This identifier is used to deliver personalized ads and measure ad performance."
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Este identificador se usa para mostrar anuncios personalizados y medir su rendimiento."
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este identificador se usa para mostrar anuncios personalizados y medir su rendimiento."
           }
         },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cet identifiant sert à diffuser des publicités personnalisées et à mesurer leurs performances."
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cet identifiant sert à diffuser des publicités personnalisées et à mesurer leurs performances."
           }
         },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "यह पहचानकर्ता व्यक्तिगत विज्ञापन देने और विज्ञापन प्रदर्शन मापने के लिए उपयोग होता है।"
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "यह पहचानकर्ता व्यक्तिगत विज्ञापन देने और विज्ञापन प्रदर्शन मापने के लिए उपयोग होता है।"
           }
         },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Este identificador é usado para exibir anúncios personalizados e medir o desempenho dos anúncios."
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este identificador é usado para exibir anúncios personalizados e medir o desempenho dos anúncios."
           }
         },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Этот идентификатор используется для показа персонализированной рекламы и оценки её эффективности."
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Этот идентификатор используется для показа персонализированной рекламы и оценки её эффективности."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "此标识符用于投放个性化广告并衡量广告效果。"
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此标识符用于投放个性化广告并衡量广告效果。"
           }
         },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "此識別碼用於投放個人化廣告並衡量廣告成效。"
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此識別碼用於投放個人化廣告並衡量廣告成效。"
+          }
+        },
+        "bg": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Този идентификатор се използва за предоставяне на персонализирани реклами и измерване на ефективността на рекламите."
+          }
+        },
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aquest identificador s'utilitza per oferir anuncis personalitzats i mesurar el rendiment dels anuncis."
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tento identifikátor se používá k zobrazování personalizovaných reklam a měření výkonu reklam."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denne identifikator bruges til at levere tilpassede annoncer og måle annonceeffektivitet."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Kennung wird verwendet, um personalisierte Anzeigen auszuliefern und die Anzeigenleistung zu messen."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Αυτό το αναγνωριστικό χρησιμοποιείται για την προβολή εξατομικευμένων διαφημίσεων και τη μέτρηση της απόδοσης της διαφήμισης."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tätä tunnistetta käytetään räätälöityjen mainosten näyttämiseen ja mainosten tehokkuuden mittaamiseen."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "מזהה זה משמש להצגת מודעות מותאמות אישית ולמדוד ביצועי מודעות."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ovaj se identifikator koristi za isporuku prilagođenih oglasa i mjerenje izvedbe oglasa."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ez az azonosító személyre szabott hirdetések megjelenítésére és a hirdetések teljesítményének mérésére szolgál."
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pengenal ini digunakan untuk menayangkan iklan yang dipersonalisasi dan mengukur kinerja iklan."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questo identificatore viene utilizzato per fornire annunci personalizzati e misurare le prestazioni degli annunci."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この識別子は、パーソナライズされた広告を配信し、広告のパフォーマンスを測定するために使用されます。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이 식별자는 개인화된 광고를 제공하고 광고 성과를 측정하는 데 사용됩니다."
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pengecam ini digunakan untuk menyampaikan iklan yang diperibadikan dan mengukur prestasi iklan."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denne identifikatoren brukes til å levere personlig tilpassede annonser og måle annonseresultater."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deze ID wordt gebruikt om gepersonaliseerde advertenties weer te geven en de advertentieprestaties te meten."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identyfikator ten służy do dostarczania spersonalizowanych reklam i pomiaru skuteczności reklam."
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acest identificator este folosit pentru a furniza reclame personalizate și pentru a măsura performanța anunțurilor."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tento identifikátor sa používa na zobrazovanie prispôsobených reklám a meranie výkonnosti reklám."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denna identifierare används för att leverera anpassade annonser och mäta annonsresultat."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ตัวระบุนี้ใช้เพื่อนำเสนอโฆษณาส่วนบุคคลและวัดประสิทธิภาพโฆษณา"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu tanımlayıcı, kişiselleştirilmiş reklamlar sunmak ve reklam performansını ölçmek için kullanılır."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Цей ідентифікатор використовується для надання персоналізованої реклами та вимірювання ефективності реклами."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giá trị nhận dạng này dùng để phân phối quảng cáo được cá nhân hóa và đo lường hiệu suất quảng cáo."
           }
         }
       }
     }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }

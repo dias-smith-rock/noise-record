@@ -4,11 +4,36 @@ enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
     case system
     case en
     case ar
+    case bg
+    case ca
+    case cs
+    case da
+    case de
+    case el
     case es
+    case fi
     case fr
+    case he
     case hi
+    case hr
+    case hu
+    case id
+    case it
+    case ja
+    case ko
+    case ms
+    case nb
+    case nl
+    case pl
     case pt
+    case ro
     case ru
+    case sk
+    case sv
+    case th
+    case tr
+    case uk
+    case vi
     case zhHans = "zh-Hans"
     case zhHant = "zh-Hant"
 
@@ -22,16 +47,66 @@ enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
             "English"
         case .ar:
             "العربية"
+        case .bg:
+            "Български"
+        case .ca:
+            "Català"
+        case .cs:
+            "Čeština"
+        case .da:
+            "Dansk"
+        case .de:
+            "Deutsch"
+        case .el:
+            "Ελληνικά"
         case .es:
             "Español"
+        case .fi:
+            "Suomi"
         case .fr:
             "Français"
+        case .he:
+            "עברית"
         case .hi:
             "हिन्दी"
+        case .hr:
+            "Hrvatski"
+        case .hu:
+            "Magyar"
+        case .id:
+            "Bahasa Indonesia"
+        case .it:
+            "Italiano"
+        case .ja:
+            "日本語"
+        case .ko:
+            "한국어"
+        case .ms:
+            "Bahasa Melayu"
+        case .nb:
+            "Norsk"
+        case .nl:
+            "Nederlands"
+        case .pl:
+            "Polski"
         case .pt:
             "Português"
+        case .ro:
+            "Română"
         case .ru:
             "Русский"
+        case .sk:
+            "Slovenčina"
+        case .sv:
+            "Svenska"
+        case .th:
+            "ไทย"
+        case .tr:
+            "Türkçe"
+        case .uk:
+            "Українська"
+        case .vi:
+            "Tiếng Việt"
         case .zhHans:
             "简体中文"
         case .zhHant:
