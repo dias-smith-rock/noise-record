@@ -75,17 +75,19 @@ struct SpectrumChartView: View, Equatable {
 
     var body: some View {
         GeometryReader { geometry in
-            Canvas { context, size in
-                let plotRect = plotRect(in: size)
-                let coords = SpectrumPlotCoordinateSystem(plotRect: plotRect)
+            let plotRect = plotRect(in: geometry.size)
+            let coords = SpectrumPlotCoordinateSystem(plotRect: plotRect)
 
+            Canvas { context, size in
                 drawFrequencyGrid(context: &context, coords: coords)
                 drawDecibelGrid(context: &context, coords: coords)
 
                 if let spectrum, !spectrum.decibels.isEmpty {
                     drawLiveSpectrum(context: &context, coords: coords, spectrum: spectrum)
                     drawPeakHoldSpectrum(context: &context, coords: coords, spectrum: spectrum)
-                    drawPeakMarker(context: &context, coords: coords, spectrum: spectrum)
+                    if let peak = peakMark(for: spectrum, coords: coords) {
+                        drawPeakDot(context: &context, at: peak.anchor)
+                    }
                 }
             }
         }
@@ -105,6 +107,16 @@ struct SpectrumChartView: View, Equatable {
         )
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .drawingGroup()
+        .overlay {
+            GeometryReader { geometry in
+                let coords = SpectrumPlotCoordinateSystem(plotRect: plotRect(in: geometry.size))
+                if let spectrum, let peak = peakMark(for: spectrum, coords: coords) {
+                    peakLabelView(peak)
+                        .position(x: peak.anchor.x, y: peak.anchor.y - 12)
+                }
+            }
+            .allowsHitTesting(false)
+        }
     }
 
     private var placeholderText: String {
@@ -243,47 +255,61 @@ struct SpectrumChartView: View, Equatable {
 
     // MARK: - 峰值标注
 
-    private func drawPeakMarker(
-        context: inout GraphicsContext,
-        coords: SpectrumPlotCoordinateSystem,
-        spectrum: FFTSpectrum
-    ) {
+    private struct SpectrumPeakMark: Equatable {
+        let anchor: CGPoint
+        let label: String
+    }
+
+    /// 峰值文字仅从 Bin 3 起检索，与曲线绘制（Bin 1 起）分离。
+    private func peakMark(
+        for spectrum: FFTSpectrum,
+        coords: SpectrumPlotCoordinateSystem
+    ) -> SpectrumPeakMark? {
         let peakDecibels = spectrum.peakDecibels
         guard !peakDecibels.isEmpty,
-              peakDecibels.count == spectrum.decibels.count else { return }
+              peakDecibels.count == spectrum.decibels.count else { return nil }
 
-        // 仅峰值悬浮文字从 Bin 3 起检索，与曲线绘制（Bin 1 起）分离
         let labelMinBin = SpectrumDSPGuards.peakLabelMinBin
         guard let peakBin = peakDecibels.enumerated()
             .filter({ $0.offset >= labelMinBin })
             .max(by: { $0.element < $1.element })?.offset,
-              peakDecibels[peakBin] > Float(coords.minDecibels) + 4 else { return }
+              peakDecibels[peakBin] > SpectrumDSPGuards.plotDecibelMin + 4 else { return nil }
 
         let peakDB = peakDecibels[peakBin]
-        let peakFrequency = max(
-            Double(peakBin) * spectrum.sampleRate / Double(spectrum.fftSize),
-            SpectrumDSPGuards.minimumPlotFrequency
-        )
+        let peakFrequency = Double(peakBin) * spectrum.sampleRate / Double(spectrum.fftSize)
+        let label = Self.formatPeakFrequency(peakFrequency)
+        guard !label.isEmpty else { return nil }
+
         let anchor = CGPoint(
             x: coords.x(forFrequency: peakFrequency),
             y: coords.y(forDecibels: peakDB)
         )
-        guard anchor.x.isFinite, anchor.y.isFinite else { return }
+        guard anchor.x.isFinite, anchor.y.isFinite else { return nil }
 
-        // 3 px 实心顶点
+        return SpectrumPeakMark(anchor: anchor, label: label)
+    }
+
+    private func drawPeakDot(context: inout GraphicsContext, at anchor: CGPoint) {
         let dotRect = CGRect(x: anchor.x - 1.5, y: anchor.y - 1.5, width: 3, height: 3)
         context.fill(Path(ellipseIn: dotRect), with: .color(.pink))
+    }
 
-        let label = Self.formatPeakFrequency(peakFrequency)
-        guard !label.isEmpty else { return }
-
-        let resolved = context.resolve(
-            Text(label)
-                .font(.system(size: 11, weight: .semibold, design: .rounded))
-                .monospacedDigit()
-                .foregroundStyle(.white.opacity(0.95))
-        )
-        context.draw(resolved, at: CGPoint(x: anchor.x, y: anchor.y - 5), anchor: .bottom)
+    private func peakLabelView(_ mark: SpectrumPeakMark) -> some View {
+        Text(mark.label)
+            .font(.system(size: 10, weight: .semibold, design: .rounded))
+            .monospacedDigit()
+            .foregroundStyle(Color.pink)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background {
+                Capsule()
+                    .fill(Color(.systemBackground).opacity(0.96))
+                    .shadow(color: .black.opacity(0.08), radius: 1, y: 1)
+            }
+            .overlay {
+                Capsule()
+                    .strokeBorder(Color.pink.opacity(0.35), lineWidth: 0.5)
+            }
     }
 
     // MARK: - 标签格式化
