@@ -91,6 +91,14 @@ final class NoiseMonitorEngine {
     private var historyBuffer = FloatTimeSeriesBuffer(capacity: 300)
     private var fftSampleRing = FFTSampleRing(capacity: FFTAnalyzer.defaultFFTSize)
     private var fftScratch = [Float](repeating: 0, count: FFTAnalyzer.defaultFFTSize)
+    /// 峰值保持持久化数组（引擎生命周期，不在 tap 回调中重建）。
+    private var peakAmounts = [Float](
+        repeating: SpectrumDSPGuards.analyzerDecibelFloor,
+        count: FFTAnalyzer.defaultFFTSize / 2
+    )
+    private var lastLiveSpectrumDecibels: [Float]?
+    private var lastSpectrumSampleRate: Double = 44_100
+    private var lastSpectrumFFTSize: Int = FFTAnalyzer.defaultFFTSize
     private var uiFrameCounter = 0
     private let voiceRecorder = VoiceActivatedRecorder()
     private var noiseClassifier: NoiseClassifierManager?
@@ -122,6 +130,8 @@ final class NoiseMonitorEngine {
         static let uiInterval: TimeInterval = 1.0 / 15.0
         /// Spectrum FFT is heavier; update every N UI frames (~5 Hz).
         static let spectrumEveryNthUIFrame = 3
+        /// 峰值保持指数衰减系数（每 UI 帧乘一次，约 15 Hz）。
+        static let peakDecayFactor: Float = 0.985
     }
     private var cachedNoiseLabel: String?
     private var isNormalizingThresholds = false
@@ -406,6 +416,44 @@ final class NoiseMonitorEngine {
         sessionSumDB = 0
         fftSampleRing.reset()
         uiFrameCounter = 0
+        resetPeakAmounts()
+    }
+
+    private func resetPeakAmounts() {
+        let floor = SpectrumDSPGuards.analyzerDecibelFloor
+        for index in peakAmounts.indices {
+            peakAmounts[index] = floor
+        }
+        lastLiveSpectrumDecibels = nil
+    }
+
+    /// 指数衰减 + 峰值锁定：仅在 processingQueue 上调用。
+    private func advancePeakAmounts(with current: [Float]?) {
+        let floor = SpectrumDSPGuards.analyzerDecibelFloor
+        let decayFactor = Performance.peakDecayFactor
+
+        for index in peakAmounts.indices {
+            if index < SpectrumDSPGuards.pathDrawingMinBin {
+                peakAmounts[index] = floor
+                continue
+            }
+            let decayedPeak = peakAmounts[index] * decayFactor
+            let decayed = decayedPeak < floor ? floor : decayedPeak
+            if let current, index < current.count {
+                peakAmounts[index] = max(decayed, current[index])
+            } else {
+                peakAmounts[index] = decayed
+            }
+        }
+    }
+
+    private func makeSpectrumSnapshot(liveDecibels: [Float]) -> FFTSpectrum {
+        FFTSpectrum(
+            decibels: liveDecibels,
+            sampleRate: lastSpectrumSampleRate,
+            fftSize: lastSpectrumFFTSize,
+            peakDecibels: peakAmounts
+        )
     }
 
     func updateWeighting(_ type: WeightingType) {
@@ -679,16 +727,27 @@ final class NoiseMonitorEngine {
         uiFrameCounter += 1
 
         var spectrum: FFTSpectrum?
+        var freshLiveDecibels: [Float]?
         if uiFrameCounter % Performance.spectrumEveryNthUIFrame == 0,
            fftSampleRing.isReadyForAnalysis {
             fftSampleRing.copyLatestWindow(into: &fftScratch)
-            spectrum = fftScratch.withUnsafeBufferPointer { ptr in
+            if let analyzed = fftScratch.withUnsafeBufferPointer({ ptr in
                 fftAnalyzer?.analyze(
                     channelData: ptr.baseAddress!,
                     frameLength: fftScratch.count,
                     calibrationOffset: offset
                 )
+            }) {
+                lastLiveSpectrumDecibels = analyzed.decibels
+                lastSpectrumSampleRate = analyzed.sampleRate
+                lastSpectrumFFTSize = analyzed.fftSize
+                freshLiveDecibels = analyzed.decibels
             }
+        }
+
+        advancePeakAmounts(with: freshLiveDecibels)
+        if let live = lastLiveSpectrumDecibels {
+            spectrum = makeSpectrumSnapshot(liveDecibels: live)
         }
 
         historyBuffer.append(smoothed)

@@ -11,10 +11,10 @@ private struct SpectrumPlotCoordinateSystem: Sendable {
     let minFrequency: Double = 20
     /// 横轴上界：22050 Hz（44100 Hz 采样率的 Nyquist 频率）
     let maxFrequency: Double = 22_050
-    /// 纵轴下界：-20 dB
-    let minDecibels: Double = -20
-    /// 纵轴上界：100 dB
-    let maxDecibels: Double = 100
+    /// 纵轴下界：-20 dBA
+    var minDecibels: Double { Double(SpectrumDSPGuards.plotDecibelMin) }
+    /// 纵轴上界：120 dBA
+    var maxDecibels: Double { Double(SpectrumDSPGuards.plotDecibelMax) }
 
     private var logMin: Double { safeLog10(minFrequency) }
     private var logMax: Double { safeLog10(maxFrequency) }
@@ -32,21 +32,22 @@ private struct SpectrumPlotCoordinateSystem: Sendable {
     }
 
     /// 第 i 个 FFT Bin → 物理频率 → X 像素。
-    /// f = i × (sampleRate / fftSize)，例如 44100/1024 ≈ 43.066 Hz/Bin。
+    /// f = i × (sampleRate / fftSize)；强制 f ≥ 20 Hz，消灭 log10(0)。
     func x(forBin bin: Int, sampleRate: Double, fftSize: Int) -> CGFloat {
         guard fftSize > 0, bin >= 0 else { return plotRect.minX }
-        let frequency = Double(bin) * sampleRate / Double(fftSize)
-        return x(forFrequency: frequency)
+        let rawFrequency = Double(bin) * sampleRate / Double(fftSize)
+        let safeFrequency = max(rawFrequency, minFrequency)
+        return x(forFrequency: safeFrequency)
     }
 
-    /// 线性分贝 → Y 像素（顶部为高声压，底部为低声压）。
-    /// y = (1 − (dB − (−20)) / (100 − (−20))) × height
+    /// 线性分贝 → Y 像素。
+    /// yRatio = 1 − (dB − (−20)) / (120 − (−20))；dB = −20 → 底部，dB = 120 → 顶部
     func y(forDecibels db: Float) -> CGFloat {
         guard plotRect.height > 0 else { return plotRect.midY }
-        let clamped = min(max(Double(db), minDecibels), maxDecibels)
-        let normalized = 1.0 - (clamped - minDecibels) / decibelSpan
-        guard normalized.isFinite else { return plotRect.midY }
-        return plotRect.minY + CGFloat(normalized) * plotRect.height
+        let plotDB = SpectrumDSPGuards.clampedPlotDecibels(db)
+        let yRatio = 1.0 - (Double(plotDB) - minDecibels) / decibelSpan
+        guard yRatio.isFinite else { return plotRect.maxY }
+        return plotRect.minY + CGFloat(yRatio) * plotRect.height
     }
 
     private func safeLog10(_ value: Double) -> Double {
@@ -63,14 +64,10 @@ struct SpectrumChartView: View, Equatable {
     let spectrum: FFTSpectrum?
     var isActive: Bool = true
 
-    @State private var peakDecibels: [Float] = []
-
     private static let plotInsets = EdgeInsets(top: 14, leading: 34, bottom: 8, trailing: 10)
-    private static let noiseFloor: Float = -120
-    private static let peakDecayRate: Float = 10
 
     private static let frequencyGridHz: [Double] = [62, 125, 250, 500, 1_000, 2_000, 4_000, 8_000, 16_000]
-    private static let decibelGridValues: [Int] = [0, 20, 40, 60, 80, 100]
+    private static let decibelGridValues: [Int] = [-20, 0, 20, 40, 60, 80, 100, 120]
 
     static func == (lhs: SpectrumChartView, rhs: SpectrumChartView) -> Bool {
         lhs.isActive == rhs.isActive && lhs.spectrum == rhs.spectrum
@@ -106,19 +103,6 @@ struct SpectrumChartView: View, Equatable {
         )
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .drawingGroup()
-        .onChange(of: spectrum) { _, newValue in
-            capturePeaks(from: newValue)
-        }
-        .onChange(of: isActive) { _, active in
-            if !active { resetPeaks() }
-        }
-        .task(id: isActive) {
-            guard isActive else { return }
-            while !Task.isCancelled, isActive {
-                try? await Task.sleep(for: .milliseconds(33))
-                decayPeaks(elapsed: 1.0 / 30.0)
-            }
-        }
     }
 
     // MARK: - 布局
@@ -197,7 +181,7 @@ struct SpectrumChartView: View, Equatable {
         context.stroke(
             path,
             with: .color(.green),
-            style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round)
+            style: StrokeStyle(lineWidth: 1.0, lineCap: .round, lineJoin: .round)
         )
     }
 
@@ -206,10 +190,11 @@ struct SpectrumChartView: View, Equatable {
         coords: SpectrumPlotCoordinateSystem,
         spectrum: FFTSpectrum
     ) {
-        guard peakDecibels.count == spectrum.decibels.count else { return }
+        guard !spectrum.peakDecibels.isEmpty,
+              spectrum.peakDecibels.count == spectrum.decibels.count else { return }
 
         let path = spectrumPath(
-            decibels: peakDecibels,
+            decibels: spectrum.peakDecibels,
             coords: coords,
             sampleRate: spectrum.sampleRate,
             fftSize: spectrum.fftSize
@@ -217,11 +202,11 @@ struct SpectrumChartView: View, Equatable {
         context.stroke(
             path,
             with: .color(.pink),
-            style: StrokeStyle(lineWidth: 1.25, lineCap: .round, lineJoin: .round)
+            style: StrokeStyle(lineWidth: 0.75, lineCap: .round, lineJoin: .round)
         )
     }
 
-    /// 遍历 Bin 1…511，先算物理频率再映射 X，保证曲线与网格绝对对齐。
+    /// 绘制实时/峰值保持曲线：Bin 1…511（~43 Hz 起），与峰值文字检索解耦。
     private func spectrumPath(
         decibels: [Float],
         coords: SpectrumPlotCoordinateSystem,
@@ -229,15 +214,19 @@ struct SpectrumChartView: View, Equatable {
         fftSize: Int
     ) -> Path {
         var path = Path()
-        let maxBin = min(decibels.count, fftSize / 2)
-        guard maxBin > 1 else { return path }
+        let startBin = SpectrumDSPGuards.pathDrawingMinBin
+        let endBin = min(512, decibels.count, fftSize / 2)
+        guard endBin > startBin else { return path }
 
-        for bin in 1..<maxBin {
-            let point = CGPoint(
-                x: coords.x(forBin: bin, sampleRate: sampleRate, fftSize: fftSize),
-                y: coords.y(forDecibels: decibels[bin])
-            )
-            if bin == 1 {
+        for bin in startBin..<endBin {
+            let rawFrequency = Float(bin) * Float(sampleRate) / Float(fftSize)
+            let x = coords.x(forFrequency: Double(rawFrequency))
+            let y = coords.y(forDecibels: decibels[bin])
+
+            guard x.isFinite, y.isFinite else { continue }
+            let point = CGPoint(x: x, y: y)
+
+            if bin == startBin {
                 path.move(to: point)
             } else {
                 path.addLine(to: point)
@@ -253,24 +242,35 @@ struct SpectrumChartView: View, Equatable {
         coords: SpectrumPlotCoordinateSystem,
         spectrum: FFTSpectrum
     ) {
-        guard peakDecibels.count == spectrum.decibels.count else { return }
+        let peakDecibels = spectrum.peakDecibels
+        guard !peakDecibels.isEmpty,
+              peakDecibels.count == spectrum.decibels.count else { return }
 
-        // 在峰值保持曲线上找全局最大 Bin
-        guard let peakBin = peakDecibels.enumerated().max(by: { $0.element < $1.element })?.offset,
+        // 仅峰值悬浮文字从 Bin 3 起检索，与曲线绘制（Bin 1 起）分离
+        let labelMinBin = SpectrumDSPGuards.peakLabelMinBin
+        guard let peakBin = peakDecibels.enumerated()
+            .filter({ $0.offset >= labelMinBin })
+            .max(by: { $0.element < $1.element })?.offset,
               peakDecibels[peakBin] > Float(coords.minDecibels) + 4 else { return }
 
         let peakDB = peakDecibels[peakBin]
-        let peakFrequency = Double(peakBin) * spectrum.sampleRate / Double(spectrum.fftSize)
+        let peakFrequency = max(
+            Double(peakBin) * spectrum.sampleRate / Double(spectrum.fftSize),
+            SpectrumDSPGuards.minimumPlotFrequency
+        )
         let anchor = CGPoint(
-            x: coords.x(forBin: peakBin, sampleRate: spectrum.sampleRate, fftSize: spectrum.fftSize),
+            x: coords.x(forFrequency: peakFrequency),
             y: coords.y(forDecibels: peakDB)
         )
+        guard anchor.x.isFinite, anchor.y.isFinite else { return }
 
         // 3 px 实心顶点
         let dotRect = CGRect(x: anchor.x - 1.5, y: anchor.y - 1.5, width: 3, height: 3)
         context.fill(Path(ellipseIn: dotRect), with: .color(.pink))
 
         let label = Self.formatPeakFrequency(peakFrequency)
+        guard !label.isEmpty else { return }
+
         let resolved = context.resolve(
             Text(label)
                 .font(.system(size: 11, weight: .semibold, design: .rounded))
@@ -278,43 +278,6 @@ struct SpectrumChartView: View, Equatable {
                 .foregroundStyle(.white.opacity(0.95))
         )
         context.draw(resolved, at: CGPoint(x: anchor.x, y: anchor.y - 5), anchor: .bottom)
-    }
-
-    // MARK: - 峰值保持
-
-    private func capturePeaks(from spectrum: FFTSpectrum?) {
-        guard let spectrum, !spectrum.decibels.isEmpty else { return }
-        ensurePeakCapacity(spectrum.decibels.count)
-        for index in spectrum.decibels.indices {
-            peakDecibels[index] = max(peakDecibels[index], spectrum.decibels[index])
-        }
-    }
-
-    private func decayPeaks(elapsed: TimeInterval) {
-        guard !peakDecibels.isEmpty else { return }
-        let decay = Float(elapsed) * Self.peakDecayRate
-        for index in peakDecibels.indices {
-            var value = peakDecibels[index] - decay
-            if value < Self.noiseFloor { value = Self.noiseFloor }
-            peakDecibels[index] = value
-        }
-        if let spectrum { capturePeaks(from: spectrum) }
-    }
-
-    private func resetPeaks() {
-        let capacity = FFTAnalyzer.defaultFFTSize / 2
-        if peakDecibels.count != capacity {
-            peakDecibels = [Float](repeating: Self.noiseFloor, count: capacity)
-        } else {
-            for index in peakDecibels.indices {
-                peakDecibels[index] = Self.noiseFloor
-            }
-        }
-    }
-
-    private func ensurePeakCapacity(_ count: Int) {
-        guard peakDecibels.count != count else { return }
-        peakDecibels = [Float](repeating: Self.noiseFloor, count: count)
     }
 
     // MARK: - 标签格式化
@@ -327,7 +290,7 @@ struct SpectrumChartView: View, Equatable {
     }
 
     private static func formatPeakFrequency(_ hz: Double) -> String {
-        guard hz.isFinite, hz > 0 else { return "— Hz" }
+        guard hz.isFinite, hz >= SpectrumDSPGuards.minimumPlotFrequency else { return "" }
         if hz >= 10_000 { return String(format: "%.0f Hz", hz) }
         if hz >= 1_000 { return String(format: "%.1f kHz", hz / 1000) }
         return String(format: "%.0f Hz", hz)

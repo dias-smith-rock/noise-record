@@ -4,6 +4,7 @@ import Foundation
 /// One FFT frame: per-bin dBFS values from DC through Nyquist (512 bins for a 1024-point real FFT).
 struct FFTSpectrum: Sendable, Equatable {
     let decibels: [Float]
+    let peakDecibels: [Float]
     let sampleRate: Double
     let fftSize: Int
 
@@ -16,6 +17,18 @@ struct FFTSpectrum: Sendable, Equatable {
 
     func frequency(forBin index: Int) -> Double {
         Double(index) * frequencyResolution
+    }
+
+    init(
+        decibels: [Float],
+        sampleRate: Double,
+        fftSize: Int,
+        peakDecibels: [Float] = []
+    ) {
+        self.decibels = decibels
+        self.peakDecibels = peakDecibels
+        self.sampleRate = sampleRate
+        self.fftSize = fftSize
     }
 }
 
@@ -84,26 +97,38 @@ final class FFTAnalyzer {
                     }
                 }
 
-                // 3. Forward real FFT (Float path: vDSP_fft_zrip / vDSP_fft_zripF)
+                // 3. Forward real FFT
                 vDSP_fft_zrip(fftSetup, &split, 1, log2n, FFTDirection(FFT_FORWARD))
 
-                // Normalize to preserve Parseval energy
                 var scale: Float = 1.0 / Float(bufferSize)
                 vDSP_vsmul(split.realp, 1, &scale, split.realp, 1, vDSP_Length(binCount))
                 vDSP_vsmul(split.imagp, 1, &scale, split.imagp, 1, vDSP_Length(binCount))
 
-                // 4. Magnitude squared → 10·log10(mag²) + calibration
+                // 4. Magnitude² → 10·log10(mag²)；不在幅值域钳位，避免 +115 dB 校准后产生 0 dB 硬底
                 vDSP_zvmags(&split, 1, &magnitudesSquared, 1, vDSP_Length(binCount))
 
                 var ref: Float = 1.0
                 vDSP_vdbcon(magnitudesSquared, 1, &ref, &decibels, 1, vDSP_Length(binCount), 0)
 
+                // log10(0) 防护：仅在 dB 域将 −∞ 替换为声学底噪，绝不 max(0, db)
+                let floor = SpectrumDSPGuards.analyzerDecibelFloor
+                for index in decibels.indices where !decibels[index].isFinite {
+                    decibels[index] = floor
+                }
+
                 var offset = calibrationOffset
                 vDSP_vsadd(decibels, 1, &offset, &decibels, 1, vDSP_Length(binCount))
 
-                let floor: Float = -120
                 var clamped = decibels
-                for index in clamped.indices where !clamped[index].isFinite || clamped[index] < floor {
+                for index in clamped.indices {
+                    if !clamped[index].isFinite {
+                        clamped[index] = floor
+                    }
+                }
+
+                // 仅压制 Bin 0 直流；Bin 1（~43 Hz）与 Bin 2（~86 Hz）保留真实 dBA
+                let dcEnd = min(SpectrumDSPGuards.dcSuppressBinCount, clamped.count)
+                for index in 0..<dcEnd {
                     clamped[index] = floor
                 }
 
