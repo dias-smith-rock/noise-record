@@ -33,9 +33,18 @@ final class NoiseMonitorEngine {
                     "mode": isHighSensitivityMode ? "high_sensitivity" : "standard",
                 ]
             )
+            ModeSwitchPerformance.noteEngineModeChange(
+                fromHighSensitivity: oldValue,
+                toHighSensitivity: isHighSensitivityMode,
+                isMonitoring: isMonitoring
+            )
             if isMonitoring {
                 restartPipeline()
+            } else {
+                ModeSwitchPerformance.mark(.restartPipelineSkippedNotMonitoring)
             }
+            ModeSwitchPerformance.finishEngineModeChange()
+            ModeSwitchPerformance.schedulePostRenderMark()
         }
     }
 
@@ -80,8 +89,8 @@ final class NoiseMonitorEngine {
     private var sessionSumDB: Float = 0
     private var filteredScratch: [Float] = []
     private var historyBuffer = FloatTimeSeriesBuffer(capacity: 300)
-    private var fftSampleRing = FFTSampleRing(capacity: 2048)
-    private var fftScratch = [Float](repeating: 0, count: 2048)
+    private var fftSampleRing = FFTSampleRing(capacity: FFTAnalyzer.defaultFFTSize)
+    private var fftScratch = [Float](repeating: 0, count: FFTAnalyzer.defaultFFTSize)
     private var uiFrameCounter = 0
     private let voiceRecorder = VoiceActivatedRecorder()
     private var noiseClassifier: NoiseClassifierManager?
@@ -436,8 +445,17 @@ final class NoiseMonitorEngine {
 
     private func restartPipeline() {
         guard isMonitoring else { return }
+        let pipelineSignpost = ModeSwitchPerformance.begin(.restartPipelineTotal)
+        defer { ModeSwitchPerformance.end(.restartPipelineTotal, pipelineSignpost) }
+
+        ModeSwitchPerformance.mark(.restartPipelineBegin)
+
+        let removeTapSignpost = ModeSwitchPerformance.begin(.removeTap)
         audioEngine.inputNode.removeTap(onBus: 0)
+        ModeSwitchPerformance.end(.removeTap, removeTapSignpost)
+
         setupAudioPipeline()
+        ModeSwitchPerformance.mark(.restartPipelineEnd)
     }
 
     /// Restores the mic pipeline after another feature (e.g. camera preview) used the audio session.
@@ -520,14 +538,32 @@ final class NoiseMonitorEngine {
     }
 
     private func setupAudioPipeline() {
+        let trace = ModeSwitchPerformance.shouldTracePipelineSetup()
+        let setupSignpost = trace ? ModeSwitchPerformance.begin(.setupPipelineTotal) : nil
+        if trace {
+            ModeSwitchPerformance.mark(.setupPipelineBegin)
+        }
+        defer {
+            if trace, let setupSignpost {
+                ModeSwitchPerformance.end(.setupPipelineTotal, setupSignpost)
+                ModeSwitchPerformance.mark(.setupPipelineEnd)
+            }
+        }
+
         let inputNode = audioEngine.inputNode
         let format = inputNode.outputFormat(forBus: 0)
         let sampleRate = format.sampleRate
         let weighting = effectiveWeighting
 
-        weightingFilter = AudioWeightingFilter(type: weighting, sampleRate: sampleRate)
-        fftAnalyzer = FFTAnalyzer(bufferSize: 2048, sampleRate: sampleRate)
-        voiceRecorder.configure(sampleRate: sampleRate)
+        weightingFilter = ModeSwitchPerformance.measure(.weightingFilter, when: trace) {
+            AudioWeightingFilter(type: weighting, sampleRate: sampleRate)
+        }
+        fftAnalyzer = ModeSwitchPerformance.measure(.fftAnalyzer, when: trace) {
+            FFTAnalyzer(bufferSize: FFTAnalyzer.defaultFFTSize, sampleRate: sampleRate)
+        }
+        ModeSwitchPerformance.measure(.voiceRecorderConfigure, when: trace) {
+            voiceRecorder.configure(sampleRate: sampleRate)
+        }
         noiseClassifier = nil
 
         if aiClassificationEnabled {
@@ -545,18 +581,22 @@ final class NoiseMonitorEngine {
                     self?.aiClassificationErrorMessage = L10n.errorAiClassificationFailed
                 }
             }
-            classifier.setup(format: format)
+            ModeSwitchPerformance.measure(.noiseClassifierSetup, when: trace) {
+                classifier.setup(format: format)
+            }
             noiseClassifier = classifier
         }
 
         inputNode.removeTap(onBus: 0)
-        inputNode.installTap(
-            onBus: 0,
-            bufferSize: SPLCalculator.tapBufferSize,
-            format: format
-        ) { [weak self] buffer, time in
-            self?.processingQueue.async {
-                self?.processBuffer(buffer, time: time)
+        ModeSwitchPerformance.measure(.installTap, when: trace) {
+            inputNode.installTap(
+                onBus: 0,
+                bufferSize: SPLCalculator.tapBufferSize,
+                format: format
+            ) { [weak self] buffer, time in
+                self?.processingQueue.async {
+                    self?.processBuffer(buffer, time: time)
+                }
             }
         }
     }
@@ -643,7 +683,11 @@ final class NoiseMonitorEngine {
            fftSampleRing.isReadyForAnalysis {
             fftSampleRing.copyLatestWindow(into: &fftScratch)
             spectrum = fftScratch.withUnsafeBufferPointer { ptr in
-                fftAnalyzer?.analyze(channelData: ptr.baseAddress!, frameLength: fftScratch.count)
+                fftAnalyzer?.analyze(
+                    channelData: ptr.baseAddress!,
+                    frameLength: fftScratch.count,
+                    calibrationOffset: offset
+                )
             }
         }
 

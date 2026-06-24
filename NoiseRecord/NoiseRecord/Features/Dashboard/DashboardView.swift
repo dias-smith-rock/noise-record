@@ -174,6 +174,17 @@ struct DashboardView: View {
 
     private var dashboardContent: some View {
         VStack(spacing: 20) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(L10n.dashboardSpectrum)
+                    .font(.headline)
+                SpectrumChartView(
+                    spectrum: engine.latestSpectrum,
+                    isActive: engine.isMonitoring
+                )
+                .equatable()
+                .frame(height: 180)
+            }
+
             EngineModeSwitchView(engine: engine)
 
             NoiseLevelGauge(
@@ -226,14 +237,6 @@ struct DashboardView: View {
                 WaveformView(samples: engine.history, mode: measurementMode)
                     .equatable()
                     .frame(height: 120)
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text(L10n.dashboardSpectrum)
-                    .font(.headline)
-                SpectrumView(spectrum: engine.latestSpectrum, mode: measurementMode)
-                    .equatable()
-                    .frame(height: 100)
             }
 
             Text(footerNote)

@@ -75,8 +75,8 @@ struct SpectrumView: View, Equatable {
         switch (lhs.spectrum, rhs.spectrum) {
         case (nil, nil): return true
         case let (left?, right?):
-            guard left.magnitudes.count == right.magnitudes.count else { return false }
-            return zip(left.magnitudes, right.magnitudes).allSatisfy { abs($0 - $1) < 0.25 }
+            guard left.decibels.count == right.decibels.count else { return false }
+            return zip(left.decibels, right.decibels).allSatisfy { abs($0 - $1) < 0.25 }
         default:
             return false
         }
@@ -84,16 +84,16 @@ struct SpectrumView: View, Equatable {
 
     var body: some View {
         Canvas { context, size in
-            guard let spectrum, !spectrum.magnitudes.isEmpty, size.width > 1, size.height > 1 else {
+            guard let spectrum, !spectrum.decibels.isEmpty, size.width > 1, size.height > 1 else {
                 return
             }
 
-            let bins = min(spectrum.magnitudes.count, 128)
+            let bins = min(spectrum.decibels.count, 128)
             let barWidth = size.width / CGFloat(bins)
 
             for index in 0..<bins {
-                let magnitude = spectrum.magnitudes[index]
-                let normalized = CGFloat((magnitude + 80) / 80)
+                let db = spectrum.decibels[index]
+                let normalized = CGFloat((db - (-80)) / 80)
                 let clamped = min(max(normalized, 0.02), 1)
                 let height = size.height * clamped
                 let rect = CGRect(
@@ -109,7 +109,7 @@ struct SpectrumView: View, Equatable {
             }
         }
         .overlay {
-            if spectrum == nil || spectrum?.magnitudes.isEmpty == true {
+            if spectrum == nil || spectrum?.decibels.isEmpty == true {
                 Text(L10n.spectrumLoading)
                     .font(.caption)
                     .foregroundStyle(.secondary)

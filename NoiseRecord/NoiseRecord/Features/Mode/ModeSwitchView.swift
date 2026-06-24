@@ -4,6 +4,7 @@ import UIKit
 struct ModeSwitchView: View {
     @Binding var mode: AcousticMeasurementMode
     var showsInlineHint: Bool = true
+    var isMonitoring: Bool = false
     var onModeChanged: ((AcousticMeasurementMode) -> Void)?
 
     @State private var showExplanation = false
@@ -28,7 +29,6 @@ struct ModeSwitchView: View {
                 .strokeBorder(theme.surfaceBorder, lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 16))
-        .animation(.easeInOut(duration: 0.28), value: mode)
         .sheet(isPresented: $showExplanation) {
             ModeExplanationSheet(mode: explanationMode)
         }
@@ -78,9 +78,23 @@ struct ModeSwitchView: View {
             let generator = UISelectionFeedbackGenerator()
             generator.selectionChanged()
 
-            withAnimation(.easeInOut(duration: 0.25)) {
+            if item == .standard {
+                AppTelemetry.logProductEvent(
+                    "mode_standard_selected",
+                    parameters: [
+                        "is_monitoring": isMonitoring ? "true" : "false",
+                    ]
+                )
+            }
+
+            ModeSwitchPerformance.beginSession(from: mode, to: item, isMonitoring: isMonitoring)
+
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
                 mode = item
             }
+            ModeSwitchPerformance.mark(.uiModeApplied)
             onModeChanged?(item)
         } label: {
             VStack(spacing: 4) {
@@ -92,12 +106,15 @@ struct ModeSwitchView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
+            .padding(3)
             .foregroundStyle(isSelected ? .white : .primary)
-            .background(isSelected ? itemTheme.accent : Color.clear)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .background {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(isSelected ? itemTheme.accent : Color.clear)
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(.plain)
-        .padding(3)
     }
 
     private var inlineHintCard: some View {
@@ -132,12 +149,20 @@ struct EngineModeSwitchView: View {
         Binding(
             get: { AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode) },
             set: { newMode in
-                engine.isHighSensitivityMode = newMode.isHighSensitivity
+                var transaction = Transaction()
+                transaction.disablesAnimations = true
+                withTransaction(transaction) {
+                    engine.isHighSensitivityMode = newMode.isHighSensitivity
+                }
             }
         )
     }
 
     var body: some View {
-        ModeSwitchView(mode: modeBinding, showsInlineHint: showsInlineHint)
+        ModeSwitchView(
+            mode: modeBinding,
+            showsInlineHint: showsInlineHint,
+            isMonitoring: engine.isMonitoring
+        )
     }
 }
