@@ -3,70 +3,65 @@ import UIKit
 
 struct ModeSwitchView: View {
     @Binding var mode: AcousticMeasurementMode
-    var showsInlineHint: Bool = true
     var isMonitoring: Bool = false
     var onModeChanged: ((AcousticMeasurementMode) -> Void)?
 
-    @State private var showExplanation = false
-    @State private var explanationMode: AcousticMeasurementMode = .standard
+    @State private var showModeInfoSheet = false
 
     private var theme: ModeVisualTheme { .theme(for: mode) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             headerRow
-
             modePicker
-
-            if showsInlineHint {
-                inlineHintCard
-            }
         }
-        .padding(14)
+        .padding(12)
         .background(theme.cardTint)
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 14)
                 .strokeBorder(theme.surfaceBorder, lineWidth: 1)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .sheet(isPresented: $showExplanation) {
-            ModeExplanationSheet(mode: explanationMode)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .sheet(isPresented: $showModeInfoSheet) {
+            MeasurementModesInfoSheet()
         }
     }
 
     private var headerRow: some View {
         HStack(alignment: .center) {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(L10n.modeSwitchTitle)
                     .font(.subheadline.bold())
                 Text(mode.userFacingTitle)
-                    .font(.caption)
+                    .font(.caption2)
                     .foregroundStyle(theme.accent)
             }
 
-            Spacer()
+            Spacer(minLength: 8)
 
             Button {
-                explanationMode = mode
-                showExplanation = true
+                showModeInfoSheet = true
             } label: {
                 Image(systemName: "info.circle")
-                    .font(.title3)
+                    .font(.body.weight(.medium))
                     .foregroundStyle(theme.accent)
-                    .accessibilityLabel(L10n.modeSwitchAccessibility)
+                    .frame(width: 32, height: 32)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(L10n.modeSwitchAccessibility)
         }
     }
 
     private var modePicker: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 3) {
             ForEach(AcousticMeasurementMode.allCases) { item in
                 modeSegment(for: item)
             }
         }
+        .padding(3)
         .background(Color(.tertiarySystemFill))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 
     private func modeSegment(for item: AcousticMeasurementMode) -> some View {
@@ -97,53 +92,33 @@ struct ModeSwitchView: View {
             ModeSwitchPerformance.mark(.uiModeApplied)
             onModeChanged?(item)
         } label: {
-            VStack(spacing: 4) {
+            VStack(spacing: 2) {
                 Text(item.segmentLabel)
-                    .font(.subheadline.weight(isSelected ? .semibold : .regular))
+                    .font(.caption.weight(isSelected ? .semibold : .medium))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
                 Text(item.technicalBadge)
                     .font(.caption2)
-                    .opacity(0.85)
+                    .opacity(0.88)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-            .padding(3)
+            .frame(height: 44)
             .foregroundStyle(isSelected ? .white : .primary)
             .background {
-                RoundedRectangle(cornerRadius: 10)
+                RoundedRectangle(cornerRadius: 8)
                     .fill(isSelected ? itemTheme.accent : Color.clear)
             }
-            .contentShape(RoundedRectangle(cornerRadius: 10))
+            .contentShape(RoundedRectangle(cornerRadius: 8))
         }
         .buttonStyle(.plain)
-    }
-
-    private var inlineHintCard: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: mode.isHighSensitivity ? "bolt.horizontal.circle.fill" : "checkmark.shield.fill")
-                .foregroundStyle(theme.accent)
-                .font(.body)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(mode.comparisonHint)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Button(L10n.modeSwitchLearnMore) {
-                    explanationMode = mode
-                    showExplanation = true
-                }
-                .font(.caption.bold())
-                .foregroundStyle(theme.accent)
-            }
-        }
     }
 }
 
 /// Bridges `NoiseMonitorEngine.isHighSensitivityMode` to `ModeSwitchView`.
 struct EngineModeSwitchView: View {
     @Bindable var engine: NoiseMonitorEngine
-    var showsInlineHint: Bool = true
 
     private var modeBinding: Binding<AcousticMeasurementMode> {
         Binding(
@@ -161,7 +136,6 @@ struct EngineModeSwitchView: View {
     var body: some View {
         ModeSwitchView(
             mode: modeBinding,
-            showsInlineHint: showsInlineHint,
             isMonitoring: engine.isMonitoring
         )
     }

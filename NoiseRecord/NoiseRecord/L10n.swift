@@ -229,7 +229,11 @@ nonisolated enum L10n {
     static var modeGuideHighSensitivitySummary: String { localized("modeGuide.comparison.highSensitivity.summary") }
     static var modeSwitchTitle: String { localized("modeSwitch.title") }
     static var modeSwitchAccessibility: String { localized("modeSwitch.accessibility.modeExplanation") }
-    static var modeSwitchLearnMore: String { localized("modeSwitch.learnMore") }
+    static var modeSwitchInfoTitle: String { localized("modeSwitch.infoSheet.title") }
+    static var modeSwitchInfoStandardTitle: String { localized("modeSwitch.infoSheet.standard.title") }
+    static var modeSwitchInfoStandardBody: String { localized("modeSwitch.infoSheet.standard.body") }
+    static var modeSwitchInfoHighSensitivityTitle: String { localized("modeSwitch.infoSheet.highSensitivity.title") }
+    static var modeSwitchInfoHighSensitivityBody: String { localized("modeSwitch.infoSheet.highSensitivity.body") }
 
     // MARK: - Gauge & spectrum
 
@@ -252,6 +256,7 @@ nonisolated enum L10n {
 
     static var gaugeHighSensitivityHint: String { localized("gauge.highSensitivity.hint") }
     static var spectrumLoading: String { localized("spectrum.loading") }
+    static var spectrumIdle: String { localized("spectrum.idle") }
 
     // MARK: - Overlay
 

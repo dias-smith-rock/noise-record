@@ -417,6 +417,9 @@
         }
       }
     },
+    "%lld" : {
+
+    },
     "%lld %@" : {
       "localizations" : {
         "ar" : {
@@ -32814,6 +32817,91 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "測量模式"
+          }
+        }
+      }
+    },
+    "modeSwitch.infoSheet.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Measurement Modes"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "测量模式"
+          }
+        }
+      }
+    },
+    "modeSwitch.infoSheet.standard.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Standard Mode (dBA)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "标准模式 (dBA)"
+          }
+        }
+      }
+    },
+    "modeSwitch.infoSheet.standard.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Simulates human ear subjective perception. Perfect for tracking everyday environmental noise, traffic, and general disturbances."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "模拟人耳主观听感，适合追踪日常环境噪声、交通噪声与一般干扰。"
+          }
+        }
+      }
+    },
+    "modeSwitch.infoSheet.highSensitivity.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "High Sensitivity Mode (dBZ / dBC)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "高灵敏模式 (dBZ / dBC)"
+          }
+        }
+      }
+    },
+    "modeSwitch.infoSheet.highSensitivity.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bypasses default iOS noise suppression filters to capture raw physical sound pressure. Readings are often higher than standard mode—this is normal. It is specifically engineered to detect low-frequency hums (e.g., AC units, transformers, structural building resonance) that you may barely hear but are physically present."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "绕过 iOS 默认降噪滤波，采集原始物理声压。读数常高于标准模式——这属正常现象。专为捕捉低频嗡鸣（如空调、变压器、建筑结构共振）而设计，这些声音您可能几乎听不到，但物理上确实存在。"
           }
         }
       }
@@ -67926,6 +68014,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "計權"
+          }
+        }
+      }
+    },
+    "spectrum.idle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap Start to view live spectrum"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点击开始以查看实时频谱"
           }
         }
       }

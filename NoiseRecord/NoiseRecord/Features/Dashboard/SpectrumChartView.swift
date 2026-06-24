@@ -91,9 +91,11 @@ struct SpectrumChartView: View, Equatable {
         }
         .overlay {
             if spectrum == nil || spectrum?.decibels.isEmpty == true {
-                Text(L10n.spectrumLoading)
+                Text(placeholderText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 12)
             }
         }
         .background(Color(.secondarySystemGroupedBackground))
@@ -103,6 +105,10 @@ struct SpectrumChartView: View, Equatable {
         )
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .drawingGroup()
+    }
+
+    private var placeholderText: String {
+        isActive ? L10n.spectrumLoading : L10n.spectrumIdle
     }
 
     // MARK: - 布局
