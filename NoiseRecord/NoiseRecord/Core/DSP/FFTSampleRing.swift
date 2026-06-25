@@ -27,16 +27,26 @@ struct FFTSampleRing {
 
     var isReadyForAnalysis: Bool { filled >= capacity }
 
-    /// Copies the most recent `capacity` samples into `scratch` in chronological order.
-    func copyLatestWindow(into scratch: inout [Float]) {
-        guard filled >= capacity, scratch.count >= capacity else { return }
-        let start = (writeIndex - capacity + capacity) % capacity
-        if start + capacity <= capacity {
-            scratch[0..<capacity] = storage[start..<(start + capacity)]
+    func isReadyForAnalysis(windowSize: Int) -> Bool {
+        filled >= min(windowSize, capacity)
+    }
+
+    /// Copies the most recent `windowSize` samples into `scratch` in chronological order.
+    func copyLatestWindow(into scratch: inout [Float], windowSize: Int? = nil) {
+        let window = windowSize ?? capacity
+        guard filled >= window, scratch.count >= window, window <= capacity else { return }
+        let start = (writeIndex - window + capacity) % capacity
+        if start + window <= capacity {
+            scratch[0..<window] = storage[start..<(start + window)]
         } else {
             let firstPart = capacity - start
             scratch[0..<firstPart] = storage[start..<capacity]
-            scratch[firstPart..<capacity] = storage[0..<(capacity - firstPart)]
+            scratch[firstPart..<window] = storage[0..<(window - firstPart)]
         }
+    }
+
+    /// Copies the most recent `capacity` samples into `scratch` in chronological order.
+    func copyLatestWindow(into scratch: inout [Float]) {
+        copyLatestWindow(into: &scratch, windowSize: capacity)
     }
 }

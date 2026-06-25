@@ -89,16 +89,17 @@ final class NoiseMonitorEngine {
     private var sessionSumDB: Float = 0
     private var filteredScratch: [Float] = []
     private var historyBuffer = FloatTimeSeriesBuffer(capacity: 300)
-    private var fftSampleRing = FFTSampleRing(capacity: FFTAnalyzer.defaultFFTSize)
-    private var fftScratch = [Float](repeating: 0, count: FFTAnalyzer.defaultFFTSize)
+    private var fftSampleRing = FFTSampleRing(capacity: FFTConfiguration.advanced.fftSize)
+    private var fftScratch = [Float](repeating: 0, count: FFTConfiguration.advanced.fftSize)
     /// 峰值保持持久化数组（引擎生命周期，不在 tap 回调中重建）。
     private var peakAmounts = [Float](
         repeating: SpectrumDSPGuards.analyzerDecibelFloor,
-        count: FFTAnalyzer.defaultFFTSize / 2
+        count: FFTConfiguration.advanced.binCount
     )
     private var lastLiveSpectrumDecibels: [Float]?
     private var lastSpectrumSampleRate: Double = 44_100
-    private var lastSpectrumFFTSize: Int = FFTAnalyzer.defaultFFTSize
+    private var lastSpectrumFFTSize: Int = FFTConfiguration.standard.fftSize
+    private var activeFFTConfiguration: FFTConfiguration = .standard
     private var uiFrameCounter = 0
     private let voiceRecorder = VoiceActivatedRecorder()
     private var noiseClassifier: NoiseClassifierManager?
@@ -145,6 +146,7 @@ final class NoiseMonitorEngine {
     private(set) var isAwaitingStopSaveDecision = false
 
     var onRecordingFinished: ((RecordingFinishedEvent) -> Void)?
+    var onVideoEmergencyFinalize: (() -> Void)?
 
     /// 是否与声控开关当前状态无关：只要本次监测有录音待确认即应弹窗。
     var shouldPromptForRecordingsOnStop: Bool {
@@ -378,6 +380,10 @@ final class NoiseMonitorEngine {
     }
 
     func handleDidEnterBackground() {
+        if isMonitoring {
+            voiceRecorder.emergencyFinalizeForLifecycleEvent()
+        }
+        onVideoEmergencyFinalize?()
         guard backgroundMonitoringEnabled else { return }
         if !isMonitoring, permissionGranted {
             startMonitoring()
@@ -441,6 +447,24 @@ final class NoiseMonitorEngine {
         lastLiveSpectrumDecibels = nil
     }
 
+    private var currentFFTConfiguration: FFTConfiguration {
+        FFTConfiguration.forHighSensitivityMode(isHighSensitivityMode)
+    }
+
+    private func configureFFTDSPBuffers(for configuration: FFTConfiguration) {
+        activeFFTConfiguration = configuration
+        let requiredBins = configuration.binCount
+        if peakAmounts.count != requiredBins {
+            peakAmounts = [Float](
+                repeating: SpectrumDSPGuards.analyzerDecibelFloor,
+                count: requiredBins
+            )
+        } else {
+            resetPeakAmounts()
+        }
+        fftAnalyzer?.reconfigure(to: configuration)
+    }
+
     /// 指数衰减 + 峰值锁定：仅在 processingQueue 上调用。
     private func advancePeakAmounts(with current: [Float]?) {
         let floor = SpectrumDSPGuards.analyzerDecibelFloor
@@ -462,11 +486,12 @@ final class NoiseMonitorEngine {
     }
 
     private func makeSpectrumSnapshot(liveDecibels: [Float]) -> FFTSpectrum {
-        FFTSpectrum(
+        let peakSnapshot = Array(peakAmounts.prefix(liveDecibels.count))
+        return FFTSpectrum(
             decibels: liveDecibels,
             sampleRate: lastSpectrumSampleRate,
             fftSize: lastSpectrumFFTSize,
-            peakDecibels: peakAmounts
+            peakDecibels: peakSnapshot
         )
     }
 
@@ -590,7 +615,8 @@ final class NoiseMonitorEngine {
 
         switch type {
         case .began:
-            break
+            voiceRecorder.emergencyFinalizeForLifecycleEvent()
+            onVideoEmergencyFinalize?()
         case .ended:
             guard BackgroundAudioSession.shouldResumeAfterInterruption(notification) else { return }
             resumeMonitoringIfNeededAfterForeground()
@@ -621,8 +647,12 @@ final class NoiseMonitorEngine {
             AudioWeightingFilter(type: weighting, sampleRate: sampleRate)
         }
         fftAnalyzer = ModeSwitchPerformance.measure(.fftAnalyzer, when: trace) {
-            FFTAnalyzer(bufferSize: FFTAnalyzer.defaultFFTSize, sampleRate: sampleRate)
+            FFTAnalyzer(
+                sampleRate: sampleRate,
+                configuration: currentFFTConfiguration
+            )
         }
+        configureFFTDSPBuffers(for: currentFFTConfiguration)
         ModeSwitchPerformance.measure(.voiceRecorderConfigure, when: trace) {
             voiceRecorder.configure(sampleRate: sampleRate)
         }
@@ -734,19 +764,24 @@ final class NoiseMonitorEngine {
 
         var spectrum: FFTSpectrum?
         var freshLiveDecibels: [Float]?
+        let fftConfiguration = currentFFTConfiguration
         if uiFrameCounter % Performance.spectrumEveryNthUIFrame == 0,
-           fftSampleRing.isReadyForAnalysis {
-            fftSampleRing.copyLatestWindow(into: &fftScratch)
+           fftSampleRing.isReadyForAnalysis(windowSize: fftConfiguration.fftSize) {
+            fftSampleRing.copyLatestWindow(
+                into: &fftScratch,
+                windowSize: fftConfiguration.fftSize
+            )
             if let analyzed = fftScratch.withUnsafeBufferPointer({ ptr in
                 fftAnalyzer?.analyze(
                     channelData: ptr.baseAddress!,
-                    frameLength: fftScratch.count,
+                    frameLength: fftConfiguration.fftSize,
                     calibrationOffset: offset
                 )
             }) {
                 lastLiveSpectrumDecibels = analyzed.decibels
                 lastSpectrumSampleRate = analyzed.sampleRate
                 lastSpectrumFFTSize = analyzed.fftSize
+                activeFFTConfiguration = fftConfiguration
                 freshLiveDecibels = analyzed.decibels
             }
         }

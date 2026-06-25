@@ -49,6 +49,12 @@ struct ContentView: View {
             engine.onRecordingFinished = { event in
                 saveRecording(event)
             }
+            engine.onVideoEmergencyFinalize = { [videoCoordinator] in
+                videoCoordinator.emergencyFinalizeIfRecording()
+            }
+            VideoEvidenceRecovery.removeStalePartFiles()
+            _ = VideoEvidenceRecovery.recoverOrphanedFiles(modelContext: modelContext)
+            refreshUnreadBadge()
             if let root = UIApplication.shared.connectedScenes
                 .compactMap({ $0 as? UIWindowScene })
                 .flatMap(\.windows)

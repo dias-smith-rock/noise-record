@@ -10,7 +10,7 @@ final class VideoEvidenceCoordinator {
     let recorder = VideoNoiseRecorder()
     let locationProvider = LocationEvidenceProvider()
 
-    var isRecording = false
+    private(set) var isRecording = false
     var isSessionReady = false
     var isPreviewReady = false
     var errorMessage: String?
@@ -18,6 +18,9 @@ final class VideoEvidenceCoordinator {
     var peakDB: Float = 0
     var sessionPeakDB: Float = 0
     var cameraPosition: AVCaptureDevice.Position = .back
+    var currentSegmentGroupID: UUID?
+
+    var onSegmentFinished: ((VideoSegmentFinishedEvent) -> Void)?
 
     func configure(backgroundMonitoringEnabled: Bool, isMonitoring: Bool) async {
         let configureSignpost = VideoTabPerformance.begin(.configureTotal)
@@ -50,6 +53,7 @@ final class VideoEvidenceCoordinator {
 
             locationProvider.requestPermission()
             VideoTabPerformance.mark(.locationPermissionRequested)
+            installRecorderCallbacks()
             isSessionReady = true
             VideoTabPerformance.mark(.uiReady)
             VideoTabPerformance.mark(.configureComplete)
@@ -81,26 +85,60 @@ final class VideoEvidenceCoordinator {
         guard isSessionReady, isPreviewReady, !isRecording else { return }
         peakDB = 0
         recordingStartedAt = Date()
+        currentSegmentGroupID = nil
         locationProvider.startUpdating()
         try await recorder.startRecording()
-        isRecording = true
+        isRecording = recorder.isRecording
     }
 
     func stopRecording(completion: @escaping (Result<URL, Error>) -> Void) {
         guard isRecording else { return }
         isRecording = false
         locationProvider.stopUpdating()
-        recorder.stopRecording(completion: completion)
+        recorder.stopRecording { [weak self] result in
+            Task { @MainActor in
+                self?.isRecording = self?.recorder.isRecording ?? false
+                completion(result)
+            }
+        }
     }
 
-    func teardown() {
+    func teardown(completion: (() -> Void)? = nil) {
         let teardownSignpost = VideoTabPerformance.begin(.teardown)
         locationProvider.stopUpdating()
+        isRecording = false
         isSessionReady = false
         isPreviewReady = false
-        recorder.pausePreview()
-        VideoTabPerformance.end(.teardown, teardownSignpost)
-        VideoTabPerformance.mark(.teardownDone)
+        recorder.pausePreview { _ in
+            VideoTabPerformance.end(.teardown, teardownSignpost)
+            VideoTabPerformance.mark(.teardownDone)
+            completion?()
+        }
+    }
+
+    func emergencyFinalizeIfRecording() {
+        guard recorder.isRecording else { return }
+        recorder.emergencyFinalizeForLifecycleEvent()
+    }
+
+    private func installRecorderCallbacks() {
+        recorder.onSegmentFinished = { [weak self] event in
+            Task { @MainActor in
+                guard let self else { return }
+                if self.currentSegmentGroupID == nil {
+                    self.currentSegmentGroupID = event.segmentGroupID
+                }
+                self.onSegmentFinished?(event)
+            }
+        }
+        recorder.onRecordingError = { [weak self] error in
+            Task { @MainActor in
+                guard let self else { return }
+                self.isRecording = false
+                self.errorMessage = error.localizedDescription
+                self.locationProvider.stopUpdating()
+            }
+        }
     }
 
     func switchCamera() {
@@ -181,6 +219,9 @@ struct VideoEvidenceView: View {
         .proTabBackground(theme: theme)
         .proTabNavigationChrome()
         .task(id: isTabActive) {
+            coordinator.onSegmentFinished = { event in
+                persistVideoSegment(event)
+            }
             if isTabActive {
                 VideoTabPerformance.mark(.taskActiveBegin)
                 await coordinator.configure(
@@ -461,23 +502,30 @@ struct VideoEvidenceView: View {
         audioStateManager.restoreMonitoringPipelineIfNeeded()
         switch result {
         case .success(let url):
-            let started = coordinator.recordingStartedAt ?? Date()
-            let session = VideoEvidenceSession(
-                fileName: url.lastPathComponent,
-                filePath: EvidenceFileResolver.makeRelativePath(from: url),
-                startedAt: started,
-                endedAt: Date(),
-                peakDB: coordinator.peakDB,
-                averageDB: engine.averageDB,
-                latitude: coordinator.locationProvider.latitude,
-                longitude: coordinator.locationProvider.longitude
-            )
-            modelContext.insert(session)
-            try? modelContext.save()
             savedVideoURL = url
             AppReviewStore.noteEvidenceFileSaved()
         case .failure(let error):
             coordinator.errorMessage = error.localizedDescription
+        }
+    }
+
+    private func persistVideoSegment(_ event: VideoSegmentFinishedEvent) {
+        let session = VideoEvidenceSession(
+            fileName: event.fileURL.lastPathComponent,
+            filePath: EvidenceFileResolver.makeRelativePath(from: event.fileURL),
+            startedAt: event.startedAt,
+            endedAt: event.endedAt,
+            peakDB: event.segmentIndex == 1 ? coordinator.peakDB : event.peakDB,
+            averageDB: engine.averageDB,
+            latitude: coordinator.locationProvider.latitude,
+            longitude: coordinator.locationProvider.longitude,
+            segmentGroupID: event.segmentGroupID,
+            segmentIndex: event.segmentIndex
+        )
+        modelContext.insert(session)
+        try? modelContext.save()
+        if event.segmentIndex == 1 || savedVideoURL == nil {
+            savedVideoURL = event.fileURL
         }
     }
 

@@ -8,7 +8,8 @@ nonisolated enum SpectrumDSPGuards {
     /// 向后兼容：峰值文字检索别名。
     static let peakTrackingMinBin = peakLabelMinBin
 
-    /// 绘图路径起始 Bin：仅跳过 Bin 0（直流）；Bin 1 ≈ 43 Hz 起绘。
+    /// 绘图路径起始 Bin：仅跳过 Bin 0（直流）。
+    /// 标准 1024：Bin 1 ≈ 43 Hz；高级 2048：Bin 1 ≈ 21.5 Hz。
     static let pathDrawingMinBin = 1
 
     /// FFT 输出中仅压制的直流 Bin 数量（Bin 0）；不触碰 Bin 1/2 低频共振数据。

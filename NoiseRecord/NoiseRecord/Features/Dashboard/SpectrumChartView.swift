@@ -16,32 +16,37 @@ private struct SpectrumPlotCoordinateSystem: Sendable {
     /// 纵轴上界：120 dBA
     var maxDecibels: Double { Double(SpectrumDSPGuards.plotDecibelMax) }
 
-    private var logMin: Double { safeLog10(minFrequency) }
-    private var logMax: Double { safeLog10(maxFrequency) }
-    private var logSpan: Double { max(logMax - logMin, 1e-9) }
+    private let logMin: Double
+    private let logMax: Double
+    private let logSpan: Double
     private var decibelSpan: Double { max(maxDecibels - minDecibels, 1e-9) }
 
+    init(plotRect: CGRect) {
+        self.plotRect = plotRect
+        self.logMin = Self.safeLog10(minFrequency)
+        self.logMax = Self.safeLog10(maxFrequency)
+        self.logSpan = max(logMax - logMin, 1e-9)
+    }
+
     /// 对数频率 → X 像素。
-    /// x = (log₁₀(f) − log₁₀(20)) / (log₁₀(22050) − log₁₀(20)) × width
+    /// xRatio = (log₁₀(f) − log₁₀(20)) / (log₁₀(22050) − log₁₀(20))
     func x(forFrequency hz: Double) -> CGFloat {
         guard plotRect.width > 0 else { return plotRect.minX }
         let clamped = min(max(hz, minFrequency), maxFrequency)
-        let normalized = (safeLog10(clamped) - logMin) / logSpan
+        let normalized = (Self.safeLog10(clamped) - logMin) / logSpan
         guard normalized.isFinite else { return plotRect.minX }
         return plotRect.minX + CGFloat(normalized) * plotRect.width
     }
 
-    /// 第 i 个 FFT Bin → 物理频率 → X 像素。
-    /// f = i × (sampleRate / fftSize)；强制 f ≥ 20 Hz，消灭 log10(0)。
+    /// 第 i 个 FFT Bin → 物理频率 → X 像素（Double 精度，避免低频阶梯锯齿）。
     func x(forBin bin: Int, sampleRate: Double, fftSize: Int) -> CGFloat {
         guard fftSize > 0, bin >= 0 else { return plotRect.minX }
-        let rawFrequency = Double(bin) * sampleRate / Double(fftSize)
-        let safeFrequency = max(rawFrequency, minFrequency)
-        return x(forFrequency: safeFrequency)
+        let binWidth = sampleRate / Double(fftSize)
+        let frequency = max(Double(bin) * binWidth, minFrequency)
+        return x(forFrequency: frequency)
     }
 
     /// 线性分贝 → Y 像素。
-    /// yRatio = 1 − (dB − (−20)) / (120 − (−20))；dB = −20 → 底部，dB = 120 → 顶部
     func y(forDecibels db: Float) -> CGFloat {
         guard plotRect.height > 0 else { return plotRect.midY }
         let plotDB = SpectrumDSPGuards.clampedPlotDecibels(db)
@@ -50,10 +55,50 @@ private struct SpectrumPlotCoordinateSystem: Sendable {
         return plotRect.minY + CGFloat(yRatio) * plotRect.height
     }
 
-    private func safeLog10(_ value: Double) -> Double {
-        guard value > 0 else { return logMin }
+    private static func safeLog10(_ value: Double) -> Double {
+        let floor = SpectrumDSPGuards.minimumPlotFrequency
+        guard value > 0 else { return log10(floor) }
         let result = log10(value)
-        return result.isFinite ? result : logMin
+        return result.isFinite ? result : log10(floor)
+    }
+}
+
+// MARK: - 路径构建
+
+/// 以 Double 频率步长构建频谱折线，支持 512 / 1024 动态 Bin 数。
+private struct SpectrumPathBuilder {
+    let coords: SpectrumPlotCoordinateSystem
+    let sampleRate: Double
+    let fftSize: Int
+    let binWidth: Double
+
+    init(coords: SpectrumPlotCoordinateSystem, sampleRate: Double, fftSize: Int) {
+        self.coords = coords
+        self.sampleRate = sampleRate
+        self.fftSize = fftSize
+        self.binWidth = sampleRate / Double(fftSize)
+    }
+
+    func buildPath(decibels: [Float]) -> Path {
+        var path = Path()
+        let startBin = SpectrumDSPGuards.pathDrawingMinBin
+        let endBin = min(decibels.count, fftSize / 2)
+        guard endBin > startBin else { return path }
+
+        for bin in startBin..<endBin {
+            let frequency = max(Double(bin) * binWidth, coords.minFrequency)
+            let x = coords.x(forFrequency: frequency)
+            let y = coords.y(forDecibels: decibels[bin])
+            guard x.isFinite, y.isFinite else { continue }
+
+            let point = CGPoint(x: x, y: y)
+            if bin == startBin {
+                path.move(to: point)
+            } else {
+                path.addLine(to: point)
+            }
+        }
+        return path
     }
 }
 
@@ -144,7 +189,6 @@ struct SpectrumChartView: View, Equatable {
 
     // MARK: - 布局
 
-    /// 扣除轴标签留白后的绘图区（约 12–15 pt 边距，防止文字被圆角卡片裁切）。
     private func plotRect(in size: CGSize) -> CGRect {
         let insets = Self.plotInsets
         let width = max(size.width - insets.leading - insets.trailing, 1)
@@ -243,33 +287,18 @@ struct SpectrumChartView: View, Equatable {
         )
     }
 
-    /// 绘制实时/峰值保持曲线：Bin 1…511（~43 Hz 起），与峰值文字检索解耦。
+    /// 绘制实时/峰值保持曲线：Bin 1…N−1，N = fftSize / 2（512 或 1024）。
     private func spectrumPath(
         decibels: [Float],
         coords: SpectrumPlotCoordinateSystem,
         sampleRate: Double,
         fftSize: Int
     ) -> Path {
-        var path = Path()
-        let startBin = SpectrumDSPGuards.pathDrawingMinBin
-        let endBin = min(512, decibels.count, fftSize / 2)
-        guard endBin > startBin else { return path }
-
-        for bin in startBin..<endBin {
-            let rawFrequency = Float(bin) * Float(sampleRate) / Float(fftSize)
-            let x = coords.x(forFrequency: Double(rawFrequency))
-            let y = coords.y(forDecibels: decibels[bin])
-
-            guard x.isFinite, y.isFinite else { continue }
-            let point = CGPoint(x: x, y: y)
-
-            if bin == startBin {
-                path.move(to: point)
-            } else {
-                path.addLine(to: point)
-            }
-        }
-        return path
+        SpectrumPathBuilder(
+            coords: coords,
+            sampleRate: sampleRate,
+            fftSize: fftSize
+        ).buildPath(decibels: decibels)
     }
 
     // MARK: - 峰值标注
@@ -279,7 +308,6 @@ struct SpectrumChartView: View, Equatable {
         let label: String
     }
 
-    /// 实时绿线峰值标注（Bin 3 起检索）。
     private func livePeakMark(
         for spectrum: FFTSpectrum,
         coords: SpectrumPlotCoordinateSystem
@@ -292,7 +320,6 @@ struct SpectrumChartView: View, Equatable {
         )
     }
 
-    /// 粉色峰值保持线标注。
     private func peakHoldMark(
         for spectrum: FFTSpectrum,
         coords: SpectrumPlotCoordinateSystem
@@ -307,7 +334,6 @@ struct SpectrumChartView: View, Equatable {
         )
     }
 
-    /// 峰值文字仅从 Bin 3 起检索，与曲线绘制（Bin 1 起）分离。
     private func peakMark(
         decibels: [Float],
         sampleRate: Double,
@@ -323,7 +349,8 @@ struct SpectrumChartView: View, Equatable {
               decibels[peakBin] > SpectrumDSPGuards.plotDecibelMin + 4 else { return nil }
 
         let peakDB = decibels[peakBin]
-        let peakFrequency = Double(peakBin) * sampleRate / Double(fftSize)
+        let binWidth = sampleRate / Double(fftSize)
+        let peakFrequency = max(Double(peakBin) * binWidth, coords.minFrequency)
         let label = Self.formatPeakFrequency(peakFrequency)
         guard !label.isEmpty else { return nil }
 

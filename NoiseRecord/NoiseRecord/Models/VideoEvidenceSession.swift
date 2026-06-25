@@ -15,6 +15,8 @@ final class VideoEvidenceSession {
     var longitude: Double?
     var fileHash: String?
     var isNew: Bool = false
+    var segmentGroupID: UUID?
+    var segmentIndex: Int = 1
 
     init(
         fileName: String,
@@ -24,7 +26,9 @@ final class VideoEvidenceSession {
         peakDB: Float,
         averageDB: Float,
         latitude: Double? = nil,
-        longitude: Double? = nil
+        longitude: Double? = nil,
+        segmentGroupID: UUID? = nil,
+        segmentIndex: Int = 1
     ) {
         self.id = UUID()
         self.fileName = fileName
@@ -35,6 +39,8 @@ final class VideoEvidenceSession {
         self.averageDB = averageDB
         self.latitude = latitude
         self.longitude = longitude
+        self.segmentGroupID = segmentGroupID
+        self.segmentIndex = segmentIndex
         self.fileHash = Self.hashFile(at: filePath)
         self.isNew = true
     }
@@ -62,8 +68,24 @@ final class VideoEvidenceSession {
     }
 
     static func hashFile(at path: String) -> String? {
-        guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)) else { return nil }
-        let digest = SHA256.hash(data: data)
+        let url = URL(fileURLWithPath: path)
+        let resolved = FileManager.default.fileExists(atPath: path)
+            ? url
+            : EvidenceFileResolver.resolveURL(
+                storedPath: path,
+                fileName: url.lastPathComponent,
+                folder: .videoEvidence
+            )
+        guard let handle = try? FileHandle(forReadingFrom: resolved) else { return nil }
+        defer { try? handle.close() }
+        var hasher = SHA256()
+        let chunkSize = 1024 * 1024
+        while true {
+            let data = handle.readData(ofLength: chunkSize)
+            if data.isEmpty { break }
+            hasher.update(data: data)
+        }
+        let digest = hasher.finalize()
         return digest.map { String(format: "%02x", $0) }.joined()
     }
 }

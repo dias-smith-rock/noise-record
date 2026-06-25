@@ -31,5 +31,10 @@ final class FloatTimeSeriesBufferTests: XCTestCase {
         var scratch = [Float](repeating: 0, count: 4)
         ring.copyLatestWindow(into: &scratch)
         XCTAssertEqual(scratch, [2, 3, 4, 5])
+
+        var partial = [Float](repeating: 0, count: 2)
+        ring.copyLatestWindow(into: &partial, windowSize: 2)
+        XCTAssertEqual(partial, [4, 5])
+        XCTAssertTrue(ring.isReadyForAnalysis(windowSize: 2))
     }
 }

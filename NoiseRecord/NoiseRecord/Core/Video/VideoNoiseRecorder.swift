@@ -28,6 +28,15 @@ enum VideoNoiseRecorderError: LocalizedError {
 
 /// High-performance video evidence recorder with burned-in noise / time / GPS OSD.
 final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
+    private static let maxSegmentDuration: TimeInterval = 600
+    private static let segmentTimestampFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = .current
+        formatter.dateFormat = "yyyyMMdd_HHmmss"
+        return formatter
+    }()
+
     let dataBridge = NoiseDataBridge()
 
     private let captureSession = AVCaptureSession()
@@ -52,7 +61,7 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
     private var pixelBufferAdaptor: AVAssetWriterInputPixelBufferAdaptor?
 
     private var isSessionRunning = false
-    private var isRecording = false
+    private(set) var isRecording = false
     private var sessionStarted = false
     private var outputURL: URL?
     private var pendingAudioSamples: [CMSampleBuffer] = []
@@ -64,6 +73,12 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
     private var lastMetaRefreshTime: CFAbsoluteTime = 0
     private let metaRefreshInterval: CFAbsoluteTime = 0.5
 
+    private var segmentStartTime: Date?
+    private var currentSegmentIndex = 1
+    private var sessionTriggerTimestamp: String?
+    private var segmentGroupID = UUID()
+    private var segmentPeakDB: Float = 0
+
     private let timestampFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
@@ -71,7 +86,8 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         return f
     }()
 
-    var onRecordingFinished: ((Result<URL, Error>) -> Void)?
+    var onSegmentFinished: ((VideoSegmentFinishedEvent) -> Void)?
+    var onRecordingError: ((Error) -> Void)?
 
     // MARK: - Session setup
 
@@ -113,14 +129,32 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
     }
 
     /// Stops preview capture but keeps the configured preview pipeline for fast re-entry.
-    func pausePreview() {
-        sessionQueue.async { [weak self] in
-            guard let self, self.isSessionRunning else { return }
+    func pausePreview(completion: ((Result<URL, Error>?) -> Void)? = nil) {
+        writerQueue.async { [weak self] in
+            guard let self else { return }
             if self.isRecording {
-                self.stopRecordingInternal { _ in }
+                self.stopRecordingInternal(detachOutputs: true) { result in
+                    self.sessionQueue.async {
+                        if self.isSessionRunning {
+                            self.captureSession.stopRunning()
+                            self.isSessionRunning = false
+                        }
+                        DispatchQueue.main.async {
+                            completion?(result.map { $0 })
+                        }
+                    }
+                }
+            } else {
+                self.sessionQueue.async {
+                    guard self.isSessionRunning else {
+                        DispatchQueue.main.async { completion?(nil) }
+                        return
+                    }
+                    self.captureSession.stopRunning()
+                    self.isSessionRunning = false
+                    DispatchQueue.main.async { completion?(nil) }
+                }
             }
-            self.captureSession.stopRunning()
-            self.isSessionRunning = false
         }
     }
 
@@ -310,16 +344,25 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         audioOutput = nil
     }
 
-    // MARK: - Recording control
+    // MARK: - Segment naming
 
-    static func makeOutputURL() -> URL {
-        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("VideoEvidence", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyyMMdd_HHmmss"
-        return dir.appendingPathComponent("evidence_\(formatter.string(from: Date())).mp4")
+    static func makeSegmentFileName(timestamp: String, segmentIndex: Int) -> String {
+        let base = segmentIndex <= 1
+            ? "evidence_\(timestamp)"
+            : "evidence_\(timestamp)_part\(segmentIndex)"
+        return "\(base).mp4"
     }
+
+    static func makeSegmentPartURL(timestamp: String, segmentIndex: Int) -> URL {
+        let partName = makeSegmentFileName(timestamp: timestamp, segmentIndex: segmentIndex)
+            .replacingOccurrences(of: ".mp4", with: ".mp4.part")
+        let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("VideoEvidence", isDirectory: true)
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        return directory.appendingPathComponent(partName)
+    }
+
+    // MARK: - Recording control
 
     func startRecording(to url: URL? = nil) async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
@@ -341,14 +384,9 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
                 }
 
                 self.writerQueue.async {
-                    self.outputURL = url ?? Self.makeOutputURL()
+                    self.resetSegmentStateForNewCapture(customURL: url)
                     self.isRecording = true
-                    self.sessionStarted = false
-                    self.recordingOriginTime = nil
-                    self.noiseTimelineSamples.removeAll()
-                    self.lastTimelineSampleTime = -1
-                    self.pendingAudioSamples.removeAll()
-                    self.tearDownWriter()
+                    self.tearDownWriterLocked()
                     continuation.resume()
                 }
             }
@@ -357,43 +395,182 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
 
     func stopRecording(completion: @escaping (Result<URL, Error>) -> Void) {
         writerQueue.async { [weak self] in
-            self?.stopRecordingInternal(completion: completion)
+            self?.stopRecordingInternal(detachOutputs: true, completion: completion)
         }
     }
 
-    private func stopRecordingInternal(completion: @escaping (Result<URL, Error>) -> Void) {
+    /// Finalize the current segment and immediately open the next one while capture continues.
+    func emergencyFinalizeForLifecycleEvent() {
+        writerQueue.async { [weak self] in
+            guard let self, self.isRecording else { return }
+            do {
+                try self.rotateSegmentLocked(emitSegmentEvent: true)
+            } catch {
+                self.reportRecordingFailure(error)
+            }
+        }
+    }
+
+    private func resetSegmentStateForNewCapture(customURL: URL?) {
+        let now = Date()
+        sessionTriggerTimestamp = Self.segmentTimestampFormatter.string(from: now)
+        currentSegmentIndex = 1
+        segmentGroupID = UUID()
+        segmentStartTime = now
+        segmentPeakDB = 0
+        sessionStarted = false
+        recordingOriginTime = nil
+        noiseTimelineSamples.removeAll()
+        lastTimelineSampleTime = -1
+        pendingAudioSamples.removeAll()
+        if let customURL {
+            outputURL = customURL
+        } else if let timestamp = sessionTriggerTimestamp {
+            outputURL = Self.makeSegmentPartURL(timestamp: timestamp, segmentIndex: currentSegmentIndex)
+        }
+    }
+
+    private func stopRecordingInternal(
+        detachOutputs: Bool,
+        completion: @escaping (Result<URL, Error>) -> Void
+    ) {
         guard isRecording else {
-            completion(.failure(VideoNoiseRecorderError.notRecording))
+            DispatchQueue.main.async {
+                completion(.failure(VideoNoiseRecorderError.notRecording))
+            }
             return
         }
         isRecording = false
 
-        guard sessionStarted, let writer = assetWriter, let url = outputURL else {
-            tearDownWriter()
-            sessionQueue.async { [weak self] in
-                self?.detachAudioCaptureLocked()
-                self?.detachRecordingOutputsLocked()
+        do {
+            let url = try finalizeCurrentSegmentLocked(emitSegmentEvent: true)
+            if detachOutputs {
+                sessionQueue.async { [weak self] in
+                    self?.detachAudioCaptureLocked()
+                    self?.detachRecordingOutputsLocked()
+                }
             }
-            completion(.failure(VideoNoiseRecorderError.notRecording))
-            return
+            if let url {
+                DispatchQueue.main.async { completion(.success(url)) }
+            } else {
+                DispatchQueue.main.async {
+                    completion(.failure(VideoNoiseRecorderError.finishFailed(L10n.errorUnknown)))
+                }
+            }
+        } catch {
+            tearDownWriterLocked()
+            if detachOutputs {
+                sessionQueue.async { [weak self] in
+                    self?.detachAudioCaptureLocked()
+                    self?.detachRecordingOutputsLocked()
+                }
+            }
+            DispatchQueue.main.async { completion(.failure(error)) }
+        }
+    }
+
+    private func rotateSegmentLocked(emitSegmentEvent: Bool) throws {
+        guard isRecording else { return }
+        _ = try finalizeCurrentSegmentLocked(emitSegmentEvent: emitSegmentEvent)
+        currentSegmentIndex += 1
+        segmentStartTime = Date()
+        segmentPeakDB = 0
+        noiseTimelineSamples.removeAll()
+        lastTimelineSampleTime = -1
+        guard let timestamp = sessionTriggerTimestamp else { return }
+        outputURL = Self.makeSegmentPartURL(timestamp: timestamp, segmentIndex: currentSegmentIndex)
+    }
+
+    private func finalizeCurrentSegmentLocked(emitSegmentEvent: Bool) throws -> URL? {
+        guard sessionStarted, let writer = assetWriter, let partURL = outputURL else {
+            tearDownWriterLocked()
+            return nil
         }
 
         videoWriterInput?.markAsFinished()
         audioWriterInput?.markAsFinished()
 
+        let semaphore = DispatchSemaphore(value: 0)
+        var finalizeError: Error?
+        var finalizedURL: URL?
+
         writer.finishWriting { [weak self] in
-            guard let self else { return }
+            guard let self else {
+                semaphore.signal()
+                return
+            }
             if let error = writer.error {
-                completion(.failure(VideoNoiseRecorderError.finishFailed(error.localizedDescription)))
+                finalizeError = VideoNoiseRecorderError.finishFailed(error.localizedDescription)
+                try? FileManager.default.removeItem(at: partURL)
             } else {
-                self.saveNoiseTimeline(for: url)
-                completion(.success(url))
+                do {
+                    let finalURL = try self.promotePartFile(at: partURL)
+                    finalizedURL = finalURL
+                    if emitSegmentEvent {
+                        self.saveNoiseTimeline(for: finalURL)
+                        self.emitSegmentFinished(for: finalURL)
+                    }
+                } catch {
+                    finalizeError = error
+                }
             }
-            self.tearDownWriter()
-            self.sessionQueue.async {
-                self.detachAudioCaptureLocked()
-                self.detachRecordingOutputsLocked()
-            }
+            semaphore.signal()
+        }
+        semaphore.wait()
+
+        tearDownWriterLocked()
+
+        if let finalizeError {
+            throw finalizeError
+        }
+        return finalizedURL
+    }
+
+    private func promotePartFile(at partURL: URL) throws -> URL {
+        let finalURL = partURL.deletingPathExtension()
+        if FileManager.default.fileExists(atPath: finalURL.path) {
+            try FileManager.default.removeItem(at: finalURL)
+        }
+        try FileManager.default.moveItem(at: partURL, to: finalURL)
+        return finalURL
+    }
+
+    private func emitSegmentFinished(for url: URL) {
+        let started = segmentStartTime ?? Date()
+        let event = VideoSegmentFinishedEvent(
+            fileURL: url,
+            segmentIndex: currentSegmentIndex,
+            segmentGroupID: segmentGroupID,
+            startedAt: started,
+            endedAt: Date(),
+            peakDB: segmentPeakDB,
+            averageDB: dataBridge.currentDecibel
+        )
+        DispatchQueue.main.async { [weak self] in
+            self?.onSegmentFinished?(event)
+        }
+    }
+
+    private func reportRecordingFailure(_ error: Error) {
+        isRecording = false
+        tearDownWriterLocked()
+        sessionQueue.async { [weak self] in
+            self?.detachAudioCaptureLocked()
+            self?.detachRecordingOutputsLocked()
+        }
+        DispatchQueue.main.async { [weak self] in
+            self?.onRecordingError?(error)
+        }
+    }
+
+    private func maybeRotateSegment(after timestamp: CMTime) {
+        guard let origin = recordingOriginTime else { return }
+        let relative = CMTimeGetSeconds(CMTimeSubtract(timestamp, origin))
+        guard relative >= Self.maxSegmentDuration else { return }
+        do {
+            try rotateSegmentLocked(emitSegmentEvent: true)
+        } catch {
+            reportRecordingFailure(error)
         }
     }
 
@@ -454,15 +631,13 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         pixelBufferAdaptor = adaptor
     }
 
-    private func tearDownWriter() {
+    private func tearDownWriterLocked() {
         assetWriter = nil
         videoWriterInput = nil
         audioWriterInput = nil
         pixelBufferAdaptor = nil
         sessionStarted = false
         recordingOriginTime = nil
-        noiseTimelineSamples.removeAll()
-        lastTimelineSampleTime = -1
         pendingAudioSamples.removeAll()
     }
 
@@ -479,8 +654,12 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         guard relativeTime >= 0 else { return }
         guard lastTimelineSampleTime < 0
             || relativeTime - lastTimelineSampleTime >= timelineSampleInterval else { return }
+        let db = dataBridge.currentDecibel
+        if db > segmentPeakDB {
+            segmentPeakDB = db
+        }
         noiseTimelineSamples.append(
-            VideoNoiseSample(time: relativeTime, decibel: dataBridge.currentDecibel)
+            VideoNoiseSample(time: relativeTime, decibel: db)
         )
         lastTimelineSampleTime = relativeTime
     }
@@ -574,12 +753,19 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
             guard let sourceBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
             let timestamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
 
+            if let writer = self.assetWriter, writer.status == .failed {
+                self.reportRecordingFailure(
+                    VideoNoiseRecorderError.finishFailed(writer.error?.localizedDescription ?? L10n.errorUnknown)
+                )
+                return
+            }
+
             do {
                 if self.assetWriter == nil {
                     try self.ensureWriter(for: sourceBuffer)
                 }
             } catch {
-                self.isRecording = false
+                self.reportRecordingFailure(error)
                 return
             }
 
@@ -623,7 +809,14 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
             CVPixelBufferUnlockBaseAddress(sourceBuffer, .readOnly)
 
             self.drawWatermark(on: outputBuffer, captureDate: Date())
-            adaptor.append(outputBuffer, withPresentationTime: timestamp)
+            guard adaptor.append(outputBuffer, withPresentationTime: timestamp) else {
+                if let writer = self.assetWriter, let error = writer.error {
+                    self.reportRecordingFailure(VideoNoiseRecorderError.finishFailed(error.localizedDescription))
+                }
+                return
+            }
+
+            self.maybeRotateSegment(after: timestamp)
         }
     }
 
