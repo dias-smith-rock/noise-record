@@ -128,8 +128,8 @@ final class NoiseMonitorEngine {
     private enum Performance {
         /// UI refresh rate — 15 Hz is smooth for dB meters while cutting main-thread work ~3× vs 50 Hz.
         static let uiInterval: TimeInterval = 1.0 / 15.0
-        /// Spectrum FFT is heavier; update every N UI frames (~5 Hz).
-        static let spectrumEveryNthUIFrame = 3
+        /// Spectrum FFT refresh: every UI frame (~15 Hz).
+        static let spectrumEveryNthUIFrame = 1
         /// 峰值保持指数衰减系数（每 UI 帧乘一次，约 15 Hz）。
         static let peakDecayFactor: Float = 0.985
     }

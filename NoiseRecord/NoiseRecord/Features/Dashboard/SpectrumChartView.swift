@@ -85,8 +85,11 @@ struct SpectrumChartView: View, Equatable {
                 if let spectrum, !spectrum.decibels.isEmpty {
                     drawLiveSpectrum(context: &context, coords: coords, spectrum: spectrum)
                     drawPeakHoldSpectrum(context: &context, coords: coords, spectrum: spectrum)
-                    if let peak = peakMark(for: spectrum, coords: coords) {
-                        drawPeakDot(context: &context, at: peak.anchor)
+                    if let livePeak = livePeakMark(for: spectrum, coords: coords) {
+                        drawPeakDot(context: &context, at: livePeak.anchor, color: .green)
+                    }
+                    if let holdPeak = peakHoldMark(for: spectrum, coords: coords) {
+                        drawPeakDot(context: &context, at: holdPeak.anchor, color: .pink)
                     }
                 }
             }
@@ -110,9 +113,25 @@ struct SpectrumChartView: View, Equatable {
         .overlay {
             GeometryReader { geometry in
                 let coords = SpectrumPlotCoordinateSystem(plotRect: plotRect(in: geometry.size))
-                if let spectrum, let peak = peakMark(for: spectrum, coords: coords) {
-                    peakLabelView(peak)
-                        .position(x: peak.anchor.x, y: peak.anchor.y - 12)
+                if let spectrum {
+                    let livePeak = livePeakMark(for: spectrum, coords: coords)
+                    let holdPeak = peakHoldMark(for: spectrum, coords: coords)
+                    let labelsOverlap: Bool = {
+                        guard let livePeak, let holdPeak else { return false }
+                        return abs(livePeak.anchor.x - holdPeak.anchor.x) < 28
+                    }()
+
+                    if let livePeak {
+                        peakLabelView(livePeak, accent: .green)
+                            .position(
+                                x: livePeak.anchor.x,
+                                y: livePeak.anchor.y - (labelsOverlap ? 22 : 12)
+                            )
+                    }
+                    if let holdPeak {
+                        peakLabelView(holdPeak, accent: .pink)
+                            .position(x: holdPeak.anchor.x, y: holdPeak.anchor.y - 12)
+                    }
                 }
             }
             .allowsHitTesting(false)
@@ -260,23 +279,51 @@ struct SpectrumChartView: View, Equatable {
         let label: String
     }
 
-    /// 峰值文字仅从 Bin 3 起检索，与曲线绘制（Bin 1 起）分离。
-    private func peakMark(
+    /// 实时绿线峰值标注（Bin 3 起检索）。
+    private func livePeakMark(
         for spectrum: FFTSpectrum,
         coords: SpectrumPlotCoordinateSystem
     ) -> SpectrumPeakMark? {
-        let peakDecibels = spectrum.peakDecibels
-        guard !peakDecibels.isEmpty,
-              peakDecibels.count == spectrum.decibels.count else { return nil }
+        peakMark(
+            decibels: spectrum.decibels,
+            sampleRate: spectrum.sampleRate,
+            fftSize: spectrum.fftSize,
+            coords: coords
+        )
+    }
+
+    /// 粉色峰值保持线标注。
+    private func peakHoldMark(
+        for spectrum: FFTSpectrum,
+        coords: SpectrumPlotCoordinateSystem
+    ) -> SpectrumPeakMark? {
+        guard !spectrum.peakDecibels.isEmpty,
+              spectrum.peakDecibels.count == spectrum.decibels.count else { return nil }
+        return peakMark(
+            decibels: spectrum.peakDecibels,
+            sampleRate: spectrum.sampleRate,
+            fftSize: spectrum.fftSize,
+            coords: coords
+        )
+    }
+
+    /// 峰值文字仅从 Bin 3 起检索，与曲线绘制（Bin 1 起）分离。
+    private func peakMark(
+        decibels: [Float],
+        sampleRate: Double,
+        fftSize: Int,
+        coords: SpectrumPlotCoordinateSystem
+    ) -> SpectrumPeakMark? {
+        guard !decibels.isEmpty else { return nil }
 
         let labelMinBin = SpectrumDSPGuards.peakLabelMinBin
-        guard let peakBin = peakDecibels.enumerated()
+        guard let peakBin = decibels.enumerated()
             .filter({ $0.offset >= labelMinBin })
             .max(by: { $0.element < $1.element })?.offset,
-              peakDecibels[peakBin] > SpectrumDSPGuards.plotDecibelMin + 4 else { return nil }
+              decibels[peakBin] > SpectrumDSPGuards.plotDecibelMin + 4 else { return nil }
 
-        let peakDB = peakDecibels[peakBin]
-        let peakFrequency = Double(peakBin) * spectrum.sampleRate / Double(spectrum.fftSize)
+        let peakDB = decibels[peakBin]
+        let peakFrequency = Double(peakBin) * sampleRate / Double(fftSize)
         let label = Self.formatPeakFrequency(peakFrequency)
         guard !label.isEmpty else { return nil }
 
@@ -289,16 +336,16 @@ struct SpectrumChartView: View, Equatable {
         return SpectrumPeakMark(anchor: anchor, label: label)
     }
 
-    private func drawPeakDot(context: inout GraphicsContext, at anchor: CGPoint) {
+    private func drawPeakDot(context: inout GraphicsContext, at anchor: CGPoint, color: Color) {
         let dotRect = CGRect(x: anchor.x - 1.5, y: anchor.y - 1.5, width: 3, height: 3)
-        context.fill(Path(ellipseIn: dotRect), with: .color(.pink))
+        context.fill(Path(ellipseIn: dotRect), with: .color(color))
     }
 
-    private func peakLabelView(_ mark: SpectrumPeakMark) -> some View {
+    private func peakLabelView(_ mark: SpectrumPeakMark, accent: Color) -> some View {
         Text(mark.label)
             .font(.system(size: 10, weight: .semibold, design: .rounded))
             .monospacedDigit()
-            .foregroundStyle(Color.pink)
+            .foregroundStyle(accent)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .background {
@@ -308,7 +355,7 @@ struct SpectrumChartView: View, Equatable {
             }
             .overlay {
                 Capsule()
-                    .strokeBorder(Color.pink.opacity(0.35), lineWidth: 0.5)
+                    .strokeBorder(accent.opacity(0.35), lineWidth: 0.5)
             }
     }
 

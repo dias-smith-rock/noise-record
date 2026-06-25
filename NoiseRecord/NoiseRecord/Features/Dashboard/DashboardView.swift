@@ -120,10 +120,10 @@ struct DashboardView: View {
             Text(csvExportErrorMessage ?? "")
         }
         .alert(L10n.dashboardStopPromptTitle, isPresented: $showStopRecordingPrompt) {
-            Button(L10n.dashboardStopPromptSave) {
+            Button(L10n.dashboardStopPromptSave, role: .destructive) {
                 commitStopSaveDecision(keep: true)
             }
-            Button(L10n.dashboardStopPromptDiscard, role: .destructive) {
+            Button(L10n.dashboardStopPromptDiscard) {
                 commitStopSaveDecision(keep: false)
             }
         } message: {
