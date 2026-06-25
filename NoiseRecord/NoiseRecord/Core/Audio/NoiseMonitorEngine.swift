@@ -146,13 +146,27 @@ final class NoiseMonitorEngine {
 
     var onRecordingFinished: ((RecordingFinishedEvent) -> Void)?
 
+    /// 是否与声控开关当前状态无关：只要本次监测有录音待确认即应弹窗。
     var shouldPromptForRecordingsOnStop: Bool {
-        voiceActivatedEnabled && (!currentSessionRecordingIDs.isEmpty || recordingState != .idle)
+        !currentSessionRecordingIDs.isEmpty || activeVoiceCaptureState != .idle
     }
 
-    /// Voice-activated capture is armed and the monitor pipeline is running.
+    /// 声控录音实时状态（比 UI 帧同步的 `recordingState` 更可靠）。
+    var activeVoiceCaptureState: RecordingState {
+        voiceRecorder.state
+    }
+
+    /// 监测期间声控采集链路是否运行（与 Voice 开关 UI 状态无关）。
     var isVoiceRecordingRunning: Bool {
-        voiceActivatedEnabled && isMonitoring
+        isMonitoring
+    }
+
+    /// 是否将当前帧送入声控录音器（AI 标签过滤仍生效）。
+    private var shouldProcessVoiceRecorder: Bool {
+        if aiClassificationEnabled && !aiFilterLabels.isEmpty {
+            return cachedNoiseLabel.map { aiFilterLabels.contains($0) } ?? false
+        }
+        return true
     }
 
     var currentSessionRecordingCount: Int {
@@ -689,21 +703,13 @@ final class NoiseMonitorEngine {
             dbfs = measurement.dbfs
             smoothed = slidingAverage.add(dbSPL)
 
-            if voiceActivatedEnabled {
-                let shouldRecord: Bool
-                if aiClassificationEnabled && !aiFilterLabels.isEmpty {
-                    shouldRecord = cachedNoiseLabel.map { aiFilterLabels.contains($0) } ?? false
-                } else {
-                    shouldRecord = true
-                }
-                if shouldRecord {
-                    voiceRecorder.process(
-                        filteredSamples: base,
-                        frameLength: frameLength,
-                        dbSPL: dbSPL,
-                        format: buffer.format
-                    )
-                }
+            if shouldProcessVoiceRecorder {
+                voiceRecorder.process(
+                    filteredSamples: base,
+                    frameLength: frameLength,
+                    dbSPL: dbSPL,
+                    format: buffer.format
+                )
             }
         }
 

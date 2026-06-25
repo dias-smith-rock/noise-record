@@ -313,12 +313,21 @@ struct DashboardView: View {
         FullscreenLEDGuideStore.markSeen()
     }
 
+    /// 停止监测：与 `voiceActivatedEnabled` 当前开关无关；有录音 / 曾录制 / deferred 非空即询问是否保留。
     private func handleStopMonitoringTapped() {
-        let needsSavePrompt = engine.shouldPromptForRecordingsOnStop
-        if needsSavePrompt {
+        let hadSavedRecordings = !engine.currentSessionRecordingIDs.isEmpty
+        let wasCapturing = engine.activeVoiceCaptureState != .idle
+        if hadSavedRecordings || wasCapturing {
             engine.prepareStopWithSavePrompt()
         }
+
         audioStateManager.stopMonitoringManually()
+
+        let needsSavePrompt = hadSavedRecordings
+            || wasCapturing
+            || !engine.deferredRecordingsForStopPrompt.isEmpty
+            || !engine.currentSessionRecordingIDs.isEmpty
+
         if needsSavePrompt {
             Task { @MainActor in
                 await Task.yield()
@@ -333,8 +342,10 @@ struct DashboardView: View {
         if keep {
             engine.commitDeferredRecordings()
         } else {
+            engine.isDiscardingSessionRecordings = true
             engine.discardDeferredRecordings()
             deleteCurrentSessionRecordings()
+            engine.isDiscardingSessionRecordings = false
         }
         engine.clearMonitoringSessionTracking()
     }
