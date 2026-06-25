@@ -12,7 +12,6 @@
 		DD3C341D2FDD873200B8AC17 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = ADMOB002PRODUCT0001 /* GoogleMobileAds */; };
 		DD3C341E2FDD874000B8AC18 /* GoogleUserMessagingPlatform in Frameworks */ = {isa = PBXBuildFile; productRef = UMP002PRODUCT0001 /* GoogleUserMessagingPlatform */; };
 		LAEXTCPYFILE00000000001 /* DecibelProLiveActivityExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = LAEXTREF000000000001 /* DecibelProLiveActivityExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		WATCHCPYFILE00000000001 /* NoiseRecordWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = WATCHREF00000000000001 /* NoiseRecordWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -29,13 +28,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = DD3C1F972FD969F500B8AC17;
 			remoteInfo = NoiseRecord;
-		};
-		WATCHPRX00000000000001 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = DD3C1F902FD969F500B8AC17 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = WATCHTGT00000000000001;
-			remoteInfo = NoiseRecordWatch;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -57,7 +49,6 @@
 			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
 			dstSubfolderSpec = 16;
 			files = (
-				WATCHCPYFILE00000000001 /* NoiseRecordWatch.app in Embed Watch Content */,
 			);
 			name = "Embed Watch Content";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -69,7 +60,6 @@
 		LAEXTREF000000000001 /* DecibelProLiveActivityExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DecibelProLiveActivityExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		SKCFG0000000000000001 /* DecibelPro.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = DecibelPro.storekit; sourceTree = "<group>"; };
 		TEST001TESTS00000000000001 /* NoiseRecordTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NoiseRecordTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		WATCHREF00000000000001 /* NoiseRecordWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NoiseRecordWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -79,13 +69,6 @@
 				Info.plist,
 			);
 			target = LAEXTTGT000000000001 /* DecibelProLiveActivityExtension */;
-		};
-		WATCHEXC00000000000001 /* Exceptions for "NoiseRecordWatch" folder in "NoiseRecordWatch" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = WATCHTGT00000000000001 /* NoiseRecordWatch */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -120,9 +103,6 @@
 		};
 		WATCHGRP00000000000001 /* NoiseRecordWatch */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				WATCHEXC00000000000001 /* Exceptions for "NoiseRecordWatch" folder in "NoiseRecordWatch" target */,
-			);
 			path = NoiseRecordWatch;
 			sourceTree = "<group>";
 		};
@@ -154,13 +134,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		WATCHFRM00000000000001 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -183,7 +156,6 @@
 			children = (
 				DD3C1F982FD969F500B8AC17 /* NoiseRecord.app */,
 				LAEXTREF000000000001 /* DecibelProLiveActivityExtension.appex */,
-				WATCHREF00000000000001 /* NoiseRecordWatch.app */,
 				TEST001TESTS00000000000001 /* NoiseRecordTests.xctest */,
 			);
 			name = Products;
@@ -207,7 +179,6 @@
 			);
 			dependencies = (
 				LAEXTDEP00000000000001 /* PBXTargetDependency */,
-				WATCHDEP00000000000001 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				DD3C1F9A2FD969F500B8AC17 /* NoiseRecord */,
@@ -272,29 +243,6 @@
 			productReference = TEST001TESTS00000000000001 /* NoiseRecordTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		WATCHTGT00000000000001 /* NoiseRecordWatch */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = WATCHCFGLIST0000000001 /* Build configuration list for PBXNativeTarget "NoiseRecordWatch" */;
-			buildPhases = (
-				WATCHSRC00000000000001 /* Sources */,
-				WATCHFRM00000000000001 /* Frameworks */,
-				WATCHRES00000000000001 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				SHAREDCOREGRP0000000001 /* SharedMonitorCore */,
-				WATCHGRP00000000000001 /* NoiseRecordWatch */,
-			);
-			name = NoiseRecordWatch;
-			packageProductDependencies = (
-			);
-			productName = NoiseRecordWatch;
-			productReference = WATCHREF00000000000001 /* NoiseRecordWatch.app */;
-			productType = "com.apple.product-type.application";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -314,9 +262,6 @@
 					TEST003TESTS00000000000001 = {
 						CreatedOnToolsVersion = 26.5;
 						TestTargetID = DD3C1F972FD969F500B8AC17;
-					};
-					WATCHTGT00000000000001 = {
-						CreatedOnToolsVersion = 26.5;
 					};
 				};
 			};
@@ -374,7 +319,6 @@
 			targets = (
 				DD3C1F972FD969F500B8AC17 /* NoiseRecord */,
 				LAEXTTGT000000000001 /* DecibelProLiveActivityExtension */,
-				WATCHTGT00000000000001 /* NoiseRecordWatch */,
 				TEST003TESTS00000000000001 /* NoiseRecordTests */,
 			);
 		};
@@ -396,13 +340,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		TEST006TESTS00000000000001 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		WATCHRES00000000000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -460,13 +397,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		WATCHSRC00000000000001 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -479,11 +409,6 @@
 			isa = PBXTargetDependency;
 			target = DD3C1F972FD969F500B8AC17 /* NoiseRecord */;
 			targetProxy = TEST007TESTS00000000000001 /* PBXContainerItemProxy */;
-		};
-		WATCHDEP00000000000001 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = WATCHTGT00000000000001 /* NoiseRecordWatch */;
-			targetProxy = WATCHPRX00000000000001 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -616,7 +541,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = NoiseRecord/NoiseRecord.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 34878H47P6;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -644,7 +569,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2.0;
+				MARKETING_VERSION = 1.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.goodcraft.NoiseRecord;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -667,7 +592,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = NoiseRecord/NoiseRecord.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 34878H47P6;
 				ENABLE_PREVIEWS = NO;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -695,7 +620,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2.0;
+				MARKETING_VERSION = 1.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.goodcraft.NoiseRecord;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -805,80 +730,6 @@
 			};
 			name = Release;
 		};
-		WATCHDBG00000000000001 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = NoiseRecordWatch/NoiseRecordWatch.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 34878H47P6;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = NoiseRecordWatch/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = DecibelPro;
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone access is required to measure noise levels on Apple Watch.";
-				INFOPLIST_KEY_WKApplication = YES;
-				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.2.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.goodcraft.NoiseRecord.watchkitapp;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = watchos;
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "watchos watchsimulator";
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 11.0;
-			};
-			name = Debug;
-		};
-		WATCHREL00000000000001 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = NoiseRecordWatch/NoiseRecordWatch.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 34878H47P6;
-				ENABLE_PREVIEWS = NO;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = NoiseRecordWatch/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = DecibelPro;
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone access is required to measure noise levels on Apple Watch.";
-				INFOPLIST_KEY_WKApplication = YES;
-				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.2.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.goodcraft.NoiseRecord.watchkitapp;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = watchos;
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "watchos watchsimulator";
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 11.0;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -914,15 +765,6 @@
 			buildConfigurations = (
 				TEST009TESTS00000000000001 /* Debug */,
 				TEST010TESTS00000000000001 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		WATCHCFGLIST0000000001 /* Build configuration list for PBXNativeTarget "NoiseRecordWatch" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				WATCHDBG00000000000001 /* Debug */,
-				WATCHREL00000000000001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
