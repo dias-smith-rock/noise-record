@@ -95,7 +95,12 @@
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "DECIBELPRO_MONTHLY",
-          "introductoryOffer" : null,
+          "introductoryOffer" : {
+            "internalID" : "DECIBELPRO_MONTHLY_TRIAL",
+            "numberOfPeriods" : 1,
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P3D"
+          },
           "localizations" : [
             {
               "description" : "Monthly Pro access with ad removal.",
@@ -123,7 +128,12 @@
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "DECIBELPRO_YEARLY",
-          "introductoryOffer" : null,
+          "introductoryOffer" : {
+            "internalID" : "DECIBELPRO_YEARLY_TRIAL",
+            "numberOfPeriods" : 1,
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P3D"
+          },
           "localizations" : [
             {
               "description" : "Best value annual Pro access with ad removal.",

@@ -34,11 +34,9 @@ struct PaywallView: View {
                     }
                     benefitsSection
                     tierCardsSection
-                    legalFooter
-                    legalLinks
                 }
                 .padding(.horizontal, 20)
-                .padding(.bottom, 16)
+                .padding(.bottom, 8)
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 stickyContinueFooter
@@ -72,6 +70,9 @@ struct PaywallView: View {
             .toolbarBackground(.hidden, for: .navigationBar)
         }
         .preferredColorScheme(.dark)
+        .task {
+            await subscriptions.refreshIntroductoryOfferEligibility()
+        }
         .alert(L10n.paywallPurchasedTitle, isPresented: $showPurchasedAlert) {
             Button(L10n.ok) { dismiss() }
         } message: {
@@ -265,25 +266,49 @@ struct PaywallView: View {
             .frame(height: 16)
             .allowsHitTesting(false)
 
-            Button {
-                Task { await purchaseSelectedTier() }
-            } label: {
-                Group {
-                    if subscriptions.isPurchasing {
-                        ProgressView()
-                            .tint(.black)
-                    } else {
-                        Text(L10n.paywallContinue)
-                            .font(.headline)
-                    }
+            VStack(spacing: 12) {
+                if subscriptions.shouldPresentFreeTrial(for: selectedTier) {
+                    Text(L10n.paywallTrialDisclaimer(days: subscriptions.introductoryTrialDays(for: selectedTier)))
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.55))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
+                } else {
+                    legalFooter
+                        .padding(.horizontal, 20)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
+
+                Button {
+                    Task { await purchaseSelectedTier() }
+                } label: {
+                    Group {
+                        if subscriptions.isPurchasing {
+                            ProgressView()
+                                .tint(.black)
+                        } else {
+                            Text(subscriptions.purchaseButtonTitle(for: selectedTier))
+                                .font(.headline)
+                                .multilineTextAlignment(.center)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(accent)
+                .disabled(subscriptions.isPurchasing || subscriptions.isRefreshingIntroductoryEligibility)
+                .padding(.horizontal, 20)
+
+                Text(subscriptions.purchaseButtonSubtitle(for: selectedTier))
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.62))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 20)
+
+                legalLinks
+                    .padding(.top, 4)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(accent)
-            .disabled(subscriptions.isPurchasing)
-            .padding(.horizontal, 20)
+            .padding(.top, 8)
             .padding(.bottom, 12)
             .background(Color.black)
         }
@@ -304,7 +329,6 @@ struct PaywallView: View {
         }
         .font(.caption.weight(.medium))
         .frame(maxWidth: .infinity)
-        .padding(.top, 4)
     }
 
     private func legalExternalLink(_ title: String, url: URL) -> some View {

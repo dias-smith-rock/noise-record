@@ -75,6 +75,7 @@ enum SubscriptionTier: String, CaseIterable, Identifiable, Sendable {
     var fallbackSecondaryPrice: String? {
         switch self {
         case .yearly: L10n.paywallPriceYearlyMonthlyFallback
+        case .monthly: L10n.paywallPriceMonthlyDailyFallback
         default: nil
         }
     }
@@ -125,6 +126,20 @@ enum PaywallPriceFormatter {
         monthlyEquivalentDisplay(fromDisplayPrice: product.displayPrice, price: product.price)
     }
 
+    static func dailyEquivalentDisplay(from product: Product) -> String {
+        dailyEquivalentDisplay(fromDisplayPrice: product.displayPrice, price: product.price)
+    }
+
+    static func monthlyEquivalentPrice(from product: Product) -> String {
+        var monthly = product.price / 12
+        var rounded = Decimal()
+        NSDecimalRound(&rounded, &monthly, 2, .down)
+        if let formatted = formattedCurrency(rounded, localeIdentifier: localeIdentifier(from: product.displayPrice)) {
+            return formatted
+        }
+        return "$1.66"
+    }
+
     static func monthlyEquivalentDisplay(fromDisplayPrice displayPrice: String, price: Decimal) -> String {
         var monthly = price / 12
         var rounded = Decimal()
@@ -133,6 +148,16 @@ enum PaywallPriceFormatter {
             return L10n.paywallYearlyMonthlyEquivalent(formatted)
         }
         return L10n.paywallPriceYearlyMonthlyFallback
+    }
+
+    static func dailyEquivalentDisplay(fromDisplayPrice displayPrice: String, price: Decimal) -> String {
+        var daily = price / 30
+        var rounded = Decimal()
+        NSDecimalRound(&rounded, &daily, 2, .down)
+        if let formatted = formattedCurrency(rounded, localeIdentifier: localeIdentifier(from: displayPrice)) {
+            return L10n.paywallMonthlyDailyEquivalent(formatted)
+        }
+        return L10n.paywallPriceMonthlyDailyFallback
     }
 
     private static func localeIdentifier(from displayPrice: String) -> String {
@@ -146,6 +171,47 @@ enum PaywallPriceFormatter {
         formatter.minimumFractionDigits = 2
         formatter.maximumFractionDigits = 2
         return formatter.string(from: value as NSDecimalNumber)
+    }
+}
+
+enum PaywallOfferPresentation {
+    static func purchaseButtonTitle(showsFreeTrial: Bool, trialDays: Int) -> String {
+        if showsFreeTrial {
+            return L10n.paywallCTAStartFreeTrial(days: trialDays)
+        }
+        return L10n.paywallCTASubscribeNow
+    }
+
+    static func purchaseButtonSubtitle(
+        tier: SubscriptionTier,
+        showsFreeTrial: Bool,
+        trialDays: Int,
+        tierPrice: String,
+        monthlyEquivalentPrice: String
+    ) -> String {
+        switch tier {
+        case .yearly:
+            if showsFreeTrial {
+                return L10n.paywallCTASubtitleTrialYearly(
+                    monthlyPrice: monthlyEquivalentPrice,
+                    trialDays: trialDays
+                )
+            }
+            return L10n.paywallCTASubtitleStandardYearly(
+                annualPrice: tierPrice,
+                monthlyPrice: monthlyEquivalentPrice
+            )
+        case .weekly:
+            return L10n.paywallCTASubtitleStandardWeekly(tierPrice)
+        case .monthly:
+            if showsFreeTrial {
+                return L10n.paywallCTASubtitleTrialMonthly(
+                    monthlyPrice: tierPrice,
+                    trialDays: trialDays
+                )
+            }
+            return L10n.paywallCTASubtitleStandardMonthly(tierPrice)
+        }
     }
 }
 

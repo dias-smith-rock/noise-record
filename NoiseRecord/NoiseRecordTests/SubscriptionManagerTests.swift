@@ -25,6 +25,14 @@ final class PaywallPriceFormatterTests: XCTestCase {
         )
         XCTAssertTrue(text.contains("1.66") || text.contains("1,66"))
     }
+
+    func testMonthlyDailyEquivalentUses033() {
+        let text = PaywallPriceFormatter.dailyEquivalentDisplay(
+            fromDisplayPrice: "$9.99",
+            price: Decimal(string: "9.99")!
+        )
+        XCTAssertTrue(text.contains("0.33") || text.contains("0,33"))
+    }
 }
 
 final class EntitlementGrantMergeTests: XCTestCase {

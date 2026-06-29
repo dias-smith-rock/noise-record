@@ -424,6 +424,7 @@ nonisolated enum L10n {
     static var paywallPriceWeeklyFallback: String { localized("paywall.price.weekly.fallback") }
     static var paywallPriceMonthlyFallback: String { localized("paywall.price.monthly.fallback") }
     static var paywallPriceYearlyMonthlyFallback: String { localized("paywall.price.yearly.monthly.fallback") }
+    static var paywallPriceMonthlyDailyFallback: String { localized("paywall.price.monthly.daily.fallback") }
     static var paywallPriceYearlyFallback: String { localized("paywall.price.yearly.fallback") }
 
     static func paywallWeeklyPrice(_ price: String) -> String {
@@ -440,6 +441,40 @@ nonisolated enum L10n {
 
     static func paywallYearlyMonthlyEquivalent(_ price: String) -> String {
         String(format: localized("paywall.price.yearly.monthly"), price)
+    }
+
+    static func paywallMonthlyDailyEquivalent(_ price: String) -> String {
+        String(format: localized("paywall.price.monthly.daily"), price)
+    }
+
+    static func paywallCTAStartFreeTrial(days: Int) -> String {
+        String(format: localized("paywall.cta.startFreeTrial"), days)
+    }
+
+    static var paywallCTASubscribeNow: String { localized("paywall.cta.subscribeNow") }
+
+    static func paywallCTASubtitleTrialYearly(monthlyPrice: String, trialDays: Int) -> String {
+        String(format: localized("paywall.cta.subtitle.trialYearly"), monthlyPrice, trialDays)
+    }
+
+    static func paywallCTASubtitleTrialMonthly(monthlyPrice: String, trialDays: Int) -> String {
+        String(format: localized("paywall.cta.subtitle.trialMonthly"), monthlyPrice, trialDays)
+    }
+
+    static func paywallCTASubtitleStandardYearly(annualPrice: String, monthlyPrice: String) -> String {
+        String(format: localized("paywall.cta.subtitle.standardYearly"), annualPrice, monthlyPrice)
+    }
+
+    static func paywallCTASubtitleStandardWeekly(_ price: String) -> String {
+        String(format: localized("paywall.cta.subtitle.standardWeekly"), price)
+    }
+
+    static func paywallCTASubtitleStandardMonthly(_ price: String) -> String {
+        String(format: localized("paywall.cta.subtitle.standardMonthly"), price)
+    }
+
+    static func paywallTrialDisclaimer(days: Int) -> String {
+        String(format: localized("paywall.trialDisclaimer"), days)
     }
 
     static var videoRecBadge: String { localized("REC") }

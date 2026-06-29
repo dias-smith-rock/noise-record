@@ -100,6 +100,8 @@ final class SubscriptionManager {
     var isAdsRemoved: Bool { hasRemovedAds }
 
     private var cachedProducts: [String: Product] = [:]
+    private var introductoryOfferEligibility: [String: Bool] = [:]
+    private(set) var isRefreshingIntroductoryEligibility = false
     private var transactionUpdatesTask: Task<Void, Never>?
     private var finishedTransactionIDs = Set<UInt64>()
 
@@ -182,11 +184,94 @@ final class SubscriptionManager {
     }
 
     func secondaryDisplayText(for tier: SubscriptionTier) -> String? {
-        guard tier == .yearly else { return nil }
-        if let product = product(for: .yearly) {
-            return PaywallPriceFormatter.monthlyEquivalentDisplay(from: product)
+        switch tier {
+        case .yearly:
+            if let product = product(for: .yearly) {
+                return PaywallPriceFormatter.monthlyEquivalentDisplay(from: product)
+            }
+            return tier.fallbackSecondaryPrice
+        case .monthly:
+            if let product = product(for: .monthly) {
+                return PaywallPriceFormatter.dailyEquivalentDisplay(from: product)
+            }
+            return tier.fallbackSecondaryPrice
+        case .weekly:
+            return nil
         }
-        return tier.fallbackSecondaryPrice
+    }
+
+    func monthlyEquivalentPrice(for tier: SubscriptionTier) -> String {
+        if let product = product(for: tier) {
+            return PaywallPriceFormatter.monthlyEquivalentPrice(from: product)
+        }
+        switch tier {
+        case .yearly: return "$1.66"
+        case .monthly: return displayPrice(for: .monthly)
+        case .weekly: return displayPrice(for: .weekly)
+        }
+    }
+
+    func isEligibleForIntroductoryOffer(tier: SubscriptionTier) -> Bool {
+        introductoryOfferEligibility[tier.productID] ?? false
+    }
+
+    func hasIntroductoryOffer(tier: SubscriptionTier) -> Bool {
+        product(for: tier)?.subscription?.introductoryOffer != nil
+    }
+
+    func shouldPresentFreeTrial(for tier: SubscriptionTier) -> Bool {
+        isEligibleForIntroductoryOffer(tier: tier) && hasIntroductoryOffer(tier: tier)
+    }
+
+    func introductoryTrialDays(for tier: SubscriptionTier) -> Int {
+        guard let period = product(for: tier)?.subscription?.introductoryOffer?.period else {
+            return 3
+        }
+        switch period.unit {
+        case .day: return max(1, period.value)
+        case .week: return max(1, period.value * 7)
+        case .month: return max(1, period.value * 30)
+        case .year: return max(1, period.value * 365)
+        @unknown default: return 3
+        }
+    }
+
+    func purchaseButtonTitle(for tier: SubscriptionTier) -> String {
+        PaywallOfferPresentation.purchaseButtonTitle(
+            showsFreeTrial: shouldPresentFreeTrial(for: tier),
+            trialDays: introductoryTrialDays(for: tier)
+        )
+    }
+
+    func purchaseButtonSubtitle(for tier: SubscriptionTier) -> String {
+        PaywallOfferPresentation.purchaseButtonSubtitle(
+            tier: tier,
+            showsFreeTrial: shouldPresentFreeTrial(for: tier),
+            trialDays: introductoryTrialDays(for: tier),
+            tierPrice: displayPrice(for: tier),
+            monthlyEquivalentPrice: monthlyEquivalentPrice(for: tier)
+        )
+    }
+
+    func refreshIntroductoryOfferEligibility() async {
+        isRefreshingIntroductoryEligibility = true
+        defer { isRefreshingIntroductoryEligibility = false }
+
+        var updated: [String: Bool] = [:]
+        for tier in SubscriptionTier.allCases {
+            do {
+                let product = try await loadProduct(id: tier.productID)
+                if let subscription = product.subscription {
+                    updated[tier.productID] = await subscription.isEligibleForIntroOffer
+                } else {
+                    updated[tier.productID] = false
+                }
+            } catch {
+                AppTelemetry.recordError(error, context: "iap_intro_eligibility")
+                updated[tier.productID] = false
+            }
+        }
+        introductoryOfferEligibility = updated
     }
 
     func purchase(tier: SubscriptionTier) async throws -> SubscriptionPurchaseResult {
@@ -475,6 +560,7 @@ final class SubscriptionManager {
             for product in products {
                 cachedProducts[product.id] = product
             }
+            await refreshIntroductoryOfferEligibility()
         } catch {
             AppTelemetry.recordError(error, context: "iap_prefetch_products")
         }

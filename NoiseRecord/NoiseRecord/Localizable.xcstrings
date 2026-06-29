@@ -35562,13 +35562,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Payment will be charged to your Apple ID. Subscriptions renew automatically unless cancelled at least 24 hours before the end of the period."
+            "value": "Auto-renews until cancelled in Apple ID Settings."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "费用将从 Apple ID 扣款。订阅将自动续期，除非在当前周期结束前至少 24 小时取消。"
+            "value": "自动续期，可在 Apple ID 设置中随时取消。"
           }
         }
       }
@@ -75969,6 +75969,176 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pro"
+          }
+        }
+      }
+    },
+    "paywall.cta.startFreeTrial": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start %d-Day Free Trial"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开始 %d 天免费试用"
+          }
+        }
+      }
+    },
+    "paywall.cta.subscribeNow": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subscribe Now"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "立即订阅"
+          }
+        }
+      }
+    },
+    "paywall.cta.subtitle.trialYearly": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only %@/Month billed annually after %d days."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d 天试用结束后按年计费，仅 %@/月。"
+          }
+        }
+      }
+    },
+    "paywall.cta.subtitle.standardYearly": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Billed annually at %@/Year (Only %@/Month)."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按年计费 %@/年（仅 %@/月）。"
+          }
+        }
+      }
+    },
+    "paywall.cta.subtitle.standardWeekly": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Billed weekly at %@."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按周计费 %@。"
+          }
+        }
+      }
+    },
+    "paywall.cta.subtitle.standardMonthly": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Billed monthly at %@."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按月计费 %@。"
+          }
+        }
+      }
+    },
+    "paywall.trialDisclaimer": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free for %d days — no charge until trial ends. Cancel anytime in Settings."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d 天免费试用，期间不扣费。可随时在设置中取消。"
+          }
+        }
+      }
+    },
+    "paywall.cta.subtitle.trialMonthly": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Billed at %@/Month after %d days."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d 天试用结束后按 %@/月计费。"
+          }
+        }
+      }
+    },
+    "paywall.price.monthly.daily": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only %@ / Day"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅 %@ / 天"
+          }
+        }
+      }
+    },
+    "paywall.price.monthly.daily.fallback": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only $0.33 / Day"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅 $0.33 / 天"
           }
         }
       }
