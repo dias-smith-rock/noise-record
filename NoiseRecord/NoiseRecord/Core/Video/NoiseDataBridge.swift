@@ -1,6 +1,8 @@
 import Foundation
 
 /// Thread-safe bridge for injecting live noise / GPS strings into the video pipeline.
+/// Decibel values must originate from `NoiseMonitorEngine` (AVAudioEngine tap), never from
+/// `AVCaptureAudioDataOutput` sample buffers.
 final class NoiseDataBridge: @unchecked Sendable {
     private let lock = NSLock()
 

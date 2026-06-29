@@ -20,6 +20,18 @@ enum BackgroundAudioSession {
         try session.setActive(true)
     }
 
+    /// Re-locks raw measurement mode after AVCapture attaches an audio route.
+    /// Uses `notifyOthersOnDeactivation` so the shared session returns to linear PCM
+    /// without AGC / echo cancellation for the AVAudioEngine monitoring tap.
+    static func forceActivateMeasurementForVideoCapture(backgroundEnabled: Bool) throws {
+        try AudioSessionManager.configureForMeasurement(backgroundEnabled: backgroundEnabled)
+
+        let session = AVAudioSession.sharedInstance()
+        try session.setPreferredSampleRate(44_100)
+        try session.setPreferredIOBufferDuration(0.005)
+        try session.setActive(true, options: .notifyOthersOnDeactivation)
+    }
+
     static func interruptionType(in notification: Notification) -> AVAudioSession.InterruptionType? {
         guard let raw = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt else {
             return nil

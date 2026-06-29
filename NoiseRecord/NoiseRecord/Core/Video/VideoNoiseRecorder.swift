@@ -78,6 +78,7 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
     private var sessionTriggerTimestamp: String?
     private var segmentGroupID = UUID()
     private var segmentPeakDB: Float = 0
+    private var backgroundMonitoringEnabled = false
 
     private let timestampFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -91,7 +92,8 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
 
     // MARK: - Session setup
 
-    func configureSession() async throws {
+    func configureSession(backgroundMonitoringEnabled: Bool = false) async throws {
+        self.backgroundMonitoringEnabled = backgroundMonitoringEnabled
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             sessionQueue.async { [weak self] in
                 guard let self else {
@@ -223,6 +225,8 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
     }
 
     private func setupPreviewSessionLocked() throws {
+        captureSession.automaticallyConfiguresApplicationAudioSession = false
+
         captureSession.beginConfiguration()
         defer { captureSession.commitConfiguration() }
 
@@ -326,6 +330,7 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
 
         audioInput = input
         audioOutput = output
+        try lockMeasurementAudioSessionLocked()
     }
 
     private func detachAudioCaptureLocked() {
@@ -342,6 +347,14 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
 
         audioInput = nil
         audioOutput = nil
+        try? lockMeasurementAudioSessionLocked()
+    }
+
+    /// Restores `.measurement` after AVCapture adds/removes its audio route.
+    private func lockMeasurementAudioSessionLocked() throws {
+        try BackgroundAudioSession.forceActivateMeasurementForVideoCapture(
+            backgroundEnabled: backgroundMonitoringEnabled
+        )
     }
 
     // MARK: - Segment naming
@@ -654,6 +667,7 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         guard relativeTime >= 0 else { return }
         guard lastTimelineSampleTime < 0
             || relativeTime - lastTimelineSampleTime >= timelineSampleInterval else { return }
+        // Watermark / timeline dB comes from NoiseDataBridge, fed by AVAudioEngine monitoring only.
         let db = dataBridge.currentDecibel
         if db > segmentPeakDB {
             segmentPeakDB = db
@@ -851,6 +865,7 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
     }
 
     private func processAudioSample(_ sampleBuffer: CMSampleBuffer) {
+        // Video file audio only — never used for SPL / watermark dB.
         writerQueue.async { [weak self] in
             guard let self, self.isRecording else { return }
             guard let copy = self.copySampleBuffer(sampleBuffer) else { return }

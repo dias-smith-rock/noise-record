@@ -40,7 +40,9 @@ final class VideoEvidenceCoordinator {
             VideoTabPerformance.mark(.audioSessionDone)
 
             let captureSignpost = VideoTabPerformance.begin(.captureConfigure)
-            try await recorder.configureSession()
+            try await recorder.configureSession(
+                backgroundMonitoringEnabled: backgroundMonitoringEnabled
+            )
             VideoTabPerformance.end(.captureConfigure, captureSignpost)
             VideoTabPerformance.mark(.captureConfigureDone)
 
@@ -66,6 +68,7 @@ final class VideoEvidenceCoordinator {
 
     func syncNoise(from engine: NoiseMonitorEngine) {
         let weighting = engine.effectiveWeighting.rawValue
+        // AVAudioEngine monitoring tap — sole source for burned-in watermark dB.
         recorder.dataBridge.update(decibel: engine.currentDB, weighting: weighting)
         if engine.currentDB > sessionPeakDB {
             sessionPeakDB = engine.currentDB
@@ -180,13 +183,9 @@ final class VideoEvidenceCoordinator {
                 backgroundEnabled: backgroundMonitoringEnabled
             )
         } else {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(
-                .playAndRecord,
-                mode: .measurement,
-                options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers]
+            try BackgroundAudioSession.forceActivateMeasurementForVideoCapture(
+                backgroundEnabled: backgroundMonitoringEnabled
             )
-            try session.setActive(true)
         }
     }
 
@@ -561,6 +560,7 @@ struct VideoEvidenceView: View {
         coordinator.syncLocation()
         do {
             try await coordinator.startRecording()
+            audioStateManager.restoreMonitoringPipelineIfNeeded()
             AppTelemetry.logVideoRecordingStart()
         } catch {
             coordinator.errorMessage = error.localizedDescription
