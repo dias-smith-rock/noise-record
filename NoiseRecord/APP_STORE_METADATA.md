@@ -1,6 +1,6 @@
 # App Store Connect Metadata Checklist
 
-Use this when submitting **DecibelPro** v1.0.
+Use this when submitting **Decibel Meter** v1.0.
 
 ## Required URLs
 
@@ -16,8 +16,8 @@ Use this when submitting **DecibelPro** v1.0.
 
 | Field | Value |
 |-------|-------|
-| App Name | DecibelPro |
-| Bundle ID | `com.goodcraft.DecibelPro` |
+| App Name | Decibel Meter |
+| Bundle ID | `com.goodcraft.NoiseRecord` |
 | App Store ID | `6779128095` |
 | App Store URL | https://apps.apple.com/app/id6779128095 |
 | Version | 1.0 (1) |
@@ -158,7 +158,7 @@ App Store Connect privacy questionnaire: declare **Advertising Data** and **Devi
 
 Legacy `com.decibelpro.removeads.lifetime` removes ads only; it does **not** unlock Pro limits or AI filter.
 
-> DecibelPro uses the `audio` background mode to continue real-time noise monitoring and voice-activated recording when the app is in the background. Users explicitly enable background monitoring in the Voice tab. The app does not play music or unrelated audio in the background.
+> Decibel Meter uses the `audio` background mode to continue real-time noise monitoring and voice-activated recording when the app is in the background. Users explicitly enable background monitoring in the Voice tab. The app does not play music or unrelated audio in the background.
 
 ## Privacy Questionnaire
 
@@ -204,7 +204,7 @@ Copy limits: **Title 30** · **Subtitle 30** · **Keywords 100** (comma-separate
 ### Title (30 characters)
 
 ```
-DecibelPro: Decibel dB Meter
+Decibel Meter: Decibel dB Meter
 ```
 
 *ASO notes: Brand first; packs `decibel`, `dB`, `meter` — top search terms for this category.*
@@ -234,9 +234,9 @@ Turn your iPhone into a live decibel meter. Monitor dB levels, auto-record loud 
 ### Description
 
 ```
-DecibelPro is a professional-grade noise toolkit for your iPhone — a real-time decibel meter, sound level monitor, and evidence recorder in one app.
+Decibel Meter is a professional-grade noise toolkit for your iPhone — a real-time decibel meter, sound level monitor, and evidence recorder in one app.
 
-Whether you are checking apartment noise, documenting neighbor complaints, measuring office sound levels, or tracking loud traffic and snoring, DecibelPro gives you live dB readings, clear stats, and exportable proof — without sending your audio to the cloud.
+Whether you are checking apartment noise, documenting neighbor complaints, measuring office sound levels, or tracking loud traffic and snoring, Decibel Meter gives you live dB readings, clear stats, and exportable proof — without sending your audio to the cloud.
 
 LIVE DECIBEL METER & SOUND MONITOR
 • Real-time dB display with max, min, average, and Leq
@@ -268,12 +268,12 @@ CALIBRATION & SETTINGS
 • Privacy policy and terms built in
 
 PRIVACY FIRST
-All measurement, recording, and video processing happens on your device. DecibelPro does not upload your audio or video to our servers.
+All measurement, recording, and video processing happens on your device. Decibel Meter does not upload your audio or video to our servers.
 
 IMPORTANT
-DecibelPro is not a certified sound level meter. Readings are reference estimates for personal comparison and documentation — not for legal metrology or occupational safety certification.
+Decibel Meter is not a certified sound level meter. Readings are reference estimates for personal comparison and documentation — not for legal metrology or occupational safety certification.
 
-Download DecibelPro today — measure noise, record proof, and document sound levels with confidence.
+Download Decibel Meter today — measure noise, record proof, and document sound levels with confidence.
 ```
 
 *Character count: ~1,850 / 4,000 — room for future feature bullets (e.g. Apple Watch).*

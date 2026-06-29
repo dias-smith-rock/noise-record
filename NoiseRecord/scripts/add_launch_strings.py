@@ -32,9 +32,9 @@ NEW_STRINGS = {
         "zh-Hant": "需要麥克風權限",
     },
     "permission.microphone.denied.message": {
-        "en": "DecibelPro needs microphone access to measure sound levels and record audio. Enable it in Settings.",
-        "zh-Hans": "DecibelPro 需要麦克风权限以测量噪声并录音。请在设置中开启。",
-        "zh-Hant": "DecibelPro 需要麥克風權限以測量噪聲並錄音。請在設定中開啟。",
+        "en": "Decibel Meter needs microphone access to measure sound levels and record audio. Enable it in Settings.",
+        "zh-Hans": "Decibel Meter 需要麦克风权限以测量噪声并录音。请在设置中开启。",
+        "zh-Hant": "Decibel Meter 需要麥克風權限以測量噪聲並錄音。請在設定中開啟。",
     },
     "permission.camera.denied.title": {
         "en": "Camera Access Required",
@@ -137,9 +137,9 @@ NEW_STRINGS = {
         "zh-Hant": "測量免責聲明",
     },
     "settings.disclaimer.body": {
-        "en": "DecibelPro uses your iPhone microphone and is not a certified sound level meter. Readings are estimates for personal reference and evidence documentation only.",
-        "zh-Hans": "DecibelPro 使用手机麦克风，并非认证声级计。读数仅供个人参考与取证记录，不构成专业测量结果。",
-        "zh-Hant": "DecibelPro 使用手機麥克風，並非認證聲級計。讀數僅供個人參考與取證記錄，不構成專業測量結果。",
+        "en": "Decibel Meter uses your iPhone microphone and is not a certified sound level meter. Readings are estimates for personal reference and evidence documentation only.",
+        "zh-Hans": "Decibel Meter 使用手机麦克风，并非认证声级计。读数仅供个人参考与取证记录，不构成专业测量结果。",
+        "zh-Hant": "Decibel Meter 使用手機麥克風，並非認證聲級計。讀數僅供個人參考與取證記錄，不構成專業測量結果。",
     },
     "settings.data.header": {
         "en": "Data",
@@ -197,14 +197,14 @@ NEW_STRINGS = {
         "zh-Hant": "緯度: %1$.4f, 經度: %2$.4f",
     },
     "settings.rateApp": {
-        "en": "Rate DecibelPro",
-        "zh-Hans": "为 DecibelPro 评分",
-        "zh-Hant": "為 DecibelPro 評分",
+        "en": "Rate Decibel Meter",
+        "zh-Hans": "为 Decibel Meter 评分",
+        "zh-Hant": "為 Decibel Meter 評分",
     },
     "settings.reviewApp": {
-        "en": "Review DecibelPro",
-        "zh-Hans": "为 DecibelPro 写评论",
-        "zh-Hant": "為 DecibelPro 寫評論",
+        "en": "Review Decibel Meter",
+        "zh-Hans": "为 Decibel Meter 写评论",
+        "zh-Hant": "為 Decibel Meter 寫評論",
     },
     "settings.review.prompt.title": {
         "en": "Share Your Experience",
@@ -222,9 +222,9 @@ NEW_STRINGS = {
         "zh-Hant": "前往寫評論",
     },
     "appReview.prompt.title": {
-        "en": "Enjoying DecibelPro?",
-        "zh-Hans": "喜欢 DecibelPro 吗？",
-        "zh-Hant": "喜歡 DecibelPro 嗎？",
+        "en": "Enjoying Decibel Meter?",
+        "zh-Hans": "喜欢 Decibel Meter 吗？",
+        "zh-Hant": "喜歡 Decibel Meter 嗎？",
     },
     "appReview.prompt.message": {
         "en": "If this app helps you document noise, a quick App Store review would mean a lot.",
@@ -307,7 +307,7 @@ NEW_STRINGS = {
         "zh-Hant": "永久免廣告",
     },
     "settings.removeAds.sheet.headline": {
-        "en": "Enjoy DecibelPro without interruptions",
+        "en": "Enjoy Decibel Meter without interruptions",
         "zh-Hans": "畅享无干扰的专业测噪体验",
         "zh-Hant": "暢享無干擾的專業測噪體驗",
     },

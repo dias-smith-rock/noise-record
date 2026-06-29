@@ -1,6 +1,6 @@
-# DecibelPro Website
+# Decibel Meter Website
 
-Static product landing site for the DecibelPro iOS app. Lives alongside the Xcode project in this monorepo and deploys independently via GitHub Pages.
+Static product landing site for the Decibel Meter iOS app. Lives alongside the Xcode project in this monorepo and deploys independently via GitHub Pages.
 
 ## Structure
 
