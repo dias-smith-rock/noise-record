@@ -19,6 +19,7 @@ final class VideoEvidenceCoordinator {
     var sessionPeakDB: Float = 0
     var cameraPosition: AVCaptureDevice.Position = .back
     var currentSegmentGroupID: UUID?
+    private var freeDurationTask: Task<Void, Never>?
 
     var onSegmentFinished: ((VideoSegmentFinishedEvent) -> Void)?
 
@@ -82,6 +83,15 @@ final class VideoEvidenceCoordinator {
     }
 
     func startRecording() async throws {
+        let isPremium = SubscriptionManager.shared.isPremiumUser
+        guard isPremium || FreemiumUsageStore.shared.canStartVideoRecording(isPremium: isPremium) else {
+            AppTelemetry.logProductEvent(
+                "freemium_limit_hit",
+                parameters: ["limit_type": "video_daily"]
+            )
+            PaywallPresenter.shared.present(context: .videoDailyLimit)
+            return
+        }
         guard isSessionReady, isPreviewReady, !isRecording else { return }
         peakDB = 0
         recordingStartedAt = Date()
@@ -89,10 +99,15 @@ final class VideoEvidenceCoordinator {
         locationProvider.startUpdating()
         try await recorder.startRecording()
         isRecording = recorder.isRecording
+        if isRecording, !isPremium {
+            FreemiumUsageStore.shared.recordVideoSessionStarted()
+            scheduleFreeDurationLimitIfNeeded()
+        }
     }
 
     func stopRecording(completion: @escaping (Result<URL, Error>) -> Void) {
         guard isRecording else { return }
+        cancelFreeDurationLimit()
         isRecording = false
         locationProvider.stopUpdating()
         recorder.stopRecording { [weak self] result in
@@ -105,6 +120,7 @@ final class VideoEvidenceCoordinator {
 
     func teardown(completion: (() -> Void)? = nil) {
         let teardownSignpost = VideoTabPerformance.begin(.teardown)
+        cancelFreeDurationLimit()
         locationProvider.stopUpdating()
         isRecording = false
         isSessionReady = false
@@ -134,6 +150,7 @@ final class VideoEvidenceCoordinator {
         recorder.onRecordingError = { [weak self] error in
             Task { @MainActor in
                 guard let self else { return }
+                self.cancelFreeDurationLimit()
                 self.isRecording = false
                 self.errorMessage = error.localizedDescription
                 self.locationProvider.stopUpdating()
@@ -172,12 +189,36 @@ final class VideoEvidenceCoordinator {
             try session.setActive(true)
         }
     }
+
+    private func scheduleFreeDurationLimitIfNeeded() {
+        guard !SubscriptionManager.shared.isPremiumUser else { return }
+        cancelFreeDurationLimit()
+        let limit = FreemiumUsageStore.freeVideoMaxDuration
+        freeDurationTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(limit))
+            guard !Task.isCancelled, let self else { return }
+            guard self.isRecording else { return }
+            AppTelemetry.logProductEvent(
+                "freemium_limit_hit",
+                parameters: ["limit_type": "video_duration"]
+            )
+            self.stopRecording { _ in
+                PaywallPresenter.shared.present(context: .videoDurationLimit)
+            }
+        }
+    }
+
+    private func cancelFreeDurationLimit() {
+        freeDurationTask?.cancel()
+        freeDurationTask = nil
+    }
 }
 
 struct VideoEvidenceView: View {
     @Bindable var engine: NoiseMonitorEngine
     @Bindable var audioStateManager: AudioStateManager
     @Bindable var coordinator: VideoEvidenceCoordinator
+    @Bindable private var subscriptions = SubscriptionManager.shared
     let isTabActive: Bool
     @Environment(\.modelContext) private var modelContext
     @State private var player: AVPlayer?
@@ -333,7 +374,7 @@ struct VideoEvidenceView: View {
                 }
             }
 
-            if previewZoomFactor > 1.05 {
+            if previewZoomFactor > 1.05, !coordinator.isRecording {
                 Text(String(format: "%.1fx", previewZoomFactor))
                     .font(.caption.bold())
                     .foregroundStyle(.white)
@@ -344,6 +385,32 @@ struct VideoEvidenceView: View {
                     .padding(12)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                     .allowsHitTesting(false)
+            }
+
+            if coordinator.isRecording {
+                VStack(alignment: .trailing, spacing: 6) {
+                    if previewZoomFactor > 1.05 {
+                        Text(String(format: "%.1fx", previewZoomFactor))
+                            .font(.caption.bold())
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(.black.opacity(0.55))
+                            .clipShape(Capsule())
+                    }
+
+                    Text(String(format: "%.1f %@", engine.currentDB, engine.effectiveWeighting.rawValue))
+                        .font(.caption.bold())
+                        .monospacedDigit()
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(.black.opacity(0.55))
+                        .clipShape(Capsule())
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                .allowsHitTesting(false)
             }
 
             Button {
@@ -364,7 +431,7 @@ struct VideoEvidenceView: View {
 
             if coordinator.isRecording {
                 HStack(spacing: 8) {
-                    Circle().fill(.red).frame(width: 10, height: 10)
+                    BlinkingRecDot()
                     Text(L10n.videoRecBadge)
                         .font(.caption.bold())
                         .foregroundStyle(.white)
@@ -402,15 +469,18 @@ struct VideoEvidenceView: View {
                     theme: theme
                 )
                 ProMetricCard(title: L10n.videoClipPeak, value: String(format: "%.0f", coordinator.peakDB), theme: theme)
-                ProMetricCard(
-                    title: L10n.videoGPS,
-                    value: coordinator.locationProvider.latitude != nil ? L10n.videoGpsLocated : L10n.videoGpsPending,
-                    theme: theme
-                )
             }
 
             if !engine.isMonitoring || !engine.isHighSensitivityMode {
                 Text(L10n.videoAutoMonitoringHint)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+
+            if !subscriptions.isPremiumUser {
+                let remaining = FreemiumUsageStore.shared.remainingVideoRecordingsToday(isPremium: false)
+                Text(L10n.videoFreeQuotaHint(remaining: remaining, maxDuration: Int(FreemiumUsageStore.freeVideoMaxDuration)))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -537,5 +607,21 @@ struct VideoEvidenceView: View {
     private func finishPresentedVideoFromSwipe() {
         audioStateManager.handlePlaybackFinished()
         clearPresentedVideo()
+    }
+}
+
+private struct BlinkingRecDot: View {
+    @State private var isLit = true
+
+    var body: some View {
+        Circle()
+            .fill(.red)
+            .frame(width: 10, height: 10)
+            .opacity(isLit ? 1 : 0.2)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 0.55).repeatForever(autoreverses: true)) {
+                    isLit = false
+                }
+            }
     }
 }

@@ -115,6 +115,10 @@ nonisolated enum L10n {
     static var videoWatermarkBody: String { localized("video.tips.watermarkBody") }
     static var videoMonitoringStartFailed: String { localized("video.error.monitoringStartFailed") }
 
+    static func videoFreeQuotaHint(remaining: Int, maxDuration: Int) -> String {
+        String(format: localized("video.freeQuotaHint"), remaining, maxDuration)
+    }
+
     static func videoSaved(_ name: String) -> String {
         String(format: localized("video.savedFile"), name)
     }
@@ -387,6 +391,53 @@ nonisolated enum L10n {
     static var iapErrorVerificationFailed: String { localized("iap.error.verificationFailed") }
     static var iapErrorNothingToRestore: String { localized("iap.error.nothingToRestore") }
     static var iapErrorUnknown: String { localized("iap.error.unknown") }
+
+    // MARK: - Paywall
+
+    static var paywallTitle: String { localized("paywall.title") }
+    static var paywallHeadline: String { localized("paywall.headline") }
+    static var paywallEarlySupporterMessage: String { localized("paywall.earlySupporter") }
+    static var paywallBestValue: String { localized("paywall.bestValue") }
+    static var paywallTierWeekly: String { localized("paywall.tier.weekly") }
+    static var paywallTierMonthly: String { localized("paywall.tier.monthly") }
+    static var paywallTierYearly: String { localized("paywall.tier.yearly") }
+    static var paywallContinue: String { localized("paywall.continue") }
+    static var paywallLegalFooter: String { localized("paywall.legalFooter") }
+    static var paywallPurchasedTitle: String { localized("paywall.alert.purchased.title") }
+    static var paywallPurchasedMessage: String { localized("paywall.alert.purchased.message") }
+    static var paywallBenefitVideo: String { localized("paywall.benefit.video") }
+    static var paywallBenefitAI: String { localized("paywall.benefit.ai") }
+    static var paywallBenefitVoiceUnlimited: String { localized("paywall.benefit.voiceUnlimited") }
+    static var paywallBenefitNoAds: String { localized("paywall.benefit.noAds") }
+    static var paywallContextVideo: String { localized("paywall.context.video") }
+    static var paywallContextAI: String { localized("paywall.context.ai") }
+    static var paywallContextSpectrum: String { localized("paywall.context.spectrum") }
+    static var paywallContextVoiceDuration: String { localized("paywall.context.voiceDuration") }
+    static var paywallContextVideoDaily: String { localized("paywall.context.videoDaily") }
+    static var paywallContextVideoDuration: String { localized("paywall.context.videoDuration") }
+    static var paywallUpgradeBannerTitle: String { localized("paywall.banner.title") }
+    static var paywallUpgradeBannerSubtitle: String { localized("paywall.banner.subtitle") }
+    static var paywallPriceWeeklyFallback: String { localized("paywall.price.weekly.fallback") }
+    static var paywallPriceMonthlyFallback: String { localized("paywall.price.monthly.fallback") }
+    static var paywallPriceYearlyMonthlyFallback: String { localized("paywall.price.yearly.monthly.fallback") }
+    static var paywallPriceYearlyFallback: String { localized("paywall.price.yearly.fallback") }
+
+    static func paywallWeeklyPrice(_ price: String) -> String {
+        String(format: localized("paywall.price.weekly"), price)
+    }
+
+    static func paywallMonthlyPrice(_ price: String) -> String {
+        String(format: localized("paywall.price.monthly"), price)
+    }
+
+    static func paywallYearlyPrice(_ price: String) -> String {
+        String(format: localized("paywall.price.yearly"), price)
+    }
+
+    static func paywallYearlyMonthlyEquivalent(_ price: String) -> String {
+        String(format: localized("paywall.price.yearly.monthly"), price)
+    }
+
     static var videoRecBadge: String { localized("REC") }
     static var videoPreviewRecording: String { localized("video.previewRecording") }
 

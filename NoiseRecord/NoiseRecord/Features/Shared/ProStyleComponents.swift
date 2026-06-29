@@ -256,7 +256,7 @@ struct ProTabHeader<Trailing: View>: View {
     var theme: ModeVisualTheme
     @ViewBuilder var trailing: () -> Trailing
 
-    @Bindable private var iap = IAPManager.shared
+    @Bindable private var subscriptions = SubscriptionManager.shared
 
     init(
         title: String,
@@ -275,7 +275,7 @@ struct ProTabHeader<Trailing: View>: View {
                     .font(.title3.bold())
                     .lineLimit(1)
 
-                if iap.isAdsRemoved {
+                if subscriptions.hasRemovedAds {
                     ProTabNoAdsBadge()
                 }
             }

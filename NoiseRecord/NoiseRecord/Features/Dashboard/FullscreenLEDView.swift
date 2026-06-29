@@ -32,7 +32,7 @@ struct FullscreenLEDView: View {
         isEcoModeActive ? throttledDecibel : engine.currentDB
     }
 
-    /// 辅助读数（时间、温湿度、波形）跟随主界面模式色。
+    /// 辅助读数（时间、温湿度、频谱）跟随主界面模式色。
     private var ledAccent: Color {
         isEcoModeActive ? theme.accent.opacity(0.16) : theme.accent
     }
@@ -245,21 +245,19 @@ struct FullscreenLEDView: View {
     }
 
     @ViewBuilder
-    private var waveformSection: some View {
+    private var spectrumSection: some View {
         if isEcoModeActive {
-            ecoFrozenWaveform
+            ecoFrozenSpectrumLine
         } else {
-            WaveformView(
-                samples: engine.history,
-                mode: mode,
-                accentOverride: ledAccent,
-                usesCardChrome: false
+            FullscreenLEDSpectrumStrip(
+                spectrum: engine.latestSpectrum,
+                accent: ledAccent
             )
             .equatable()
         }
     }
 
-    private var ecoFrozenWaveform: some View {
+    private var ecoFrozenSpectrumLine: some View {
         Rectangle()
             .fill(ledAccent.opacity(0.35))
             .frame(height: 1)
@@ -271,7 +269,7 @@ struct FullscreenLEDView: View {
         VStack(alignment: .trailing, spacing: 0) {
             Spacer(minLength: 0)
 
-            waveformSection
+            spectrumSection
                 .frame(width: 320, height: 60)
 
             Spacer(minLength: 0)
@@ -432,5 +430,39 @@ struct FullscreenLEDView: View {
         Task {
             await audioStateManager.manuallyResumeMonitoring()
         }
+    }
+}
+
+// MARK: - Compact LED spectrum strip
+
+private struct FullscreenLEDSpectrumStrip: View, Equatable {
+    let spectrum: FFTSpectrum?
+    let accent: Color
+
+    static func == (lhs: FullscreenLEDSpectrumStrip, rhs: FullscreenLEDSpectrumStrip) -> Bool {
+        lhs.spectrum == rhs.spectrum
+    }
+
+    var body: some View {
+        Canvas { context, size in
+            guard size.width > 1, size.height > 1 else { return }
+            let plotRect = CGRect(origin: .zero, size: size)
+            let coords = SpectrumPlotCoordinateSystem(plotRect: plotRect)
+
+            guard let spectrum, !spectrum.decibels.isEmpty else { return }
+
+            let path = SpectrumPathBuilder(
+                coords: coords,
+                sampleRate: spectrum.sampleRate,
+                fftSize: spectrum.fftSize
+            ).buildPath(decibels: spectrum.decibels)
+
+            context.stroke(
+                path,
+                with: .color(accent),
+                style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round)
+            )
+        }
+        .drawingGroup()
     }
 }

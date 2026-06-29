@@ -13,7 +13,7 @@ nonisolated enum AdMobConfig {
     #else
     static let isDebugBuild = false
     static var adsEnabled: Bool {
-        !IAPManager.adsRemovedSnapshot
+        !SubscriptionManager.adsRemovedSnapshot
     }
     static let coldStartAppOpen = "ca-app-pub-2283581832994740/5926550020"
     static let hotStartInterstitial = "ca-app-pub-2283581832994740/7790296034"

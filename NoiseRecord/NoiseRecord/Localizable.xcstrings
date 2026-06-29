@@ -209,7 +209,11 @@
         }
       }
     },
+    " " : {
+
+    },
     "·" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -32403,6 +32407,91 @@
         }
       }
     },
+    "modeSwitch.infoSheet.highSensitivity.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bypasses default iOS noise suppression filters to capture raw physical sound pressure. Readings are often higher than standard mode—this is normal. It is specifically engineered to detect low-frequency hums (e.g., AC units, transformers, structural building resonance) that you may barely hear but are physically present."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "绕过 iOS 默认降噪滤波，采集原始物理声压。读数常高于标准模式——这属正常现象。专为捕捉低频嗡鸣（如空调、变压器、建筑结构共振）而设计，这些声音您可能几乎听不到，但物理上确实存在。"
+          }
+        }
+      }
+    },
+    "modeSwitch.infoSheet.highSensitivity.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "High Sensitivity Mode (dBZ / dBC)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "高灵敏模式 (dBZ / dBC)"
+          }
+        }
+      }
+    },
+    "modeSwitch.infoSheet.standard.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Simulates human ear subjective perception. Perfect for tracking everyday environmental noise, traffic, and general disturbances."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "模拟人耳主观听感，适合追踪日常环境噪声、交通噪声与一般干扰。"
+          }
+        }
+      }
+    },
+    "modeSwitch.infoSheet.standard.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Standard Mode (dBA)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "标准模式 (dBA)"
+          }
+        }
+      }
+    },
+    "modeSwitch.infoSheet.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Measurement Modes"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "测量模式"
+          }
+        }
+      }
+    },
     "modeSwitch.learnMore" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -32817,91 +32906,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "測量模式"
-          }
-        }
-      }
-    },
-    "modeSwitch.infoSheet.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Measurement Modes"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "测量模式"
-          }
-        }
-      }
-    },
-    "modeSwitch.infoSheet.standard.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Standard Mode (dBA)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "标准模式 (dBA)"
-          }
-        }
-      }
-    },
-    "modeSwitch.infoSheet.standard.body" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Simulates human ear subjective perception. Perfect for tracking everyday environmental noise, traffic, and general disturbances."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "模拟人耳主观听感，适合追踪日常环境噪声、交通噪声与一般干扰。"
-          }
-        }
-      }
-    },
-    "modeSwitch.infoSheet.highSensitivity.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "High Sensitivity Mode (dBZ / dBC)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "高灵敏模式 (dBZ / dBC)"
-          }
-        }
-      }
-    },
-    "modeSwitch.infoSheet.highSensitivity.body" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bypasses default iOS noise suppression filters to capture raw physical sound pressure. Readings are often higher than standard mode—this is normal. It is specifically engineered to detect low-frequency hums (e.g., AC units, transformers, structural building resonance) that you may barely hear but are physically present."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "绕过 iOS 默认降噪滤波，采集原始物理声压。读数常高于标准模式——这属正常现象。专为捕捉低频嗡鸣（如空调、变压器、建筑结构共振）而设计，这些声音您可能几乎听不到，但物理上确实存在。"
           }
         }
       }
@@ -35201,6 +35205,584 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "時間與地點"
+          }
+        }
+      }
+    },
+    "paywall.alert.purchased.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premium forensic tools are now unlocked."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "高级取证功能已解锁。"
+          }
+        }
+      }
+    },
+    "paywall.alert.purchased.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welcome to Pro"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "欢迎加入 Pro"
+          }
+        }
+      }
+    },
+    "paywall.banner.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlock forensic video, AI filters, and 2048-point spectrum."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "解锁法证视频、AI 过滤与 2048 点频谱。"
+          }
+        }
+      }
+    },
+    "paywall.banner.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upgrade to Pro"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "升级 Pro"
+          }
+        }
+      }
+    },
+    "paywall.benefit.ai" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI sound filters for dogs, cars, drills and more"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "狗叫、汽车等 AI 声音分类过滤录音"
+          }
+        }
+      }
+    },
+    "paywall.benefit.noAds" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove all app open and interstitial ads"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移除所有开屏与插屏广告"
+          }
+        }
+      }
+    },
+    "paywall.benefit.spectrum" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2048-point spectrum for sub-bass resonance capture"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2048 点高精频谱，捕获低频共振"
+          }
+        }
+      }
+    },
+    "paywall.benefit.video" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlimited video evidence — no daily cap or duration limit"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无限视频取证（无每日次数与时长限制）"
+          }
+        }
+      }
+    },
+    "paywall.benefit.voiceUnlimited" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlimited voice-activated recording length per clip"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "声控录音单次时长无限制"
+          }
+        }
+      }
+    },
+    "paywall.bestValue" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Best Value"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最超值"
+          }
+        }
+      }
+    },
+    "paywall.context.ai" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI sound classification filters require Pro."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI 声音分类过滤需要 Pro 订阅。"
+          }
+        }
+      }
+    },
+    "paywall.context.spectrum" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2048-point high-resolution spectrum requires Pro."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2048 点高精频谱需要 Pro 订阅。"
+          }
+        }
+      }
+    },
+    "paywall.context.video" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upgrade to Pro for unlimited video evidence."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "升级 Pro 解锁无限视频取证。"
+          }
+        }
+      }
+    },
+    "paywall.context.videoDaily" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You've used today's free video recording. Upgrade for unlimited captures."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日免费视频录制次数已用完，升级 Pro 解锁无限次数。"
+          }
+        }
+      }
+    },
+    "paywall.context.videoDuration" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free recordings stop at 10 seconds. Upgrade for longer captures."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "免费版单次视频最长 10 秒，升级 Pro 解锁更长录制。"
+          }
+        }
+      }
+    },
+    "paywall.context.voiceDuration" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free clips are limited to 3 minutes. Upgrade for unlimited length."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "免费版单次声控录音最长 3 分钟，升级 Pro 解锁无限时长。"
+          }
+        }
+      }
+    },
+    "paywall.continue" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "继续"
+          }
+        }
+      }
+    },
+    "paywall.earlySupporter" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Early Supporter Detected: Your ad-free status is locked forever. Upgrade to Pro to unlock our advanced court-ready forensic tools."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已识别早期支持者：您的永久免广告权益已锁定。升级 Pro 解锁高级法庭级取证工具。"
+          }
+        }
+      }
+    },
+    "paywall.headline" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Court-ready forensic tools for serious noise evidence."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "为专业噪声取证而生的法庭级工具。"
+          }
+        }
+      }
+    },
+    "paywall.legalFooter" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Payment will be charged to your Apple ID. Subscriptions renew automatically unless cancelled at least 24 hours before the end of the period."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "费用将从 Apple ID 扣款。订阅将自动续期，除非在当前周期结束前至少 24 小时取消。"
+          }
+        }
+      }
+    },
+    "paywall.price.monthly" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ / Month"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ / 月"
+          }
+        }
+      }
+    },
+    "paywall.price.monthly.fallback" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "$9.99 / Month"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "$9.99 / 月"
+          }
+        }
+      }
+    },
+    "paywall.price.weekly" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ / Week"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ / 周"
+          }
+        }
+      }
+    },
+    "paywall.price.weekly.fallback" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "$2.99 / Week"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "$2.99 / 周"
+          }
+        }
+      }
+    },
+    "paywall.price.yearly" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ / Year"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ / 年"
+          }
+        }
+      }
+    },
+    "paywall.price.yearly.billed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Billed annually at %@/Year"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按年计费 %@/年"
+          }
+        }
+      }
+    },
+    "paywall.price.yearly.billed.fallback" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Billed annually at $19.99/Year"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按年计费 $19.99/年"
+          }
+        }
+      }
+    },
+    "paywall.price.yearly.fallback" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "$19.99 / Year"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "$19.99 / 年"
+          }
+        }
+      }
+    },
+    "paywall.price.yearly.monthly" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only %@ / Month"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅需 %@ / 月"
+          }
+        }
+      }
+    },
+    "paywall.price.yearly.monthly.fallback" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only $1.66 / Month"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅需 $1.66 / 月"
+          }
+        }
+      }
+    },
+    "paywall.tier.monthly" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monthly"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "月订阅"
+          }
+        }
+      }
+    },
+    "paywall.tier.weekly" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weekly"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "周订阅"
+          }
+        }
+      }
+    },
+    "paywall.tier.yearly" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yearly"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "年订阅"
+          }
+        }
+      }
+    },
+    "paywall.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DecibelPro Premium"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DecibelPro 高级版"
           }
         }
       }
@@ -70121,6 +70703,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "無法為影片啟動噪音監測。"
+          }
+        }
+      }
+    },
+    "video.freeQuotaHint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free: %lld recording left today · max %llds per clip"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "免费：今日剩余 %lld 次 · 单次最长 %lld 秒"
           }
         }
       }

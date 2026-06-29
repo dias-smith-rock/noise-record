@@ -70,7 +70,15 @@ final class NoiseMonitorEngine {
             }
         }
     }
-    var aiClassificationEnabled = false
+    var aiClassificationEnabled = false {
+        didSet {
+            guard !isLoadingPersistedSettings else { return }
+            if aiClassificationEnabled, !SubscriptionManager.shared.isPremiumUser {
+                aiClassificationEnabled = false
+                PaywallPresenter.shared.present(context: .aiFilter)
+            }
+        }
+    }
     var aiFilterLabels: Set<String> = [] {
         didSet {
             guard !isLoadingPersistedSettings else { return }
@@ -112,6 +120,7 @@ final class NoiseMonitorEngine {
     private var sessionMinDB: Float = 120
     /// When true, high-sensitivity was enabled only for video evidence and should be restored afterward.
     private var shouldRestoreStandardModeAfterVideo = false
+    private var isApplyingTemporaryVideoHighSensitivity = false
 
     private struct UIPublishSnapshot: Sendable {
         let generation: UInt64
@@ -204,6 +213,8 @@ final class NoiseMonitorEngine {
         voiceRecorder.lowThreshold = pair.low
         isNormalizingThresholds = false
         isLoadingPersistedSettings = false
+        enforcePremiumFeatureAccessSilently()
+        configureVoiceRecordingLimits()
 
         voiceRecorder.onRecordingFinished = { [weak self] event in
             Task { @MainActor in
@@ -218,6 +229,35 @@ final class NoiseMonitorEngine {
 
         installAudioSessionObservers()
         installCalibrationObserver()
+        installSubscriptionObserver()
+    }
+
+    private func configureVoiceRecordingLimits() {
+        let isPremium = SubscriptionManager.shared.isPremiumUser
+        voiceRecorder.maxClipDuration = isPremium
+            ? VoiceActivatedRecorder.maxSegmentDuration
+            : VoiceActivatedRecorder.freeMaxClipDuration
+        voiceRecorder.onClipDurationLimitReached = isPremium ? nil : { [weak self] in
+            guard self != nil else { return }
+            Task { @MainActor in
+                AppTelemetry.logProductEvent(
+                    "freemium_limit_hit",
+                    parameters: ["limit_type": "voice_duration"]
+                )
+                PaywallPresenter.shared.present(context: .voiceDurationLimit)
+            }
+        }
+    }
+
+    private func installSubscriptionObserver() {
+        NotificationCenter.default.addObserver(
+            forName: SubscriptionManager.entitlementsDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.configureVoiceRecordingLimits()
+            self?.enforcePremiumFeatureAccessSilently()
+        }
     }
 
     private func installCalibrationObserver() {
@@ -264,7 +304,9 @@ final class NoiseMonitorEngine {
         let wasStandardMode = !isHighSensitivityMode
         if wasStandardMode {
             shouldRestoreStandardModeAfterVideo = true
+            isApplyingTemporaryVideoHighSensitivity = true
             isHighSensitivityMode = true
+            isApplyingTemporaryVideoHighSensitivity = false
         } else {
             shouldRestoreStandardModeAfterVideo = false
         }
@@ -301,6 +343,7 @@ final class NoiseMonitorEngine {
 
         resetStatistics()
         refreshCalibrationOffset()
+        configureVoiceRecordingLimits()
         beginMonitoringSession()
         setupAudioPipeline()
 
@@ -437,6 +480,16 @@ final class NoiseMonitorEngine {
         fftSampleRing.reset()
         uiFrameCounter = 0
         resetPeakAmounts()
+    }
+
+    private func enforcePremiumFeatureAccessSilently() {
+        guard !SubscriptionManager.shared.isPremiumUser else { return }
+        isLoadingPersistedSettings = true
+        if aiClassificationEnabled {
+            aiClassificationEnabled = false
+            aiFilterLabels = []
+        }
+        isLoadingPersistedSettings = false
     }
 
     private func resetPeakAmounts() {
@@ -658,7 +711,7 @@ final class NoiseMonitorEngine {
         }
         noiseClassifier = nil
 
-        if aiClassificationEnabled {
+        if aiClassificationEnabled, SubscriptionManager.shared.isPremiumUser {
             let classifier = NoiseClassifierManager()
             classifier.onClassification = { [weak self] label, confidence in
                 self?.cachedNoiseLabel = label

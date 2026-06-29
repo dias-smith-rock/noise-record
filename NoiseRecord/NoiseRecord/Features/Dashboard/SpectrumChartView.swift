@@ -4,7 +4,7 @@ import SwiftUI
 
 /// 频谱图统一坐标映射：X 为对数频率，Y 为线性分贝。
 /// 网格线与数据曲线共用同一套公式，保证物理对齐。
-private struct SpectrumPlotCoordinateSystem: Sendable {
+struct SpectrumPlotCoordinateSystem: Sendable {
     let plotRect: CGRect
 
     /// 横轴下界：20 Hz（人耳可闻低频端）
@@ -66,7 +66,7 @@ private struct SpectrumPlotCoordinateSystem: Sendable {
 // MARK: - 路径构建
 
 /// 以 Double 频率步长构建频谱折线，支持 512 / 1024 动态 Bin 数。
-private struct SpectrumPathBuilder {
+struct SpectrumPathBuilder {
     let coords: SpectrumPlotCoordinateSystem
     let sampleRate: Double
     let fftSize: Int

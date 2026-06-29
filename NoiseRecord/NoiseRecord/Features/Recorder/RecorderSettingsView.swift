@@ -203,7 +203,15 @@ struct RecorderSettingsView: View {
                 theme: theme,
                 icon: "waveform.badge.magnifyingglass"
             )
-            .onChange(of: engine.aiClassificationEnabled) { _, _ in
+            .onChange(of: engine.aiClassificationEnabled) { _, enabled in
+                guard enabled else {
+                    engine.persistSettings()
+                    return
+                }
+                guard SubscriptionManager.shared.isPremiumUser else {
+                    engine.aiClassificationEnabled = false
+                    return
+                }
                 engine.persistSettings()
                 if engine.isMonitoring {
                     engine.stopMonitoring()
@@ -258,6 +266,10 @@ struct RecorderSettingsView: View {
         if engine.aiFilterLabels.contains(label) {
             engine.aiFilterLabels.remove(label)
         } else {
+            guard SubscriptionManager.shared.isPremiumUser else {
+                PaywallPresenter.shared.present(context: .aiFilter)
+                return
+            }
             engine.aiFilterLabels.insert(label)
         }
     }

@@ -136,6 +136,27 @@ App Store Connect privacy questionnaire: declare **Advertising Data** and **Devi
 
 **Analytics events:** `commercial_iap_purchase_success`, `commercial_iap_restore_success`, `commercial_iap_product_missing`; other IAP steps are Crashlytics breadcrumbs only.
 
+## Pro Subscription (Premium)
+
+| Field | Value |
+|-------|-------|
+| Weekly | `com.goodcraft.NoiseRecord.weekly` |
+| Monthly | `com.goodcraft.NoiseRecord.monthly` |
+| Yearly | `com.goodcraft.NoiseRecord.yearly` |
+| Manager | `SubscriptionManager` (StoreKit 2, dual-gate: ads + premium) |
+| Local testing | [`DecibelPro.storekit`](DecibelPro.storekit) — Premium subscription group |
+
+**Free vs Pro feature matrix**
+
+| Feature | Free | Pro |
+|---------|------|-----|
+| 2048 FFT / high-sensitivity mode | Yes | Yes |
+| Voice-activated recording (per clip) | 3 min max | Unlimited (10 min rolling segments) |
+| Video evidence | 1 per day, 10 s max | Unlimited count and duration |
+| AI sound classification filter | No | Yes |
+| Ads | Shown | Removed (subscription or legacy remove-ads) |
+
+Legacy `com.decibelpro.removeads.lifetime` removes ads only; it does **not** unlock Pro limits or AI filter.
 
 > DecibelPro uses the `audio` background mode to continue real-time noise monitoring and voice-activated recording when the app is in the background. Users explicitly enable background monitoring in the Voice tab. The app does not play music or unrelated audio in the background.
 

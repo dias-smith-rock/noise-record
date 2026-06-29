@@ -21,11 +21,16 @@ struct RecordingFinishedEvent: Sendable {
 final class VoiceActivatedRecorder: @unchecked Sendable {
     /// 单段安全落盘阈值（10 分钟），超时滚动切片。
     static let maxSegmentDuration: TimeInterval = 600
+    /// 免费用户单次声控触发会话最长录音时长。
+    static let freeMaxClipDuration: TimeInterval = 180
 
     var highThreshold: Float = 55
     var lowThreshold: Float = 48
     var postRecordingDelay: TimeInterval = 4
     var preBufferDuration: TimeInterval = 1.5
+    /// 单次触发会话最长时长；Pro 默认与 `maxSegmentDuration` 相同。
+    var maxClipDuration: TimeInterval = maxSegmentDuration
+    var onClipDurationLimitReached: (() -> Void)?
 
     private(set) var state: RecordingState = .idle
     private var ringBuffer: RingBuffer?
@@ -51,6 +56,7 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
     private var currentNoiseType: String?
     private var lastFlushTime: CFAbsoluteTime = 0
     private let flushInterval: CFAbsoluteTime = 0.2
+    private var didNotifyClipDurationLimit = false
 
     private let fileQueue = DispatchQueue(label: "com.noiseapp.recording.file")
     var onRecordingFinished: ((RecordingFinishedEvent) -> Void)?
@@ -85,6 +91,7 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
             flushToFileIfNeeded()
             ensureOpenSegmentFile(format: format)
             rotateSegmentIfNeeded(format: format)
+            enforceClipDurationLimitIfNeeded()
 
             if dbSPL < lowThreshold {
                 state = .coolingDown
@@ -96,6 +103,7 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
             flushToFileIfNeeded()
             ensureOpenSegmentFile(format: format)
             rotateSegmentIfNeeded(format: format)
+            enforceClipDurationLimitIfNeeded()
 
             if dbSPL >= highThreshold {
                 state = .recording
@@ -146,6 +154,7 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
         sessionTriggerTimestamp = Self.timestampString(from: now)
         sessionTriggerPeakDB = Int(currentDB)
         beginNewSegmentTiming(at: now)
+        didNotifyClipDurationLimit = false
         segmentPeakDB = currentDB
         segmentDbSum = currentDB
         segmentDbCount = 1
@@ -201,6 +210,7 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
         segmentDbSum = 0
         segmentDbCount = 0
         lastFlushTime = 0
+        didNotifyClipDurationLimit = false
         pcmAccumulator.reset()
     }
 
@@ -220,6 +230,20 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
         segmentPeakDB = max(segmentPeakDB, dbSPL)
         segmentDbSum += dbSPL
         segmentDbCount += 1
+    }
+
+    // MARK: - Clip duration limit (free tier)
+
+    private func enforceClipDurationLimitIfNeeded() {
+        guard state == .recording || state == .coolingDown else { return }
+        guard let sessionStart = recordingStartDate,
+              Date().timeIntervalSince(sessionStart) >= maxClipDuration else { return }
+
+        if !didNotifyClipDurationLimit {
+            didNotifyClipDurationLimit = true
+            onClipDurationLimitReached?()
+        }
+        stopRecording()
     }
 
     // MARK: - Rolling segment rotation

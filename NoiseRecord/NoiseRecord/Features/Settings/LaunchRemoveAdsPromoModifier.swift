@@ -1,41 +1,43 @@
 import SwiftUI
 
-/// 冷启动时：未购买免广告则自动弹出购买 Sheet；关闭且仍未购买时由 `AdSceneLifecycle` 展示开屏广告。
-private struct LaunchRemoveAdsPromoModifier: ViewModifier {
-    @State private var showPurchaseSheet = false
-    @Bindable private var iap = IAPManager.shared
-
-    private var theme: ModeVisualTheme {
-        .theme(for: .standard)
-    }
+private struct LaunchPaywallPromoModifier: ViewModifier {
+    @Bindable private var subscriptions = SubscriptionManager.shared
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var showPaywall = false
 
     func body(content: Content) -> some View {
         content
-            .onAppear(perform: presentLaunchPromoIfNeeded)
             .onReceive(
                 NotificationCenter.default.publisher(for: .launchRemoveAdsPromoShouldPresent)
             ) { _ in
-                presentLaunchPromoIfNeeded()
+                presentPaywallIfNeeded()
             }
-            .sheet(isPresented: $showPurchaseSheet, onDismiss: handlePurchaseSheetDismissed) {
-                RemoveAdsPurchaseSheet(theme: theme)
+            .onAppear(perform: presentPaywallIfNeeded)
+            .onChange(of: scenePhase) { _, phase in
+                guard phase == .active else { return }
+                presentPaywallIfNeeded()
+            }
+            .sheet(isPresented: $showPaywall, onDismiss: handleDismiss) {
+                PaywallView(context: .launch)
             }
     }
 
-    private func presentLaunchPromoIfNeeded() {
-        guard !iap.isAdsRemoved else { return }
+    private func presentPaywallIfNeeded() {
+        guard !subscriptions.isPremiumUser else { return }
         guard AdSceneLifecycle.consumeLaunchRemoveAdsPromoPresentation() else { return }
-        showPurchaseSheet = true
-        AppTelemetry.logAdLifecycle(channel: "iap_promo", step: "sheet_presented")
+        showPaywall = true
     }
 
-    private func handlePurchaseSheetDismissed() {
-        AdSceneLifecycle.handleLaunchRemoveAdsPromoDismissed(purchased: iap.isAdsRemoved)
+    private func handleDismiss() {
+        AdSceneLifecycle.handleLaunchRemoveAdsPromoDismissed(
+            purchased: subscriptions.isPremiumUser || subscriptions.hasRemovedAds
+        )
+        AdSceneLifecycle.scheduleLaunchAutoStartMonitoring()
     }
 }
 
 extension View {
     func launchRemoveAdsPromo() -> some View {
-        modifier(LaunchRemoveAdsPromoModifier())
+        modifier(LaunchPaywallPromoModifier())
     }
 }

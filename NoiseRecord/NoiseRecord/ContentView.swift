@@ -110,6 +110,15 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: AppReviewStore.shouldPresentPromptNotification)) { _ in
             showAppReviewPrompt = true
         }
+        .onReceive(NotificationCenter.default.publisher(for: .launchAutoStartMonitoring)) { _ in
+            Task {
+                guard audioStateManager.appAudioState != .playing else { return }
+                await audioStateManager.manuallyResumeMonitoring()
+                if engine.isMonitoring {
+                    AppTelemetry.logProductEvent("monitoring_auto_start_launch")
+                }
+            }
+        }
         .appReviewPrompt(isPresented: $showAppReviewPrompt)
         .onChange(of: engine.isMonitoring) { _, isMonitoring in
             if isMonitoring {

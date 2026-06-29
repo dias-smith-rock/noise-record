@@ -3,6 +3,8 @@ import SwiftUI
 extension Notification.Name {
     /// 冷启动需要展示「免广告购买」引导 Sheet 时发出。
     static let launchRemoveAdsPromoShouldPresent = Notification.Name("launchRemoveAdsPromoShouldPresent")
+    /// 冷启动 Paywall 关闭后（或无需 Paywall 时）请求自动开启监测。
+    static let launchAutoStartMonitoring = Notification.Name("launchAutoStartMonitoring")
 }
 
 /// Drives cold/hot-start ad presentation via SwiftUI scene lifecycle.
@@ -21,6 +23,7 @@ enum AdSceneLifecycle {
     private static var pendingPresentation: PendingPresentation?
     private static var hasPresentedSinceForeground = false
     private static var shouldPresentLaunchRemoveAdsPromo = false
+    private static var pendingLaunchMonitoringAutoStart = false
 
     /// 是否应在当前冷启动展示免广告购买 Sheet（读取后由 `consumeLaunchRemoveAdsPromoPresentation` 消费）。
     static var isLaunchRemoveAdsPromoPending: Bool {
@@ -42,12 +45,18 @@ enum AdSceneLifecycle {
             if isColdStart {
                 isColdStart = false
                 hasPresentedSinceForeground = false
+                pendingLaunchMonitoringAutoStart = true
+                AppTelemetry.logAdLifecycle(channel: "lifecycle", step: "launch_monitoring_auto_start_armed")
 
-                if !IAPManager.adsRemovedSnapshot {
+                if !SubscriptionManager.isPremiumSnapshot {
                     armLaunchRemoveAdsPromo()
                 } else if AdMobConfig.adsEnabled {
                     pendingPresentation = .cold
                     AppTelemetry.logAdLifecycle(channel: "cold", step: "armed_on_cold_start")
+                }
+
+                if SubscriptionManager.isPremiumSnapshot {
+                    scheduleLaunchAutoStartMonitoring()
                 }
             } else if wasInBackground {
                 wasInBackground = false
@@ -69,6 +78,7 @@ enum AdSceneLifecycle {
             pendingPresentation = nil
             hasPresentedSinceForeground = false
             shouldPresentLaunchRemoveAdsPromo = false
+            pendingLaunchMonitoringAutoStart = false
             AppTelemetry.logAdLifecycle(channel: "lifecycle", step: "scene_entered_background")
             if AdMobConfig.adsEnabled, AdConsentManager.canRequestAds {
                 HotStartAdManager.shared.loadAd()
@@ -93,6 +103,27 @@ enum AdSceneLifecycle {
         guard shouldPresentLaunchRemoveAdsPromo else { return false }
         shouldPresentLaunchRemoveAdsPromo = false
         return true
+    }
+
+    /// 消费冷启动自动开监测令牌（每轮冷启动仅一次）。
+    static func consumeLaunchMonitoringAutoStart() -> Bool {
+        guard pendingLaunchMonitoringAutoStart else { return false }
+        pendingLaunchMonitoringAutoStart = false
+        return true
+    }
+
+    /// 通知 `ContentView` 在冷启动后自动开启监测。
+    static func requestLaunchAutoStartMonitoring() {
+        guard consumeLaunchMonitoringAutoStart() else { return }
+        NotificationCenter.default.post(name: .launchAutoStartMonitoring, object: nil)
+    }
+
+    /// 延迟到下一 run loop，确保 `ContentView` 已挂载通知监听。
+    static func scheduleLaunchAutoStartMonitoring() {
+        Task { @MainActor in
+            try? await Task.yield()
+            requestLaunchAutoStartMonitoring()
+        }
     }
 
     /// 免广告购买 Sheet 关闭后：已购买则结束；未购买则立即尝试展示冷启动开屏广告。
