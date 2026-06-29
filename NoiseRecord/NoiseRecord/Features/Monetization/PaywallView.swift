@@ -319,12 +319,20 @@ struct PaywallView: View {
             let result = try await subscriptions.purchase(tier: selectedTier)
             switch result {
             case .purchased:
-                showPurchasedAlert = true
+                if subscriptions.isPremiumUser {
+                    showPurchasedAlert = true
+                } else {
+                    errorMessage = L10n.iapErrorEntitlementNotGranted
+                    showErrorAlert = true
+                }
             case .pending:
                 showPendingAlert = true
             case .cancelled:
                 break
             }
+        } catch let error as SubscriptionManagerError where error == .entitlementNotGranted {
+            errorMessage = L10n.iapErrorEntitlementNotGranted
+            showErrorAlert = true
         } catch {
             errorMessage = error.localizedDescription
             showErrorAlert = true

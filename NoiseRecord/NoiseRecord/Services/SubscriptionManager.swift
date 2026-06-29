@@ -202,6 +202,10 @@ final class SubscriptionManager {
         try await AppStore.sync()
         await checkEntitlements(allowDowngrade: true)
 
+        if !hasRemovedAds && !isPremiumUser {
+            await checkEntitlementsWithRetry()
+        }
+
         guard hasRemovedAds || isPremiumUser else {
             AppTelemetry.logIAPLifecycle(step: "restore_nothing_found")
             throw SubscriptionManagerError.nothingToRestore
@@ -316,8 +320,16 @@ final class SubscriptionManager {
                         metadata: ["tier": tier.rawValue]
                     )
                 }
+                grantEntitlement(from: transaction)
                 await finishTransactionIfNeeded(transaction)
                 await checkEntitlements(allowDowngrade: false)
+                if !isPremiumUser && SubscriptionProduct.isSubscriptionProductID(transaction.productID) {
+                    await checkEntitlementsWithRetry()
+                }
+                guard isPremiumUser || isActiveLegacyRemoveAds(transaction) else {
+                    AppTelemetry.logIAPLifecycle(step: "purchase_entitlement_not_granted")
+                    throw SubscriptionManagerError.entitlementNotGranted
+                }
                 return .purchased
 
             case .unverified(let transaction, let error):
@@ -357,6 +369,7 @@ final class SubscriptionManager {
                         "product_id": transaction.productID,
                     ]
                 )
+                grantEntitlement(from: transaction)
                 await finishTransactionIfNeeded(transaction)
                 await checkEntitlements(allowDowngrade: false)
 
@@ -364,6 +377,48 @@ final class SubscriptionManager {
                 AppTelemetry.recordError(error, context: "iap_transaction_update_unverified")
                 await finishTransactionIfNeeded(transaction)
             }
+        }
+    }
+
+    private func grantEntitlement(from transaction: Transaction) {
+        let legacy = isActiveLegacyRemoveAds(transaction)
+        let subscription = isActiveSubscription(transaction)
+        guard let merged = EntitlementGrantMerge.merged(
+            hasRemovedAds: hasRemovedAds,
+            isPremiumUser: isPremiumUser,
+            purchasedProductIds: purchasedProductIds,
+            isLegacyPurchase: legacy,
+            isSubscriptionPurchase: subscription,
+            purchasedProductID: transaction.productID
+        ) else {
+            return
+        }
+
+        applyEntitlementState(
+            hasRemovedAds: merged.hasRemovedAds,
+            isPremiumUser: merged.isPremiumUser,
+            purchasedProductIds: merged.purchasedProductIds,
+            persistLocally: true
+        )
+        isEarlySupporter = merged.isEarlySupporter
+
+        AppTelemetry.logIAPLifecycle(
+            step: "entitlement_granted_from_transaction",
+            metadata: [
+                "product_id": transaction.productID,
+                "has_removed_ads": String(merged.hasRemovedAds),
+                "is_premium": String(merged.isPremiumUser),
+            ]
+        )
+    }
+
+    private func checkEntitlementsWithRetry(maxAttempts: Int = 3, delayMs: UInt64 = 300) async {
+        guard maxAttempts > 1 else { return }
+
+        for _ in 1..<maxAttempts {
+            guard !hasRemovedAds && !isPremiumUser else { return }
+            try? await Task.sleep(nanoseconds: delayMs * 1_000_000)
+            await checkEntitlements(allowDowngrade: false)
         }
     }
 

@@ -8,7 +8,7 @@ struct DeviceCalibrationStore: Sendable {
     private static let weightingKey = "settings.weighting"
     private static let highSensitivityKey = "settings.highSensitivityMode"
 
-    static let defaultReferenceSPL: Float = 94
+    static let defaultReferenceSPL: Float = 54
 
     /// Baseline offset for quiet-room display ~30–40 dBA in measurement mode.
     static let defaultOffset: Float = 115.0
@@ -28,8 +28,13 @@ struct DeviceCalibrationStore: Sendable {
         "iPhone14,8": 115.5,
         "iPhone14,2": 115.0,
         "iPhone14,3": 115.0,
+        "iPhone14,4": 115.0,
+        "iPhone14,5": 115.0,
+        "iPhone14,6": 115.0,
+        "iPhone13,1": 115.0,
         "iPhone13,2": 115.0,
         "iPhone13,3": 115.0,
+        "iPhone13,4": 115.0,
         "iPad13,18": 115.0,
         "iPad13,19": 115.0,
     ]
@@ -40,11 +45,14 @@ struct DeviceCalibrationStore: Sendable {
 
     /// Device hardware offset (115–118 dB range).
     static var deviceOffset: Float {
-        if let mapped = deviceLookup[deviceModelIdentifier] {
+        deviceOffset(for: deviceModelIdentifier)
+    }
+
+    static func deviceOffset(for machineIdentifier: String) -> Float {
+        if let mapped = deviceLookup[machineIdentifier] {
             return mapped
         }
-        let model = deviceModelIdentifier
-        if model.hasPrefix("iPhone16") || model.hasPrefix("iPhone17") {
+        if machineIdentifier.hasPrefix("iPhone16") || machineIdentifier.hasPrefix("iPhone17") {
             return 118.0
         }
         return defaultOffset

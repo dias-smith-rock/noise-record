@@ -9,7 +9,9 @@ struct RemoveAdsSettingsPromo: View {
 
     var body: some View {
         Group {
-            if !subscriptions.isPremiumUser {
+            if subscriptions.isPremiumUser {
+                ProVIPStatusBanner(theme: theme)
+            } else {
                 ProUpgradeBanner(theme: theme) {
                     showPaywall = true
                 }
@@ -18,6 +20,49 @@ struct RemoveAdsSettingsPromo: View {
         .sheet(isPresented: $showPaywall) {
             PaywallView(context: .settings)
         }
+    }
+}
+
+private struct ProVIPStatusBanner: View {
+    let theme: ModeVisualTheme
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: "crown.fill")
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(.white)
+                .frame(width: 48, height: 48)
+                .background(Circle().fill(.white.opacity(0.18)))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(L10n.paywallVIPBannerTitle)
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                Text(L10n.paywallVIPBannerSubtitle)
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.88))
+                    .multilineTextAlignment(.leading)
+            }
+
+            Spacer(minLength: 8)
+
+            Image(systemName: "checkmark.seal.fill")
+                .font(.title3)
+                .foregroundStyle(.white.opacity(0.95))
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            LinearGradient(
+                colors: [Color.orange, theme.accent, Color(red: 0.9, green: 0.35, blue: 0.05)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: Color.orange.opacity(0.28), radius: 10, y: 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(L10n.paywallVIPBannerTitle)
     }
 }
 

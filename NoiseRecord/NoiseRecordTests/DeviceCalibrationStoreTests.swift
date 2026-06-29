@@ -47,4 +47,12 @@ final class DeviceCalibrationStoreTests: XCTestCase {
         XCTAssertEqual(DeviceCalibrationStore.userAdjustment, 0, accuracy: 0.001)
         XCTAssertEqual(DeviceCalibrationStore.referenceSPL, 100, accuracy: 0.001)
     }
+
+    func testDeviceOffsetForIPhone13MachineIdentifier() {
+        XCTAssertEqual(DeviceCalibrationStore.deviceOffset(for: "iPhone14,5"), 115.0, accuracy: 0.001)
+    }
+
+    func testDeviceOffsetForIPhone13MiniMachineIdentifier() {
+        XCTAssertEqual(DeviceCalibrationStore.deviceOffset(for: "iPhone14,4"), 115.0, accuracy: 0.001)
+    }
 }

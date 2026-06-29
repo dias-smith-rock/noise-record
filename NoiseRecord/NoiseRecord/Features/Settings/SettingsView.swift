@@ -119,7 +119,7 @@ struct SettingsView: View {
             Section {
                 LabeledContent(L10n.settingsCurrentMode, value: measurementMode.userFacingTitle)
                 LabeledContent(L10n.settingsTechnicalBadge, value: measurementMode.technicalBadge)
-                LabeledContent(L10n.settingsDeviceModel, value: DeviceCalibrationStore.deviceModelIdentifier)
+                LabeledContent(L10n.settingsDeviceModel, value: HardwareIdentifier.marketingName)
                 LabeledContent(L10n.settingsDeviceOffset, value: String(format: "%.1f dB", DeviceCalibrationStore.deviceOffset))
                 LabeledContent(L10n.settingsUserAdjustment, value: String(format: "%+.1f dB", displayedUserAdjustment))
                 LabeledContent(L10n.settingsTotalOffset, value: String(format: "%.1f dB", displayedTotalOffset))

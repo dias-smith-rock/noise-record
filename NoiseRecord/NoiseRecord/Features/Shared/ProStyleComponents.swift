@@ -233,21 +233,23 @@ struct ProEmptyState: View {
 
 // MARK: - Tab header
 
-/// 已购永久免广告时，显示在 Tab 标题右侧的标识。
-struct ProTabNoAdsBadge: View {
+/// Tab 标题右侧权益标识：订阅显示 Pro，Legacy 免广告显示 No Ads。
+struct ProTabEntitlementBadge: View {
+    let isPremium: Bool
+
     var body: some View {
         HStack(spacing: 4) {
-            Image(systemName: "hand.raised.slash.fill")
+            Image(systemName: isPremium ? "crown.fill" : "hand.raised.slash.fill")
                 .font(.caption2.weight(.semibold))
-            Text(L10n.noAdsBadge)
+            Text(isPremium ? L10n.proBadge : L10n.noAdsBadge)
                 .font(.caption.weight(.semibold))
         }
-        .foregroundStyle(.green)
+        .foregroundStyle(isPremium ? .orange : .green)
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .background(Color.green.opacity(0.14))
+        .background((isPremium ? Color.orange : Color.green).opacity(0.14))
         .clipShape(Capsule())
-        .accessibilityLabel(L10n.noAdsBadge)
+        .accessibilityLabel(isPremium ? L10n.proBadge : L10n.noAdsBadge)
     }
 }
 
@@ -276,7 +278,7 @@ struct ProTabHeader<Trailing: View>: View {
                     .lineLimit(1)
 
                 if subscriptions.hasRemovedAds {
-                    ProTabNoAdsBadge()
+                    ProTabEntitlementBadge(isPremium: subscriptions.isPremiumUser)
                 }
             }
 

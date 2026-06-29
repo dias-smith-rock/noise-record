@@ -9,6 +9,44 @@ enum SubscriptionProduct {
 
     static let allSubscriptionIDs: Set<String> = [weekly, monthly, yearly]
     static let allProductIDs: Set<String> = [legacyRemoveAds, weekly, monthly, yearly]
+
+    static func isSubscriptionProductID(_ productID: String) -> Bool {
+        allSubscriptionIDs.contains(productID)
+    }
+}
+
+/// 根据单笔已验证交易合并本地权益（可单测）。
+enum EntitlementGrantMerge {
+    struct Result: Equatable {
+        let hasRemovedAds: Bool
+        let isPremiumUser: Bool
+        let purchasedProductIds: Set<String>
+        let isEarlySupporter: Bool
+    }
+
+    static func merged(
+        hasRemovedAds: Bool,
+        isPremiumUser: Bool,
+        purchasedProductIds: Set<String>,
+        isLegacyPurchase: Bool,
+        isSubscriptionPurchase: Bool,
+        purchasedProductID: String
+    ) -> Result? {
+        guard isLegacyPurchase || isSubscriptionPurchase else { return nil }
+
+        var nextHasRemovedAds = hasRemovedAds || isLegacyPurchase || isSubscriptionPurchase
+        let nextIsPremium = isPremiumUser || isSubscriptionPurchase
+        var nextProductIDs = purchasedProductIds
+        nextProductIDs.insert(purchasedProductID)
+        let nextEarlySupporter = isLegacyPurchase && !nextIsPremium
+
+        return Result(
+            hasRemovedAds: nextHasRemovedAds,
+            isPremiumUser: nextIsPremium,
+            purchasedProductIds: nextProductIDs,
+            isEarlySupporter: nextEarlySupporter
+        )
+    }
 }
 
 enum SubscriptionTier: String, CaseIterable, Identifiable, Sendable {
@@ -63,6 +101,7 @@ enum SubscriptionManagerError: LocalizedError, Sendable, Equatable {
     case productNotFound
     case verificationFailed
     case nothingToRestore
+    case entitlementNotGranted
     case unknownPurchaseResult
 
     var errorDescription: String? {
@@ -73,6 +112,8 @@ enum SubscriptionManagerError: LocalizedError, Sendable, Equatable {
             L10n.iapErrorVerificationFailed
         case .nothingToRestore:
             L10n.iapErrorNothingToRestore
+        case .entitlementNotGranted:
+            L10n.iapErrorEntitlementNotGranted
         case .unknownPurchaseResult:
             L10n.iapErrorUnknown
         }

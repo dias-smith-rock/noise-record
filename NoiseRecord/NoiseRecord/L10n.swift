@@ -14,6 +14,7 @@ nonisolated enum L10n {
     static var cancel: String { localized("common.cancel") }
     static var close: String { localized("common.close") }
     static var noAdsBadge: String { localized("iap.noAdsBadge") }
+    static var proBadge: String { localized("iap.proBadge") }
     static var done: String { localized("common.done") }
     static var save: String { localized("common.save") }
     static var delete: String { localized("common.delete") }
@@ -390,6 +391,7 @@ nonisolated enum L10n {
     static var iapErrorProductNotFound: String { localized("iap.error.productNotFound") }
     static var iapErrorVerificationFailed: String { localized("iap.error.verificationFailed") }
     static var iapErrorNothingToRestore: String { localized("iap.error.nothingToRestore") }
+    static var iapErrorEntitlementNotGranted: String { localized("iap.error.entitlementNotGranted") }
     static var iapErrorUnknown: String { localized("iap.error.unknown") }
 
     // MARK: - Paywall
@@ -417,6 +419,8 @@ nonisolated enum L10n {
     static var paywallContextVideoDuration: String { localized("paywall.context.videoDuration") }
     static var paywallUpgradeBannerTitle: String { localized("paywall.banner.title") }
     static var paywallUpgradeBannerSubtitle: String { localized("paywall.banner.subtitle") }
+    static var paywallVIPBannerTitle: String { localized("paywall.banner.vip.title") }
+    static var paywallVIPBannerSubtitle: String { localized("paywall.banner.vip.subtitle") }
     static var paywallPriceWeeklyFallback: String { localized("paywall.price.weekly.fallback") }
     static var paywallPriceMonthlyFallback: String { localized("paywall.price.monthly.fallback") }
     static var paywallPriceYearlyMonthlyFallback: String { localized("paywall.price.yearly.monthly.fallback") }

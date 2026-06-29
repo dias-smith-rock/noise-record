@@ -695,7 +695,7 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
 
         let scale = max(CGFloat(width), CGFloat(height)) / 1920.0
         let cardWidth = min(600 * scale, CGFloat(width) - 80)
-        let cardHeight = 180 * scale
+        let cardHeight = 140 * scale
         let margin: CGFloat = 40 * scale
         let cardRect = CGRect(
             x: CGFloat(width) - margin - cardWidth,
@@ -705,6 +705,8 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         )
 
         UIGraphicsPushContext(context)
+        drawDecibelBadge(scale: scale, margin: margin, canvasWidth: CGFloat(width))
+
         let cardPath = UIBezierPath(roundedRect: cardRect, cornerRadius: 16 * scale)
         UIColor.black.withAlphaComponent(0.6).setFill()
         cardPath.fill()
@@ -731,6 +733,35 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         context.restoreGState()
     }
 
+    private func drawDecibelBadge(scale: CGFloat, margin: CGFloat, canvasWidth: CGFloat) {
+        let decibelText = dataBridge.decibelString
+        let font = UIFont.monospacedDigitSystemFont(ofSize: 72 * scale, weight: .bold)
+        let textAttributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: UIColor.white,
+        ]
+        let textSize = (decibelText as NSString).size(withAttributes: textAttributes)
+        let horizontalPadding = 48 * scale
+        let verticalPadding = 28 * scale
+        let badgeWidth = textSize.width + horizontalPadding * 2
+        let badgeHeight = textSize.height + verticalPadding * 2
+        let badgeRect = CGRect(
+            x: canvasWidth - margin - badgeWidth,
+            y: margin,
+            width: badgeWidth,
+            height: badgeHeight
+        )
+
+        let badgePath = UIBezierPath(roundedRect: badgeRect, cornerRadius: badgeHeight / 2)
+        UIColor.black.withAlphaComponent(0.55).setFill()
+        badgePath.fill()
+
+        decibelText.draw(
+            at: CGPoint(x: badgeRect.minX + horizontalPadding, y: badgeRect.minY + verticalPadding),
+            withAttributes: textAttributes
+        )
+    }
+
     private func refreshedMetaText(captureDate: Date) -> String {
         let now = CFAbsoluteTimeGetCurrent()
         if now - lastMetaRefreshTime >= metaRefreshInterval || cachedMetaText.isEmpty {
@@ -738,7 +769,6 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
             cachedMetaText = """
             \(timestampFormatter.string(from: captureDate))
             \(dataBridge.gpsString)
-            \(dataBridge.overlayDecibelText)
             """
         }
         return cachedMetaText
