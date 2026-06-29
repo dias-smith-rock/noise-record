@@ -219,7 +219,7 @@ nonisolated enum L10n {
         String(format: localized("settings.calibration.reset.alert.restored.message"), previous, previousTotal, newTotal, previousAdjustment)
     }
 
-    static func filesAudioDetailLine(date: String, duration: Int) -> String {
+    static func filesAudioDetailLine(date: String, duration: String) -> String {
         String(format: localized("files.audio.detailLine"), date, duration)
     }
 

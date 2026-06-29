@@ -335,7 +335,9 @@ struct RecordingListView: View {
                     MediaListCard(
                         fileName: video.fileName,
                         isNew: video.isNew,
-                        subtitle: video.startedAt.formatted(date: .abbreviated, time: .standard),
+                        subtitle: nil,
+                        detailLine: video.startedAt.formatted(date: .abbreviated, time: .shortened),
+                        playFooterText: DurationFormatting.hms(from: video.duration),
                         badges: videoBadges(for: video),
                         isPlaying: false,
                         playIcon: "play.rectangle.fill",
@@ -370,7 +372,8 @@ struct RecordingListView: View {
                         fileName: session.fileName,
                         isNew: session.isNew,
                         subtitle: nil,
-                        detailLine: audioDetailLine(for: session),
+                        detailLine: session.startedAt.formatted(date: .abbreviated, time: .shortened),
+                        playFooterText: DurationFormatting.hms(from: session.duration),
                         badges: audioBadges(for: session),
                         isPlaying: audioPlayerController.playingID == session.id,
                         playIcon: audioPlayerController.playingID == session.id ? "stop.circle.fill" : "play.circle.fill",
@@ -474,13 +477,6 @@ struct RecordingListView: View {
     private func truncatedHash(_ hash: String?) -> String? {
         guard let hash, !hash.isEmpty else { return nil }
         return String(hash.prefix(8))
-    }
-
-    private func audioDetailLine(for session: RecordingSession) -> String {
-        L10n.filesAudioDetailLine(
-            date: session.startedAt.formatted(date: .abbreviated, time: .shortened),
-            duration: Int(session.duration)
-        )
     }
 
     // MARK: - Playback
@@ -835,6 +831,7 @@ private struct MediaListCard: View {
     var isNew: Bool = false
     let subtitle: String?
     var detailLine: String?
+    var playFooterText: String?
     let badges: [String]
     let isPlaying: Bool
     let playIcon: String
@@ -861,30 +858,39 @@ private struct MediaListCard: View {
                 }
 
                 Button(action: onPlay) {
-                    Image(systemName: playIcon)
-                        .font(.system(size: 36))
-                        .foregroundStyle(theme.accent)
+                    VStack(spacing: 4) {
+                        ZStack(alignment: .topTrailing) {
+                            Image(systemName: playIcon)
+                                .font(.system(size: 36))
+                                .foregroundStyle(theme.accent)
+
+                            if isNew {
+                                Circle()
+                                    .fill(Color.red)
+                                    .frame(width: 8, height: 8)
+                                    .offset(x: 4, y: -4)
+                            }
+                        }
+
+                        if let playFooterText {
+                            Text(playFooterText)
+                                .font(.caption2.weight(.medium))
+                                .monospacedDigit()
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                        }
+                    }
+                    .frame(width: 52)
                 }
                 .buttonStyle(.plain)
 
                 VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 6) {
-                        Text(fileName)
-                            .font(.subheadline.bold())
-                            .lineLimit(2)
-                            .truncationMode(.middle)
-
-                        if isNew {
-                            Text(L10n.filesBadgeNew)
-                                .font(.caption2.bold())
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(theme.accent)
-                                .clipShape(Capsule())
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    Text(fileName)
+                        .font(.subheadline.bold())
+                        .lineLimit(2)
+                        .truncationMode(.middle)
+                        .frame(maxWidth: .infinity, alignment: .leading)
 
                     if let subtitle {
                         Text(subtitle)
