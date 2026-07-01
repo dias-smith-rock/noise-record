@@ -8,6 +8,7 @@ struct WaveformView: View, Equatable {
     var showsReferenceLimitLine: Bool = true
     var referenceLimitDB: Float = NoiseReferenceLimits.residentialNightDB
     var axisLabelColor: Color = .secondary
+    var waveformOpacity: Double = 1
 
     private var theme: ModeVisualTheme { .theme(for: mode) }
     private var minDB: Float { mode.waveformMinDB }
@@ -29,6 +30,7 @@ struct WaveformView: View, Equatable {
             && lhs.showsYAxisLabels == rhs.showsYAxisLabels
             && lhs.showsReferenceLimitLine == rhs.showsReferenceLimitLine
             && lhs.referenceLimitDB == rhs.referenceLimitDB
+            && lhs.waveformOpacity == rhs.waveformOpacity
     }
 
     var body: some View {
@@ -88,7 +90,11 @@ struct WaveformView: View, Equatable {
                 var segment = Path()
                 segment.move(to: startPoint)
                 segment.addLine(to: endPoint)
-                context.stroke(segment, with: .color(segmentColor), style: strokeStyle)
+                context.stroke(
+                    segment,
+                    with: .color(segmentColor.opacity(waveformOpacity)),
+                    style: strokeStyle
+                )
             }
         }
         .background(usesCardChrome ? AnyShapeStyle(Color(.secondarySystemGroupedBackground)) : AnyShapeStyle(Color.clear))

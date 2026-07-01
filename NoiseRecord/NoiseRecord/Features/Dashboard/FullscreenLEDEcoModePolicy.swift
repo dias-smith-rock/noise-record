@@ -4,11 +4,8 @@ import Foundation
 enum FullscreenLEDEcoModePolicy {
     static let significantDecibelChangeThreshold: Float = 3
 
-    #if DEBUG
-    static let decibelRefreshInterval: TimeInterval = 1
-    #else
-    static let decibelRefreshInterval: TimeInterval = 10
-    #endif
+    /// Eco 主读数刷新间隔（与右上角提示一致，每分钟更新一次）。
+    static let decibelRefreshInterval: TimeInterval = 60
 
     /// 时钟仅显示到分钟，Eco 下由 `TimelineView` 按分钟边界刷新。
     static let clockRefreshInterval: TimeInterval = 60

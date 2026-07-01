@@ -15,12 +15,8 @@ final class FullscreenLEDEcoModePolicyTests: XCTestCase {
         )
     }
 
-    func testReleaseDecibelRefreshIntervalIsTenSeconds() {
-        #if DEBUG
-        XCTAssertEqual(FullscreenLEDEcoModePolicy.decibelRefreshInterval, 1)
-        #else
-        XCTAssertEqual(FullscreenLEDEcoModePolicy.decibelRefreshInterval, 10)
-        #endif
+    func testDecibelRefreshIntervalIsOneMinute() {
+        XCTAssertEqual(FullscreenLEDEcoModePolicy.decibelRefreshInterval, 60)
     }
 
     func testClockAndSpectrumIntervals() {

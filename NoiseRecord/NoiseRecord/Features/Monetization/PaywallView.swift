@@ -5,8 +5,8 @@ import UIKit
 struct PaywallView: View {
     let context: PaywallContext
 
-    @Environment(\.dismiss) private var dismiss
     @Bindable private var subscriptions = SubscriptionManager.shared
+    @Bindable private var paywallPresenter = PaywallPresenter.shared
 
     @State private var selectedTier: SubscriptionTier = .yearly
     @State private var showPurchasedAlert = false
@@ -55,7 +55,7 @@ struct PaywallView: View {
             )
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button(L10n.close) { dismiss() }
+                    Button(L10n.close) { paywallPresenter.resolve(purchased: false) }
                         .foregroundStyle(.white.opacity(0.85))
                 }
                 ToolbarItem(placement: .topBarTrailing) {
@@ -74,7 +74,7 @@ struct PaywallView: View {
             await subscriptions.refreshIntroductoryOfferEligibility()
         }
         .alert(L10n.paywallPurchasedTitle, isPresented: $showPurchasedAlert) {
-            Button(L10n.ok) { dismiss() }
+            Button(L10n.ok) { paywallPresenter.resolve(purchased: true) }
         } message: {
             Text(L10n.paywallPurchasedMessage)
         }
@@ -84,7 +84,7 @@ struct PaywallView: View {
             Text(L10n.settingsRemoveAdsPendingMessage)
         }
         .alert(L10n.settingsRemoveAdsRestoredTitle, isPresented: $showRestoredAlert) {
-            Button(L10n.ok) { dismiss() }
+            Button(L10n.ok) { paywallPresenter.resolve(purchased: subscriptions.isPremiumUser) }
         } message: {
             Text(L10n.settingsRemoveAdsRestoredMessage)
         }

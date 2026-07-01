@@ -19,7 +19,6 @@ final class VideoEvidenceCoordinator {
     var sessionPeakDB: Float = 0
     var cameraPosition: AVCaptureDevice.Position = .back
     var currentSegmentGroupID: UUID?
-    private var freeDurationTask: Task<Void, Never>?
 
     var onSegmentFinished: ((VideoSegmentFinishedEvent) -> Void)?
 
@@ -104,13 +103,11 @@ final class VideoEvidenceCoordinator {
         isRecording = recorder.isRecording
         if isRecording, !isPremium {
             FreemiumUsageStore.shared.recordVideoSessionStarted()
-            scheduleFreeDurationLimitIfNeeded()
         }
     }
 
     func stopRecording(completion: @escaping (Result<URL, Error>) -> Void) {
         guard isRecording else { return }
-        cancelFreeDurationLimit()
         isRecording = false
         locationProvider.stopUpdating()
         recorder.stopRecording { [weak self] result in
@@ -123,7 +120,6 @@ final class VideoEvidenceCoordinator {
 
     func teardown(completion: (() -> Void)? = nil) {
         let teardownSignpost = VideoTabPerformance.begin(.teardown)
-        cancelFreeDurationLimit()
         locationProvider.stopUpdating()
         isRecording = false
         isSessionReady = false
@@ -153,7 +149,6 @@ final class VideoEvidenceCoordinator {
         recorder.onRecordingError = { [weak self] error in
             Task { @MainActor in
                 guard let self else { return }
-                self.cancelFreeDurationLimit()
                 self.isRecording = false
                 self.errorMessage = error.localizedDescription
                 self.locationProvider.stopUpdating()
@@ -188,29 +183,6 @@ final class VideoEvidenceCoordinator {
             )
         }
     }
-
-    private func scheduleFreeDurationLimitIfNeeded() {
-        guard !SubscriptionManager.shared.isPremiumUser else { return }
-        cancelFreeDurationLimit()
-        let limit = FreemiumUsageStore.freeVideoMaxDuration
-        freeDurationTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(limit))
-            guard !Task.isCancelled, let self else { return }
-            guard self.isRecording else { return }
-            AppTelemetry.logProductEvent(
-                "freemium_limit_hit",
-                parameters: ["limit_type": "video_duration"]
-            )
-            self.stopRecording { _ in
-                PaywallPresenter.shared.present(context: .videoDurationLimit)
-            }
-        }
-    }
-
-    private func cancelFreeDurationLimit() {
-        freeDurationTask?.cancel()
-        freeDurationTask = nil
-    }
 }
 
 struct VideoEvidenceView: View {
@@ -230,6 +202,7 @@ struct VideoEvidenceView: View {
     @State private var showLocationPermissionDenied = false
     @State private var didPromptLocationDenied = false
     @State private var lastNoiseSync = Date.distantPast
+    @State private var pendingVideoSegments: [VideoSegmentFinishedEvent] = []
 
     private var measurementMode: AcousticMeasurementMode {
         AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
@@ -260,7 +233,7 @@ struct VideoEvidenceView: View {
         .proTabNavigationChrome()
         .task(id: isTabActive) {
             coordinator.onSegmentFinished = { event in
-                persistVideoSegment(event)
+                pendingVideoSegments.append(event)
             }
             if isTabActive {
                 VideoTabPerformance.mark(.taskActiveBegin)
@@ -610,10 +583,59 @@ struct VideoEvidenceView: View {
         audioStateManager.restoreMonitoringPipelineIfNeeded()
         switch result {
         case .success(let url):
-            savedVideoURL = url
-            AppReviewStore.noteEvidenceFileSaved()
+            finishVideoSave(fileURL: url)
         case .failure(let error):
+            discardPendingVideoSegments()
             coordinator.errorMessage = error.localizedDescription
+        }
+    }
+
+    private func finishVideoSave(fileURL: URL) {
+        let duration = videoRecordingDuration()
+        if !subscriptions.isPremiumUser && duration > FreemiumUsageStore.freeVideoMaxDuration {
+            AppTelemetry.logProductEvent(
+                "freemium_limit_hit",
+                parameters: ["limit_type": "video_duration"]
+            )
+            PaywallPresenter.shared.present(context: .videoDurationLimit) { purchased in
+                if purchased {
+                    commitPendingVideoSegments()
+                    savedVideoURL = fileURL
+                    AppReviewStore.noteEvidenceFileSaved()
+                } else {
+                    discardPendingVideoSegments()
+                }
+                pendingVideoSegments = []
+                coordinator.recordingStartedAt = nil
+            }
+        } else {
+            commitPendingVideoSegments()
+            savedVideoURL = fileURL
+            AppReviewStore.noteEvidenceFileSaved()
+            pendingVideoSegments = []
+            coordinator.recordingStartedAt = nil
+        }
+    }
+
+    private func videoRecordingDuration() -> TimeInterval {
+        if let startedAt = coordinator.recordingStartedAt {
+            return max(0, Date().timeIntervalSince(startedAt))
+        }
+        guard let first = pendingVideoSegments.first,
+              let last = pendingVideoSegments.last else { return 0 }
+        return max(0, last.endedAt.timeIntervalSince(first.startedAt))
+    }
+
+    private func commitPendingVideoSegments() {
+        for event in pendingVideoSegments {
+            persistVideoSegment(event)
+        }
+    }
+
+    private func discardPendingVideoSegments() {
+        for event in pendingVideoSegments {
+            try? FileManager.default.removeItem(at: event.fileURL)
+            VideoNoiseTimelineStore.remove(for: event.fileURL)
         }
     }
 

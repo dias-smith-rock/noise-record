@@ -36,8 +36,8 @@ nonisolated enum L10n {
     static var dashboardTitle: String { localized("dashboard.title") }
     static var dashboardFullscreenLED: String { localized("dashboard.fullscreenLED") }
     static var dashboardFullscreenLEDGuide: String { localized("dashboard.fullscreenLED.guide") }
-    static func dashboardFullscreenLEDEcoHint(seconds: Int) -> String {
-        String(format: localized("dashboard.fullscreenLED.ecoHint"), seconds)
+    static func dashboardFullscreenLEDEcoHint(minutes: Int) -> String {
+        String(format: localized("dashboard.fullscreenLED.ecoHint"), minutes)
     }
     static var dashboardMax: String { localized("dashboard.stat.max") }
     static var dashboardMin: String { localized("dashboard.stat.min") }

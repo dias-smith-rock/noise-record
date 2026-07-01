@@ -2,6 +2,12 @@ import Accelerate
 import AVFoundation
 import Foundation
 
+enum DeferredSessionSaveGate {
+    case saveImmediately
+    case requiresPaywall
+    case nothingToSave
+}
+
 @Observable
 @MainActor
 final class NoiseMonitorEngine {
@@ -158,8 +164,10 @@ final class NoiseMonitorEngine {
 
     private(set) var pendingSessionStopSummary: SessionStopSummary?
     private(set) var sessionStopPromptID: UUID?
+    private(set) var sessionAutoSaveGateID: UUID?
     private var deferredSessionRecording: RecordingFinishedEvent?
     private var isAwaitingStopSaveDecision = false
+    private var isProcessingMonitoringStop = false
     private(set) var currentMonitoringSegmentSaveCount = 0
 
     var onRecordingFinished: ((RecordingFinishedEvent) -> Void)?
@@ -233,20 +241,8 @@ final class NoiseMonitorEngine {
     }
 
     private func configureVoiceRecordingLimits() {
-        let isPremium = SubscriptionManager.shared.isPremiumUser
-        voiceRecorder.maxClipDuration = isPremium
-            ? VoiceActivatedRecorder.maxSessionDurationPro
-            : VoiceActivatedRecorder.freeMaxClipDuration
-        voiceRecorder.onClipDurationLimitReached = isPremium ? nil : { [weak self] in
-            guard self != nil else { return }
-            Task { @MainActor in
-                AppTelemetry.logProductEvent(
-                    "freemium_limit_hit",
-                    parameters: ["limit_type": "voice_duration"]
-                )
-                PaywallPresenter.shared.present(context: .voiceDurationLimit)
-            }
-        }
+        voiceRecorder.maxClipDuration = VoiceActivatedRecorder.maxSessionDurationPro
+        voiceRecorder.onClipDurationLimitReached = nil
     }
 
     private func installSubscriptionObserver() {
@@ -380,6 +376,8 @@ final class NoiseMonitorEngine {
         if presentSessionSavePrompt {
             prepareStopWithSavePrompt()
         }
+        isProcessingMonitoringStop = true
+        defer { isProcessingMonitoringStop = false }
         audioEngine.inputNode.removeTap(onBus: 0)
         audioEngine.stop()
         locationProvider.stopUpdating()
@@ -406,7 +404,7 @@ final class NoiseMonitorEngine {
         if presentSessionSavePrompt {
             buildPendingSessionStopSummaryIfNeeded()
         } else {
-            clearStopSavePromptState()
+            queueInternalSessionSaveGateIfNeeded()
         }
     }
 
@@ -438,6 +436,18 @@ final class NoiseMonitorEngine {
         sessionStopPromptID = UUID()
     }
 
+    func deferredSessionSaveGate() -> DeferredSessionSaveGate {
+        guard let event = deferredSessionRecording else { return .nothingToSave }
+        if SubscriptionManager.shared.isPremiumUser { return .saveImmediately }
+        let fileName = event.fileURL.lastPathComponent
+        let startedAt = RecordingSession.parseStartDate(from: fileName) ?? event.startedAt
+        let duration = max(0, event.endedAt.timeIntervalSince(startedAt))
+        if duration > VoiceActivatedRecorder.freeMaxClipDuration {
+            return .requiresPaywall
+        }
+        return .saveImmediately
+    }
+
     func commitDeferredSessionRecording() {
         guard let event = deferredSessionRecording else {
             clearStopSavePromptState()
@@ -446,6 +456,9 @@ final class NoiseMonitorEngine {
         deferredSessionRecording = nil
         pendingSessionStopSummary = nil
         sessionStopPromptID = nil
+        sessionAutoSaveGateID = nil
+        isAwaitingStopSaveDecision = false
+        currentMonitoringSegmentSaveCount = 0
         onRecordingFinished?(event)
     }
 
@@ -463,12 +476,22 @@ final class NoiseMonitorEngine {
         deferredSessionRecording = nil
         pendingSessionStopSummary = nil
         sessionStopPromptID = nil
+        sessionAutoSaveGateID = nil
         isAwaitingStopSaveDecision = false
         currentMonitoringSegmentSaveCount = 0
     }
 
+    private func queueInternalSessionSaveGateIfNeeded() {
+        guard deferredSessionRecording != nil else {
+            clearStopSavePromptState()
+            return
+        }
+        sessionAutoSaveGateID = UUID()
+    }
+
     private func handleRecordingFinished(_ event: RecordingFinishedEvent) {
-        if event.isSessionRecording, isAwaitingStopSaveDecision {
+        if event.isSessionRecording,
+           isAwaitingStopSaveDecision || isProcessingMonitoringStop {
             deferredSessionRecording = event
             return
         }

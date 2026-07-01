@@ -186,7 +186,7 @@ struct FullscreenLEDView: View {
                     if isEcoModeActive {
                         Text(
                             L10n.dashboardFullscreenLEDEcoHint(
-                                seconds: Int(FullscreenLEDEcoModePolicy.decibelRefreshInterval)
+                                minutes: Int(FullscreenLEDEcoModePolicy.decibelRefreshInterval / 60)
                             )
                         )
                         .font(.caption2)
@@ -299,7 +299,8 @@ struct FullscreenLEDView: View {
             usesCardChrome: false,
             showsYAxisLabels: true,
             referenceLimitDB: waveformReferenceLimitDB,
-            axisLabelColor: ledAccent
+            axisLabelColor: ledAccent,
+            waveformOpacity: isEcoModeActive ? 0.2 : 1
         )
         .equatable()
     }

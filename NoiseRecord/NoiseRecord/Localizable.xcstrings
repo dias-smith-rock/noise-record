@@ -8575,13 +8575,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Eco · updates every %d s"
+            "value": "Eco · updates every %d min"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Eco · 每 %d 秒刷新"
+            "value": "Eco · 每 %d 分钟刷新"
           }
         }
       }

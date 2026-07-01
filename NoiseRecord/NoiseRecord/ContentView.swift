@@ -125,10 +125,13 @@ struct ContentView: View {
         .onChange(of: engine.sessionStopPromptID) { _, promptID in
             showSessionStopPrompt = promptID != nil
         }
+        .onChange(of: engine.sessionAutoSaveGateID) { _, gateID in
+            guard gateID != nil else { return }
+            applyDeferredSessionSaveGate()
+        }
         .alert(L10n.dashboardStopPromptSessionTitle, isPresented: $showSessionStopPrompt) {
             Button(L10n.dashboardStopPromptSave) {
-                engine.commitDeferredSessionRecording()
-                refreshUnreadBadge()
+                handleDeferredSessionSave()
             }
             Button(L10n.dashboardStopPromptDiscard, role: .destructive) {
                 engine.discardDeferredSessionRecording()
@@ -270,6 +273,33 @@ struct ContentView: View {
             ),
             isAnimating: true
         )
+    }
+
+    private func handleDeferredSessionSave() {
+        applyDeferredSessionSaveGate()
+    }
+
+    private func applyDeferredSessionSaveGate() {
+        switch engine.deferredSessionSaveGate() {
+        case .saveImmediately:
+            engine.commitDeferredSessionRecording()
+            refreshUnreadBadge()
+        case .requiresPaywall:
+            AppTelemetry.logProductEvent(
+                "freemium_limit_hit",
+                parameters: ["limit_type": "voice_duration"]
+            )
+            PaywallPresenter.shared.present(context: .voiceDurationLimit) { purchased in
+                if purchased {
+                    engine.commitDeferredSessionRecording()
+                    refreshUnreadBadge()
+                } else {
+                    engine.discardDeferredSessionRecording()
+                }
+            }
+        case .nothingToSave:
+            engine.clearStopSavePromptState()
+        }
     }
 
     private func saveRecording(_ event: RecordingFinishedEvent) {
