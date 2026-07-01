@@ -193,6 +193,7 @@ struct ProRecordingStatusBadge: View {
         switch state {
         case .idle: .gray
         case .recording: .red
+        case .coolingDown: .orange
         }
     }
 

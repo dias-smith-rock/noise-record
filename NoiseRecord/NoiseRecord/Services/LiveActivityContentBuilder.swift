@@ -18,6 +18,8 @@ enum LiveActivityContentBuilder {
         switch recordingState {
         case .recording:
             return L10n.liveActivityStatusVoiceRecording
+        case .coolingDown:
+            return L10n.recordingTailDelay
         case .idle:
             return isHighSensitivity
                 ? L10n.liveActivityStatusMonitoringHighSensitivity

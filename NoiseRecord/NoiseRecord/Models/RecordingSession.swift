@@ -17,6 +17,9 @@ final class RecordingSession {
     var notes: String = ""
     var latitude: Double?
     var longitude: Double?
+    var segmentGroupID: UUID?
+    var segmentIndex: Int = 1
+    var isSessionRecording: Bool = false
 
     init(
         fileName: String,
@@ -27,7 +30,10 @@ final class RecordingSession {
         averageDB: Float,
         noiseType: String? = nil,
         latitude: Double? = nil,
-        longitude: Double? = nil
+        longitude: Double? = nil,
+        segmentGroupID: UUID? = nil,
+        segmentIndex: Int = 1,
+        isSessionRecording: Bool = false
     ) {
         self.id = UUID()
         self.fileName = fileName
@@ -39,6 +45,9 @@ final class RecordingSession {
         self.noiseType = noiseType
         self.latitude = latitude
         self.longitude = longitude
+        self.segmentGroupID = segmentGroupID
+        self.segmentIndex = segmentIndex
+        self.isSessionRecording = isSessionRecording
         self.fileHash = Self.hashFile(at: filePath)
         self.isNew = true
     }

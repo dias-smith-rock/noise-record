@@ -60,7 +60,12 @@ final class NoiseMonitorEngine {
             applyNormalizedThresholds(adjustingHigh: false)
         }
     }
-    var voiceActivatedEnabled = false
+    var voiceActivatedEnabled = false {
+        didSet {
+            guard !isLoadingPersistedSettings else { return }
+            voiceRecorder.voiceActivatedEnabled = voiceActivatedEnabled
+        }
+    }
     var backgroundMonitoringEnabled = false {
         didSet {
             guard backgroundMonitoringEnabled != oldValue else { return }
@@ -164,6 +169,14 @@ final class NoiseMonitorEngine {
         isMonitoring
     }
 
+    /// 是否将当前帧送入录音器（AI 标签过滤仍生效）。
+    private var shouldProcessVoiceRecorder: Bool {
+        if aiClassificationEnabled && !aiFilterLabels.isEmpty {
+            return cachedNoiseLabel.map { aiFilterLabels.contains($0) } ?? false
+        }
+        return true
+    }
+
     /// Effective weighting applied to the audio pipeline.
     var effectiveWeighting: WeightingType {
         isHighSensitivityMode ? .z : weightingType
@@ -188,6 +201,14 @@ final class NoiseMonitorEngine {
         aiClassificationEnabled = VoiceSettingsStore.aiClassificationEnabled
         aiFilterLabels = VoiceSettingsStore.aiFilterLabels
         isHighSensitivityMode = DeviceCalibrationStore.isHighSensitivityMode
+
+        voiceRecorder.highThreshold = pair.high
+        voiceRecorder.lowThreshold = pair.low
+        voiceRecorder.voiceActivatedEnabled = voiceActivatedEnabled
+        voiceRecorder.locationSnapshot = { [weak self] in
+            guard let self else { return (nil, nil) }
+            return (self.locationProvider.latitude, self.locationProvider.longitude)
+        }
 
         isNormalizingThresholds = false
         isLoadingPersistedSettings = false
@@ -516,6 +537,8 @@ final class NoiseMonitorEngine {
         isNormalizingThresholds = true
         highThreshold = pair.high
         lowThreshold = pair.low
+        voiceRecorder.highThreshold = pair.high
+        voiceRecorder.lowThreshold = pair.low
         isNormalizingThresholds = false
         if !isLoadingPersistedSettings {
             persistSettings()
@@ -725,12 +748,14 @@ final class NoiseMonitorEngine {
             dbfs = measurement.dbfs
             smoothed = slidingAverage.add(dbSPL)
 
-            voiceRecorder.process(
-                filteredSamples: base,
-                frameLength: frameLength,
-                dbSPL: dbSPL,
-                format: buffer.format
-            )
+            if shouldProcessVoiceRecorder {
+                voiceRecorder.process(
+                    filteredSamples: base,
+                    frameLength: frameLength,
+                    dbSPL: dbSPL,
+                    format: buffer.format
+                )
+            }
         }
 
         leqCalculator.addSample(dbSPL: dbSPL)

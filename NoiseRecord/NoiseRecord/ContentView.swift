@@ -259,7 +259,10 @@ struct ContentView: View {
             averageDB: event.averageDB,
             noiseType: event.noiseType,
             latitude: event.latitude,
-            longitude: event.longitude
+            longitude: event.longitude,
+            segmentGroupID: event.segmentGroupID,
+            segmentIndex: event.segmentIndex,
+            isSessionRecording: event.isSessionRecording
         )
         modelContext.insert(session)
         try? modelContext.save()
