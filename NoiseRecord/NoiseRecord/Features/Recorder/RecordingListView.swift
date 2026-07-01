@@ -406,9 +406,10 @@ struct RecordingListView: View {
                         subtitle: nil,
                         detailLine: session.startedAt.formatted(date: .abbreviated, time: .shortened),
                         playFooterText: DurationFormatting.hms(from: session.duration),
-                        waveformFileURL: session.preferredFileURL,
+                        waveformFileURL: session.fileURL,
+                        waveformAlternateURLs: waveformAlternateURLs(for: session),
                         waveformMode: measurementMode,
-                        waveformReloadToken: waveformReloadVersions[session.preferredFileURL.standardizedFileURL.path, default: 0],
+                        waveformReloadToken: waveformReloadVersions[session.fileURL.standardizedFileURL.path, default: 0],
                         badges: [],
                         isPlaying: false,
                         playIcon: "play.circle.fill",
@@ -521,7 +522,14 @@ struct RecordingListView: View {
             return
         }
         detailRoute = .audio(session.id)
-        lastDetailFileURL = session.preferredFileURL
+        lastDetailFileURL = session.fileURL
+    }
+
+    private func waveformAlternateURLs(for session: RecordingSession) -> [URL] {
+        let preferred = session.preferredFileURL
+        let resolved = session.fileURL
+        guard preferred != resolved else { return [] }
+        return [preferred]
     }
 
     private func openVideoDetail(_ session: VideoEvidenceSession) {
@@ -691,7 +699,10 @@ struct RecordingListView: View {
     // MARK: - Delete
 
     private func deleteAudio(_ session: RecordingSession) {
-        WaveformThumbnailCache.invalidate(for: session.preferredFileURL)
+        WaveformThumbnailCache.invalidate(
+            for: session.fileURL,
+            alternateURLs: waveformAlternateURLs(for: session)
+        )
         try? FileManager.default.removeItem(at: session.fileURL)
         VideoNoiseTimelineStore.remove(for: session.fileURL)
         modelContext.delete(session)
@@ -812,6 +823,7 @@ private struct MediaListCard: View {
     var detailLine: String?
     var playFooterText: String?
     var waveformFileURL: URL?
+    var waveformAlternateURLs: [URL] = []
     var waveformMode: AcousticMeasurementMode?
     var waveformReloadToken: Int = 0
     var badges: [String] = []
@@ -891,6 +903,7 @@ private struct MediaListCard: View {
                             if let waveformFileURL, let waveformMode {
                                 RecordingWaveformThumbnailView(
                                     fileURL: waveformFileURL,
+                                    alternateFileURLs: waveformAlternateURLs,
                                     mode: waveformMode,
                                     reloadToken: waveformReloadToken
                                 )

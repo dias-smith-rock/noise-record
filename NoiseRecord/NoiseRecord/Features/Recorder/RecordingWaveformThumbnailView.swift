@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RecordingWaveformThumbnailView: View {
     let fileURL: URL
+    var alternateFileURLs: [URL] = []
     var mode: AcousticMeasurementMode = .standard
     var reloadToken: Int = 0
 
@@ -24,8 +25,9 @@ struct RecordingWaveformThumbnailView: View {
         .frame(maxWidth: .infinity)
         .accessibilityLabel(L10n.mediaDetailTabWaveform)
         .task(id: taskID) {
+            let alternates = alternateFileURLs
             let data = await Task.detached(priority: .utility) {
-                WaveformThumbnailCache.thumbnail(for: fileURL)
+                WaveformThumbnailCache.thumbnail(for: fileURL, alternateURLs: alternates)
             }.value
             timeline = data?.timeline
             playbackDuration = data?.playbackDuration ?? 0
@@ -33,13 +35,28 @@ struct RecordingWaveformThumbnailView: View {
     }
 
     private var taskID: String {
-        "\(fileURL.path)|\(reloadToken)"
+        let alternatePaths = alternateFileURLs.map(\.path).joined(separator: "|")
+        return "\(fileURL.path)|\(alternatePaths)|\(reloadToken)"
     }
 
     private func drawWaveform(in context: inout GraphicsContext, size: CGSize) {
         guard size.width > 1, size.height > 1,
-              let timeline, timeline.samples.count > 1,
+              let timeline, !timeline.samples.isEmpty,
               playbackDuration > 0 else { return }
+
+        if timeline.samples.count == 1, let sample = timeline.samples.first {
+            let y = waveformYPosition(for: sample.decibel, height: size.height, minDB: minDB, maxDB: maxDB)
+            var path = Path()
+            path.move(to: CGPoint(x: 0, y: y))
+            path.addLine(to: CGPoint(x: size.width, y: y))
+            let color = AcousticGaugeStyle.color(forDecibel: sample.decibel)
+            context.stroke(
+                path,
+                with: .color(color),
+                style: StrokeStyle(lineWidth: 1.5, lineCap: .round)
+            )
+            return
+        }
 
         let duration = playbackDuration
         let pointCount = min(max(Int(size.width), 2), 120)

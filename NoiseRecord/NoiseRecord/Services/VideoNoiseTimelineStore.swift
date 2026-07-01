@@ -3,8 +3,20 @@ import Foundation
 enum VideoNoiseTimelineStore {
     static let fileExtension = "noise.json"
 
-    static func sidecarURL(for videoURL: URL) -> URL {
-        videoURL.deletingPathExtension().appendingPathExtension(fileExtension)
+    static func sidecarURL(for mediaURL: URL) -> URL {
+        mediaURL.deletingPathExtension().appendingPathExtension(fileExtension)
+    }
+
+    static func load(for mediaURL: URL, alternateURLs: [URL] = []) -> VideoNoiseTimeline? {
+        for url in [mediaURL] + alternateURLs {
+            let sidecar = sidecarURL(for: url)
+            guard let data = try? Data(contentsOf: sidecar),
+                  let timeline = try? JSONDecoder().decode(VideoNoiseTimeline.self, from: data) else {
+                continue
+            }
+            return timeline
+        }
+        return nil
     }
 
     static func save(_ timeline: VideoNoiseTimeline, for videoURL: URL) throws {
@@ -13,15 +25,15 @@ enum VideoNoiseTimelineStore {
         try data.write(to: url, options: .atomic)
     }
 
-    static func load(for videoURL: URL) -> VideoNoiseTimeline? {
-        let url = sidecarURL(for: videoURL)
-        guard let data = try? Data(contentsOf: url) else { return nil }
-        return try? JSONDecoder().decode(VideoNoiseTimeline.self, from: data)
-    }
-
     static func remove(for videoURL: URL) {
         let url = sidecarURL(for: videoURL)
         try? FileManager.default.removeItem(at: url)
+    }
+
+    static func removeAll(for mediaURL: URL, alternateURLs: [URL] = []) {
+        for url in [mediaURL] + alternateURLs {
+            remove(for: url)
+        }
     }
 
     static func moveSidecar(from oldVideoURL: URL, to newVideoURL: URL) throws {

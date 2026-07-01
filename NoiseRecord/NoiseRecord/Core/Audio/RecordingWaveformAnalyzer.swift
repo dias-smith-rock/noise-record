@@ -4,14 +4,25 @@ import Foundation
 enum RecordingWaveformAnalyzer {
     static let sampleInterval: Double = 0.1
 
-    static func loadCachedTimeline(for fileURL: URL) -> VideoNoiseTimeline? {
-        guard let cached = VideoNoiseTimelineStore.load(for: fileURL),
-              isCacheValidForDisplay(cached) else { return nil }
+    static func loadCachedTimeline(for fileURL: URL, alternateURLs: [URL] = []) -> VideoNoiseTimeline? {
+        guard let cached = VideoNoiseTimelineStore.load(for: fileURL, alternateURLs: alternateURLs),
+              isCacheValidForPlayback(cached) else { return nil }
         return cached
     }
 
-    static func loadCachedDecibels(for fileURL: URL) -> [Float]? {
-        loadCachedTimeline(for: fileURL)?.samples.map(\.decibel)
+    /// List thumbnails: show any existing sidecar without triggering analysis.
+    static func loadCachedTimelineForThumbnail(
+        for fileURL: URL,
+        alternateURLs: [URL] = []
+    ) -> VideoNoiseTimeline? {
+        guard let cached = VideoNoiseTimelineStore.load(for: fileURL, alternateURLs: alternateURLs),
+              !cached.samples.isEmpty else { return nil }
+        return cached
+    }
+
+    static func loadCachedDecibels(for fileURL: URL, alternateURLs: [URL] = []) -> [Float]? {
+        loadCachedTimelineForThumbnail(for: fileURL, alternateURLs: alternateURLs)?
+            .samples.map(\.decibel)
     }
 
     static func loadOrAnalyze(
@@ -19,7 +30,7 @@ enum RecordingWaveformAnalyzer {
         weighting: WeightingType = DeviceCalibrationStore.weightingType
     ) async throws -> VideoNoiseTimeline {
         if let cached = VideoNoiseTimelineStore.load(for: fileURL),
-           isCacheValidForDisplay(cached) {
+           isCacheValidForPlayback(cached) {
             return cached
         }
 
@@ -33,7 +44,7 @@ enum RecordingWaveformAnalyzer {
         fileURL.pathExtension.lowercased() == "m4a"
     }
 
-    private static func isCacheValidForDisplay(_ timeline: VideoNoiseTimeline) -> Bool {
+    private static func isCacheValidForPlayback(_ timeline: VideoNoiseTimeline) -> Bool {
         guard timeline.isValidForPlaybackAlignment, !timeline.samples.isEmpty else { return false }
         return hasMeaningfulVariation(timeline)
     }
