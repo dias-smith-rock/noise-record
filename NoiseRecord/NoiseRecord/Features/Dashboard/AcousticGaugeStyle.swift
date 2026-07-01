@@ -70,12 +70,12 @@ enum AcousticGaugeStyle {
 
     static func ambientNoiseDescription(forDecibel db: Float) -> String {
         switch db {
-        case ..<30: "Total Silence"
-        case 30..<50: "Quiet Library / Whisper"
-        case 50..<65: "Normal Conversation"
-        case 65..<80: "City Traffic / Hairdryer"
-        case 80..<100: "Lawn Mower / Alarm Siren"
-        default: "Jet Takeoff / Threshold of Pain"
+        case ..<30: L10n.gaugeAmbientTotalSilence
+        case 30..<50: L10n.gaugeAmbientQuietLibrary
+        case 50..<65: L10n.gaugeAmbientNormalConversation
+        case 65..<80: L10n.gaugeAmbientCityTraffic
+        case 80..<100: L10n.gaugeAmbientLawnMower
+        default: L10n.gaugeAmbientJetTakeoff
         }
     }
 

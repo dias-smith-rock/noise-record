@@ -30,6 +30,7 @@ GOOGLE_LOCALE = {"zh-Hans": "zh-CN", "zh-Hant": "zh-TW", "nb": "no", "he": "iw"}
 MYMEMORY_LOCALE = {"zh-Hans": "zh-CN", "zh-Hant": "zh-TW", "nb": "no", "he": "iw"}
 VERBATIM_KEYS = {"", "·", "dB", "72", "%lld %@"}
 PLACEHOLDER_RE = re.compile(r"%(?:\d+\$)?[@dflld]|%.[\d]+[f]|%%")
+DB_UNIT_RE = re.compile(r"^\d+(?:\.\d+)?\s*dB(?:Z|A|C)?$", re.IGNORECASE)
 PROTECTED_TERMS = (
     "DecibelPro", "dBA", "dBC", "dBZ", "dB", "Leq", "GPS", "CSV", "RMS", "SPL", "AI", "LED",
 )
@@ -87,7 +88,7 @@ def protect_terms(text: str) -> tuple[str, dict[str, str]]:
     tokens: dict[str, str] = {}
     for index, term in enumerate(PROTECTED_TERMS):
         if term in text:
-            token = f"__TERM{index}__"
+            token = f"\uE000{index}\uE001"
             tokens[token] = term
             text = text.replace(term, token)
     return text, tokens
@@ -96,7 +97,27 @@ def protect_terms(text: str) -> tuple[str, dict[str, str]]:
 def restore_terms(text: str, tokens: dict[str, str]) -> str:
     for token, term in tokens.items():
         text = text.replace(token, term)
+
+    # Recover from translators mutating legacy __TERM{n}__ placeholders.
+    for match in re.finditer(r"__\s*TERM[A-Z]*\s*(\d+)\s*__", text, flags=re.IGNORECASE):
+        index = int(match.group(1))
+        if 0 <= index < len(PROTECTED_TERMS):
+            text = text.replace(match.group(0), PROTECTED_TERMS[index])
+
+    # Recover common Chinese/Vietnamese corruptions of __TERM4__ (dB).
+    text = re.sub(r"__?\s*第?(\d+)学期\s*__?", _replace_term_index, text, flags=re.IGNORECASE)
+    text = re.sub(r"__?\s*第?(\d+)學期\s*__?", _replace_term_index, text, flags=re.IGNORECASE)
+    text = re.sub(r"__?\s*学期(\d+)\s*__?", _replace_term_index, text, flags=re.IGNORECASE)
+    text = re.sub(r"__?\s*學期(\d+)\s*__?", _replace_term_index, text, flags=re.IGNORECASE)
+    text = re.sub(r"__?\s*HỌC(\d+)\s*__?", _replace_term_index, text, flags=re.IGNORECASE)
     return text
+
+
+def _replace_term_index(match: re.Match[str]) -> str:
+    index = int(match.group(1))
+    if 0 <= index < len(PROTECTED_TERMS):
+        return PROTECTED_TERMS[index]
+    return match.group(0)
 
 
 def cache_key(locale: str, text: str) -> str:
@@ -140,7 +161,13 @@ def translate_one(locale: str, text: str, cache: dict[str, str]) -> str:
 
 
 def is_verbatim(key: str, source: str) -> bool:
-    return key in VERBATIM_KEYS or source in VERBATIM_KEYS
+    if key in VERBATIM_KEYS or source in VERBATIM_KEYS:
+        return True
+    if DB_UNIT_RE.match(source.strip()):
+        return True
+    if source in PROTECTED_TERMS:
+        return True
+    return False
 
 
 def expand_catalog(path: Path, cache: dict[str, str]) -> int:

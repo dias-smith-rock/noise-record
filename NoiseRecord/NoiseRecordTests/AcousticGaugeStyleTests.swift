@@ -16,12 +16,12 @@ final class AcousticGaugeStyleTests: XCTestCase {
     }
 
     func testAmbientDescriptionsForLifeScenarioBands() {
-        XCTAssertEqual(AcousticGaugeStyle.ambientNoiseDescription(forDecibel: 10), "Total Silence")
-        XCTAssertEqual(AcousticGaugeStyle.ambientNoiseDescription(forDecibel: 35), "Quiet Library / Whisper")
-        XCTAssertEqual(AcousticGaugeStyle.ambientNoiseDescription(forDecibel: 55), "Normal Conversation")
-        XCTAssertEqual(AcousticGaugeStyle.ambientNoiseDescription(forDecibel: 72), "City Traffic / Hairdryer")
-        XCTAssertEqual(AcousticGaugeStyle.ambientNoiseDescription(forDecibel: 90), "Lawn Mower / Alarm Siren")
-        XCTAssertEqual(AcousticGaugeStyle.ambientNoiseDescription(forDecibel: 120), "Jet Takeoff / Threshold of Pain")
+        XCTAssertEqual(AcousticGaugeStyle.ambientNoiseDescription(forDecibel: 10), L10n.gaugeAmbientTotalSilence)
+        XCTAssertEqual(AcousticGaugeStyle.ambientNoiseDescription(forDecibel: 35), L10n.gaugeAmbientQuietLibrary)
+        XCTAssertEqual(AcousticGaugeStyle.ambientNoiseDescription(forDecibel: 55), L10n.gaugeAmbientNormalConversation)
+        XCTAssertEqual(AcousticGaugeStyle.ambientNoiseDescription(forDecibel: 72), L10n.gaugeAmbientCityTraffic)
+        XCTAssertEqual(AcousticGaugeStyle.ambientNoiseDescription(forDecibel: 90), L10n.gaugeAmbientLawnMower)
+        XCTAssertEqual(AcousticGaugeStyle.ambientNoiseDescription(forDecibel: 120), L10n.gaugeAmbientJetTakeoff)
     }
 
     func testZoneAccentUsesUpperBoundaryColor() {

@@ -39,6 +39,13 @@ nonisolated enum L10n {
     static func dashboardFullscreenLEDEcoHint(minutes: Int) -> String {
         String(format: localized("dashboard.fullscreenLED.ecoHint"), minutes)
     }
+    static var dashboardFullscreenLEDEcoModeLabel: String { localized("dashboard.fullscreenLED.ecoModeLabel") }
+    static var dashboardFullscreenLEDEcoModeAccessibilityOn: String {
+        localized("dashboard.fullscreenLED.ecoModeAccessibilityOn")
+    }
+    static var dashboardFullscreenLEDEcoModeAccessibilityOff: String {
+        localized("dashboard.fullscreenLED.ecoModeAccessibilityOff")
+    }
     static var dashboardMax: String { localized("dashboard.stat.max") }
     static var dashboardMin: String { localized("dashboard.stat.min") }
     static var dashboardAvg: String { localized("dashboard.stat.avg") }
@@ -293,6 +300,12 @@ nonisolated enum L10n {
     static var liveActivityStatusEnded: String { localized("liveActivity.status.ended") }
 
     static var gaugeHighSensitivityHint: String { localized("gauge.highSensitivity.hint") }
+    static var gaugeAmbientTotalSilence: String { localized("gauge.ambient.totalSilence") }
+    static var gaugeAmbientQuietLibrary: String { localized("gauge.ambient.quietLibrary") }
+    static var gaugeAmbientNormalConversation: String { localized("gauge.ambient.normalConversation") }
+    static var gaugeAmbientCityTraffic: String { localized("gauge.ambient.cityTraffic") }
+    static var gaugeAmbientLawnMower: String { localized("gauge.ambient.lawnMower") }
+    static var gaugeAmbientJetTakeoff: String { localized("gauge.ambient.jetTakeoff") }
     static var spectrumLoading: String { localized("spectrum.loading") }
     static var spectrumIdle: String { localized("spectrum.idle") }
 

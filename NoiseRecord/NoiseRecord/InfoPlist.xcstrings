@@ -14,7 +14,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "__المصطلح0__"
+            "value": "dB"
           }
         },
         "bg": {
@@ -146,7 +146,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "__TERMO0__"
+            "value": "DecibelPro"
           }
         },
         "ro": {
@@ -200,13 +200,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "__学期0__"
+            "value": "DecibelPro"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "__學期0__"
+            "value": "DecibelPro"
           }
         }
       }

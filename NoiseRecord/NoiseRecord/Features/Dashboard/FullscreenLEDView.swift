@@ -228,7 +228,7 @@ struct FullscreenLEDView: View {
 
     private var ecoModeToggleButton: some View {
         Button(action: toggleEcoMode) {
-            Label("ECO", systemImage: "leaf.fill")
+            Label(L10n.dashboardFullscreenLEDEcoModeLabel, systemImage: "leaf.fill")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(
                     isEcoModeActive
@@ -256,7 +256,11 @@ struct FullscreenLEDView: View {
                 }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(isEcoModeActive ? "Eco night mode on" : "Eco night mode off")
+        .accessibilityLabel(
+            isEcoModeActive
+                ? L10n.dashboardFullscreenLEDEcoModeAccessibilityOn
+                : L10n.dashboardFullscreenLEDEcoModeAccessibilityOff
+        )
         .accessibilityAddTraits(isEcoModeActive ? [.isSelected] : [])
     }
 
