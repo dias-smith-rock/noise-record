@@ -4,6 +4,8 @@ struct WaveformView: View, Equatable {
     let samples: [Float]
     var mode: AcousticMeasurementMode = .standard
     var usesCardChrome: Bool = true
+    var showsYAxisLabels: Bool = true
+    var axisLabelColor: Color = .secondary
 
     private var theme: ModeVisualTheme { .theme(for: mode) }
     private var minDB: Float { mode.waveformMinDB }
@@ -14,11 +16,42 @@ struct WaveformView: View, Equatable {
             && lhs.samples.last == rhs.samples.last
             && lhs.mode == rhs.mode
             && lhs.usesCardChrome == rhs.usesCardChrome
+            && lhs.showsYAxisLabels == rhs.showsYAxisLabels
     }
 
     var body: some View {
+        HStack(alignment: .top, spacing: 6) {
+            if showsYAxisLabels {
+                yAxisLabels
+                    .frame(width: 30, alignment: .trailing)
+            }
+
+            waveformCanvas
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    private var yAxisLabels: some View {
+        VStack(spacing: 0) {
+            Text(formatAxisLabel(maxDB))
+            Spacer(minLength: 0)
+            Text(formatAxisLabel(minDB))
+        }
+        .font(.system(size: 10, weight: .medium, design: .monospaced))
+        .foregroundStyle(axisLabelColor)
+        .frame(maxHeight: .infinity)
+        .accessibilityHidden(true)
+    }
+
+    private var waveformCanvas: some View {
         Canvas { context, size in
-            guard samples.count > 1, size.width > 1, size.height > 1 else { return }
+            guard size.width > 1, size.height > 1 else { return }
+
+            if showsYAxisLabels {
+                drawYAxisGrid(in: &context, size: size)
+            }
+
+            guard samples.count > 1 else { return }
 
             let points = resampledPoints(samples: samples, size: size, minDB: minDB, maxDB: maxDB)
             guard points.count > 1 else { return }
@@ -52,9 +85,35 @@ struct WaveformView: View, Equatable {
         .clipShape(RoundedRectangle(cornerRadius: usesCardChrome ? 12 : 0))
         .drawingGroup()
     }
+
+    private func drawYAxisGrid(in context: inout GraphicsContext, size: CGSize) {
+        let gridColor = axisLabelColor.opacity(0.22)
+        let gridStyle = StrokeStyle(lineWidth: 0.5, dash: [4, 4])
+
+        for db in [minDB, maxDB] {
+            let y = waveformYPosition(for: db, height: size.height, minDB: minDB, maxDB: maxDB)
+            var path = Path()
+            path.move(to: CGPoint(x: 0, y: y))
+            path.addLine(to: CGPoint(x: size.width, y: y))
+            context.stroke(path, with: .color(gridColor), style: gridStyle)
+        }
+    }
+
+    private func formatAxisLabel(_ db: Float) -> String {
+        if db.rounded() == db {
+            return String(format: "%.0f", db)
+        }
+        return String(format: "%.1f", db)
+    }
 }
 
 // MARK: - Sampling
+
+private func waveformYPosition(for db: Float, height: CGFloat, minDB: Float, maxDB: Float) -> CGFloat {
+    let dbRange = max(maxDB - minDB, 1)
+    let normalized = CGFloat((db - minDB) / dbRange)
+    return height * (1 - min(max(normalized, 0), 1))
+}
 
 private func resampledPoints(
     samples: [Float],
@@ -63,7 +122,6 @@ private func resampledPoints(
     maxDB: Float
 ) -> [(CGPoint, Float)] {
     let pointCount = min(samples.count, max(Int(size.width), 2))
-    let dbRange = max(maxDB - minDB, 1)
     var points: [(CGPoint, Float)] = []
     points.reserveCapacity(pointCount)
 
@@ -71,8 +129,7 @@ private func resampledPoints(
         let sampleIndex = pointIndex * (samples.count - 1) / max(pointCount - 1, 1)
         let sample = samples[sampleIndex]
         let x = size.width * CGFloat(pointIndex) / CGFloat(max(pointCount - 1, 1))
-        let normalized = CGFloat((sample - minDB) / dbRange)
-        let y = size.height * (1 - min(max(normalized, 0), 1))
+        let y = waveformYPosition(for: sample, height: size.height, minDB: minDB, maxDB: maxDB)
         points.append((CGPoint(x: x, y: y), sample))
     }
 

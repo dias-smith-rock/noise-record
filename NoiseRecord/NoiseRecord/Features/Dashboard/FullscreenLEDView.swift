@@ -13,14 +13,11 @@ struct FullscreenLEDView: View {
 
     @State private var now = Date()
     @State private var isEcoModeActive = false
+    /// Eco 时钟 `TimelineView` 锚点（当前分钟起点），进入 Eco 时固定以免 body 重算漂移。
+    @State private var ecoClockTimelineAnchor: Date?
     /// 夜间模式下限流展示的分贝值；后台 `engine.currentDB` 仍实时更新。
     @State private var throttledDecibel: Float = 0
-
-    #if DEBUG
-    private let ecoUIRefreshInterval: TimeInterval = 1
-    #else
-    private let ecoUIRefreshInterval: TimeInterval = 60
-    #endif
+    @State private var ecoWaveformSnapshot: [Float] = []
 
     private var risk: NoiseRiskLevel {
         .from(db: engine.currentDB, highSensitivity: mode.isHighSensitivity)
@@ -32,7 +29,7 @@ struct FullscreenLEDView: View {
         isEcoModeActive ? throttledDecibel : engine.currentDB
     }
 
-    /// 辅助读数（时间、温湿度、频谱）跟随主界面模式色。
+    /// 辅助读数（时间、温湿度、波形）跟随主界面模式色。
     private var ledAccent: Color {
         isEcoModeActive ? theme.accent.opacity(0.16) : theme.accent
     }
@@ -95,30 +92,49 @@ struct FullscreenLEDView: View {
         .persistentSystemOverlays(.hidden)
         .onAppear {
             throttledDecibel = engine.currentDB
+            ecoWaveformSnapshot = engine.history
+            if isEcoModeActive {
+                ecoClockTimelineAnchor = FullscreenLEDEcoModePolicy.startOfCurrentMinute()
+            }
             activatePresentation()
         }
         .onDisappear(perform: deactivatePresentation)
         .onChange(of: engine.currentDB) { _, newValue in
-            if !isEcoModeActive {
+            if isEcoModeActive {
+                syncEcoDecibelIfNeeded(current: newValue)
+            } else {
                 throttledDecibel = newValue
             }
         }
         .onChange(of: isEcoModeActive) { _, isEco in
-            if !isEco {
+            if isEco {
                 throttledDecibel = engine.currentDB
+                captureEcoWaveformSnapshot()
+                ecoClockTimelineAnchor = FullscreenLEDEcoModePolicy.startOfCurrentMinute()
+            } else {
+                throttledDecibel = engine.currentDB
+                ecoWaveformSnapshot = []
+                ecoClockTimelineAnchor = nil
+                now = Date()
             }
         }
         .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { date in
             guard !isEcoModeActive else { return }
             now = date
         }
-        .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { date in
+        .onReceive(
+            Timer.publish(every: FullscreenLEDEcoModePolicy.decibelRefreshInterval, on: .main, in: .common)
+                .autoconnect()
+        ) { _ in
             guard isEcoModeActive else { return }
-            now = date
+            syncEcoDecibelIfNeeded(current: engine.currentDB, force: true)
         }
-        .onReceive(Timer.publish(every: ecoUIRefreshInterval, on: .main, in: .common).autoconnect()) { _ in
+        .onReceive(
+            Timer.publish(every: FullscreenLEDEcoModePolicy.waveformSnapshotInterval, on: .main, in: .common)
+                .autoconnect()
+        ) { _ in
             guard isEcoModeActive else { return }
-            throttledDecibel = engine.currentDB
+            captureEcoWaveformSnapshot()
         }
         .background {
             LandscapeOrientationEnforcer()
@@ -158,24 +174,50 @@ struct FullscreenLEDView: View {
             Spacer()
 
             HStack(alignment: .center, spacing: 14) {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    ledDigitText(
-                        clockTimeText,
-                        size: LEDMetricTypography.digitSize,
-                        color: ledAccent,
-                        shadowRadius: iconShadowRadius
-                    )
+                ecoClockDisplay
 
-                    ledBodyText(
-                        clockPeriodText,
-                        size: LEDMetricTypography.bodySize,
-                        color: ledAccent,
-                        shadowRadius: iconShadowRadius
-                    )
+                VStack(alignment: .trailing, spacing: 4) {
+                    ecoModeToggleButton
+                    if isEcoModeActive {
+                        Text(
+                            L10n.dashboardFullscreenLEDEcoHint(
+                                seconds: Int(FullscreenLEDEcoModePolicy.decibelRefreshInterval)
+                            )
+                        )
+                        .font(.caption2)
+                        .foregroundStyle(Color.white.opacity(0.28))
+                    }
                 }
-
-                ecoModeToggleButton
             }
+        }
+    }
+
+    @ViewBuilder
+    private var ecoClockDisplay: some View {
+        if isEcoModeActive, let anchor = ecoClockTimelineAnchor {
+            TimelineView(.periodic(from: anchor, by: FullscreenLEDEcoModePolicy.clockRefreshInterval)) { context in
+                clockLabels(for: context.date)
+            }
+        } else {
+            clockLabels(for: now)
+        }
+    }
+
+    private func clockLabels(for date: Date) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            ledDigitText(
+                clockTimeText(for: date),
+                size: LEDMetricTypography.digitSize,
+                color: ledAccent,
+                shadowRadius: iconShadowRadius
+            )
+
+            ledBodyText(
+                clockPeriodText(for: date),
+                size: LEDMetricTypography.bodySize,
+                color: ledAccent,
+                shadowRadius: iconShadowRadius
+            )
         }
     }
 
@@ -245,32 +287,37 @@ struct FullscreenLEDView: View {
     }
 
     @ViewBuilder
-    private var spectrumSection: some View {
-        if isEcoModeActive {
-            ecoFrozenSpectrumLine
-        } else {
-            FullscreenLEDSpectrumStrip(
-                spectrum: engine.latestSpectrum,
-                accent: ledAccent
-            )
-            .equatable()
+    private var waveformSection: some View {
+        WaveformView(
+            samples: isEcoModeActive ? ecoWaveformSnapshot : engine.history,
+            mode: mode,
+            usesCardChrome: false,
+            showsYAxisLabels: true,
+            axisLabelColor: ledAccent
+        )
+        .equatable()
+    }
+
+    private func syncEcoDecibelIfNeeded(current: Float, force: Bool = false) {
+        guard isEcoModeActive else { return }
+        if force || FullscreenLEDEcoModePolicy.shouldRefreshThrottledDecibel(
+            current: current,
+            displayed: throttledDecibel
+        ) {
+            throttledDecibel = current
         }
     }
 
-    private var ecoFrozenSpectrumLine: some View {
-        Rectangle()
-            .fill(ledAccent.opacity(0.35))
-            .frame(height: 1)
-            .frame(maxWidth: .infinity)
-            .accessibilityHidden(true)
+    private func captureEcoWaveformSnapshot() {
+        ecoWaveformSnapshot = engine.history
     }
 
     private var rightMetricsPanel: some View {
         VStack(alignment: .trailing, spacing: 0) {
             Spacer(minLength: 0)
 
-            spectrumSection
-                .frame(width: 320, height: 60)
+            waveformSection
+                .frame(width: 320, height: 120)
 
             Spacer(minLength: 0)
 
@@ -353,16 +400,16 @@ struct FullscreenLEDView: View {
         }
     }
 
-    private var clockTimeText: String {
-        now.formatted(
+    private func clockTimeText(for date: Date) -> String {
+        date.formatted(
             .dateTime
                 .hour(.defaultDigits(amPM: .omitted))
                 .minute(.twoDigits)
         )
     }
 
-    private var clockPeriodText: String {
-        let hour = Calendar.current.component(.hour, from: now)
+    private func clockPeriodText(for date: Date) -> String {
+        let hour = Calendar.current.component(.hour, from: date)
         return hour < 12 ? "AM" : "PM"
     }
 
@@ -382,11 +429,21 @@ struct FullscreenLEDView: View {
 
     private func statusFace(level: NoiseRiskLevel, isActive: Bool) -> some View {
         let config = statusFaceConfig(for: level)
-        let tint = isEcoModeActive ? config.tint.opacity(isActive ? 0.35 : 0.12) : config.tint
+        let tint: Color
+        let faceOpacity: Double
+
+        if isEcoModeActive {
+            tint = config.tint
+            faceOpacity = isActive ? 0.88 : 0
+        } else {
+            tint = config.tint
+            faceOpacity = isActive ? 1 : 0.28
+        }
+
         return Image(systemName: config.symbol)
             .font(.title3)
             .foregroundStyle(tint)
-            .opacity(isActive ? 1 : 0.28)
+            .opacity(faceOpacity)
             .shadow(color: isActive && !isEcoModeActive ? config.tint.opacity(0.65) : .clear, radius: 4)
     }
 
@@ -404,6 +461,14 @@ struct FullscreenLEDView: View {
     private func toggleEcoMode() {
         isEcoModeActive.toggle()
         throttledDecibel = engine.currentDB
+        if isEcoModeActive {
+            captureEcoWaveformSnapshot()
+            ecoClockTimelineAnchor = FullscreenLEDEcoModePolicy.startOfCurrentMinute()
+        } else {
+            ecoWaveformSnapshot = []
+            ecoClockTimelineAnchor = nil
+            now = Date()
+        }
     }
 
     private func activatePresentation() {
@@ -430,39 +495,5 @@ struct FullscreenLEDView: View {
         Task {
             await audioStateManager.manuallyResumeMonitoring()
         }
-    }
-}
-
-// MARK: - Compact LED spectrum strip
-
-private struct FullscreenLEDSpectrumStrip: View, Equatable {
-    let spectrum: FFTSpectrum?
-    let accent: Color
-
-    static func == (lhs: FullscreenLEDSpectrumStrip, rhs: FullscreenLEDSpectrumStrip) -> Bool {
-        lhs.spectrum == rhs.spectrum
-    }
-
-    var body: some View {
-        Canvas { context, size in
-            guard size.width > 1, size.height > 1 else { return }
-            let plotRect = CGRect(origin: .zero, size: size)
-            let coords = SpectrumPlotCoordinateSystem(plotRect: plotRect)
-
-            guard let spectrum, !spectrum.decibels.isEmpty else { return }
-
-            let path = SpectrumPathBuilder(
-                coords: coords,
-                sampleRate: spectrum.sampleRate,
-                fftSize: spectrum.fftSize
-            ).buildPath(decibels: spectrum.decibels)
-
-            context.stroke(
-                path,
-                with: .color(accent),
-                style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round)
-            )
-        }
-        .drawingGroup()
     }
 }
