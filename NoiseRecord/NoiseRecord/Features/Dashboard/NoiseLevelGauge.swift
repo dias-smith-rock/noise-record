@@ -23,10 +23,10 @@ struct NoiseLevelGauge: View {
     }
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 8) {
             ZStack(alignment: .topTrailing) {
                 gaugeDial
-                    .frame(height: 232)
+                    .frame(height: 198)
                     .frame(maxWidth: .infinity)
 
                 if let onFullscreenTap {
@@ -110,7 +110,7 @@ struct NoiseLevelGauge: View {
                 .position(x: layout.center.x, y: layout.center.y + layout.size * 0.04)
             }
         }
-        .aspectRatio(1.08, contentMode: .fit)
+        .aspectRatio(1.12, contentMode: .fit)
         .padding(.horizontal, 2)
     }
 
@@ -227,11 +227,19 @@ private struct GaugeLayout {
     let minorTickLength: CGFloat = 6
     let labelInset: CGFloat = 22
 
+    /// 弧端（20 / 140 dB）位于 150° / 390°，sin = 0.5。
+    private static let arcEndSine: CGFloat = 0.5
+    private static let bottomPadding: CGFloat = 6
+
     init(size: CGSize) {
         let side = min(size.width, size.height)
         self.size = side
         self.radius = side * 0.48
-        self.center = CGPoint(x: size.width * 0.5, y: size.height * 0.50)
+        let arcBottom = radius * Self.arcEndSine
+        self.center = CGPoint(
+            x: size.width * 0.5,
+            y: size.height - Self.bottomPadding - arcBottom
+        )
     }
 
     func point(for db: Float, radius: CGFloat) -> CGPoint {

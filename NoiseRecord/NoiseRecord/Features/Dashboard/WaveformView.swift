@@ -3,20 +3,18 @@ import SwiftUI
 struct WaveformView: View, Equatable {
     let samples: [Float]
     var mode: AcousticMeasurementMode = .standard
-    var minDB: Float = 20
-    var maxDB: Float = 100
     var accentOverride: Color? = nil
     var usesCardChrome: Bool = true
 
     private var theme: ModeVisualTheme { .theme(for: mode) }
     private var strokeColor: Color { accentOverride ?? theme.accent }
+    private var minDB: Float { mode.waveformMinDB }
+    private var maxDB: Float { mode.waveformMaxDB }
 
     static func == (lhs: WaveformView, rhs: WaveformView) -> Bool {
         lhs.samples.count == rhs.samples.count
             && lhs.samples.last == rhs.samples.last
             && lhs.mode == rhs.mode
-            && lhs.minDB == rhs.minDB
-            && lhs.maxDB == rhs.maxDB
             && lhs.usesCardChrome == rhs.usesCardChrome
     }
 

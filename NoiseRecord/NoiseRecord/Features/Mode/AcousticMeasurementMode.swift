@@ -25,6 +25,21 @@ enum AcousticMeasurementMode: String, CaseIterable, Identifiable, Sendable {
     var tooltipCopy: String { localizedTooltipCopy }
     var tooltipHeadline: String { localizedTooltipHeadline }
     var comparisonHint: String { localizedComparisonHint }
+
+    /// 波形图纵向标度（收窄范围以增强视觉起伏）。
+    var waveformMinDB: Float {
+        switch self {
+        case .standard: 30
+        case .highSensitivity: 42
+        }
+    }
+
+    var waveformMaxDB: Float {
+        switch self {
+        case .standard: 72
+        case .highSensitivity: 68
+        }
+    }
 }
 
 /// Restrained palette: one accent per mode, neutral surfaces everywhere else.
