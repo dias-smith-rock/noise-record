@@ -249,11 +249,6 @@ struct ContentView: View {
     }
 
     private func saveRecording(_ event: RecordingFinishedEvent) {
-        if engine.isDiscardingSessionRecordings {
-            try? FileManager.default.removeItem(at: event.fileURL)
-            return
-        }
-
         let session = RecordingSession(
             fileName: event.fileURL.lastPathComponent,
             filePath: EvidenceFileResolver.makeRelativePath(from: event.fileURL),
@@ -261,10 +256,11 @@ struct ContentView: View {
             endedAt: event.endedAt,
             peakDB: event.peakDB,
             averageDB: event.averageDB,
-            noiseType: event.noiseType
+            noiseType: event.noiseType,
+            latitude: event.latitude,
+            longitude: event.longitude
         )
         modelContext.insert(session)
-        engine.noteRecordingSaved(id: session.id)
         try? modelContext.save()
         refreshUnreadBadge()
         AppReviewStore.noteEvidenceFileSaved()

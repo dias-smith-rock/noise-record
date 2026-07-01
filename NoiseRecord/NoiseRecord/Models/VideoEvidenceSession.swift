@@ -17,6 +17,7 @@ final class VideoEvidenceSession {
     var isNew: Bool = false
     var segmentGroupID: UUID?
     var segmentIndex: Int = 1
+    var notes: String = ""
 
     init(
         fileName: String,

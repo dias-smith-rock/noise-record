@@ -90,7 +90,6 @@ final class LiveActivityManager {
         currentDB: Float,
         isHighSensitivity: Bool,
         weightingType: WeightingType,
-        voiceActivatedEnabled: Bool,
         recordingState: RecordingState,
         historyTail: [Float]
     ) {
@@ -102,8 +101,7 @@ final class LiveActivityManager {
             )
             let status = LiveActivityContentBuilder.statusMessage(
                 isHighSensitivity: isHighSensitivity,
-                recordingState: recordingState,
-                voiceActivatedEnabled: voiceActivatedEnabled
+                recordingState: recordingState
             )
             let weighting = LiveActivityContentBuilder.weightingLabel(
                 isHighSensitivity: isHighSensitivity,

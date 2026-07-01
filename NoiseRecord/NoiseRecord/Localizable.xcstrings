@@ -76244,6 +76244,644 @@
           }
         }
       }
+    },
+    "mediaDetail.tabPicker": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Section"
+          }
+        }
+      }
+    },
+    "mediaDetail.tab.waveform": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waveform"
+          }
+        }
+      }
+    },
+    "mediaDetail.tab.levels": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Levels"
+          }
+        }
+      }
+    },
+    "mediaDetail.tab.exposure": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exposure"
+          }
+        }
+      }
+    },
+    "mediaDetail.analyzingWaveform": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analyzing waveform…"
+          }
+        }
+      }
+    },
+    "mediaDetail.noWaveform.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Waveform"
+          }
+        }
+      }
+    },
+    "mediaDetail.noWaveform.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waveform data is unavailable for this recording."
+          }
+        }
+      }
+    },
+    "mediaDetail.play": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play"
+          }
+        }
+      }
+    },
+    "mediaDetail.pause": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause"
+          }
+        }
+      }
+    },
+    "mediaDetail.locationTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location"
+          }
+        }
+      }
+    },
+    "mediaDetail.locationUnknown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unknown location"
+          }
+        }
+      }
+    },
+    "mediaDetail.notesTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes"
+          }
+        }
+      }
+    },
+    "mediaDetail.notesPlaceholder": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recording Notes"
+          }
+        }
+      }
+    },
+    "mediaDetail.exposureSection": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exposure"
+          }
+        }
+      }
+    },
+    "mediaDetail.soundLevelsSection": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sound Levels"
+          }
+        }
+      }
+    },
+    "mediaDetail.duration": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duration"
+          }
+        }
+      }
+    },
+    "mediaDetail.dose": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dose"
+          }
+        }
+      }
+    },
+    "mediaDetail.projectedDose": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Projected Dose"
+          }
+        }
+      }
+    },
+    "mediaDetail.timeAveragedExposure": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time Averaged"
+          }
+        }
+      }
+    },
+    "mediaDetail.peak": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peak"
+          }
+        }
+      }
+    },
+    "mediaDetail.maximum": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maximum"
+          }
+        }
+      }
+    },
+    "mediaDetail.timeAveraged": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time Averaged"
+          }
+        }
+      }
+    },
+    "mediaDetail.laeq": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Equivalent Continuous"
+          }
+        }
+      }
+    },
+    "mediaDetail.notAvailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "N/A"
+          }
+        }
+      }
+    },
+    "mediaDetail.meterConfiguration": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meter Configuration"
+          }
+        }
+      }
+    },
+    "mediaDetail.exposureConfiguration": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exposure Configuration"
+          }
+        }
+      }
+    },
+    "mediaDetail.timeWeighting": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time Weighting"
+          }
+        }
+      }
+    },
+    "mediaDetail.timeWeightingSlow": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1.000 s (Slow)"
+          }
+        }
+      }
+    },
+    "mediaDetail.frequencyWeighting": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frequency Weighting"
+          }
+        }
+      }
+    },
+    "mediaDetail.peakFrequencyWeighting": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peak Frequency Weighting"
+          }
+        }
+      }
+    },
+    "mediaDetail.criterionDuration": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Criterion Duration"
+          }
+        }
+      }
+    },
+    "mediaDetail.criterionDurationValue": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "8h"
+          }
+        }
+      }
+    },
+    "mediaDetail.criterionLevel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Criterion Level"
+          }
+        }
+      }
+    },
+    "mediaDetail.criterionLevelValue": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "85 dB"
+          }
+        }
+      }
+    },
+    "mediaDetail.thresholdLevel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Threshold Level"
+          }
+        }
+      }
+    },
+    "mediaDetail.thresholdLevelValue": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "80 dB"
+          }
+        }
+      }
+    },
+    "mediaDetail.exchangeRate": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exchange Rate"
+          }
+        }
+      }
+    },
+    "mediaDetail.exchangeRateValue": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 dB"
+          }
+        }
+      }
+    },
+    "mediaDetail.metricInfoAccessibility": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Metric information"
+          }
+        }
+      }
+    },
+    "mediaDetail.info.duration": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total monitored duration for this recording."
+          }
+        }
+      }
+    },
+    "mediaDetail.info.dose": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimated noise dose based on the configured exposure standard."
+          }
+        }
+      }
+    },
+    "mediaDetail.info.projectedDose": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Projected dose if the current level continued for a full shift."
+          }
+        }
+      }
+    },
+    "mediaDetail.info.timeAveraged": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time-weighted average level over the recording."
+          }
+        }
+      }
+    },
+    "mediaDetail.info.peak": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Highest instantaneous C-weighted peak level."
+          }
+        }
+      }
+    },
+    "mediaDetail.info.maximum": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maximum A-weighted sound level during the recording."
+          }
+        }
+      }
+    },
+    "mediaDetail.info.laeq": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Equivalent continuous A-weighted sound level."
+          }
+        }
+      }
+    },
+    "mediaDetail.info.timeWeighting": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slow time weighting smooths short spikes for display."
+          }
+        }
+      }
+    },
+    "mediaDetail.info.frequencyWeighting": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frequency weighting applied to the measurement chain."
+          }
+        }
+      }
+    },
+    "mediaDetail.info.peakWeighting": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peak measurements use C-weighting."
+          }
+        }
+      }
+    },
+    "mediaDetail.info.criterionDuration": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reference duration for dose calculations."
+          }
+        }
+      }
+    },
+    "mediaDetail.info.criterionLevel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reference sound level for dose calculations."
+          }
+        }
+      }
+    },
+    "mediaDetail.info.thresholdLevel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Levels below this threshold do not contribute to dose."
+          }
+        }
+      }
+    },
+    "mediaDetail.info.exchangeRate": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Level increase that doubles allowable exposure time."
+          }
+        }
+      }
+    },
+    "recordingStatus.sessionMonitoring": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monitoring"
+          }
+        }
+      }
+    },
+    "recorderSettings.metric.monitoring": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monitoring"
+          }
+        }
+      }
+    },
+    "recorderSettings.status.on": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On"
+          }
+        }
+      }
+    },
+    "recorderSettings.sessionRecording.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Session Recording"
+          }
+        }
+      }
+    },
+    "recorderSettings.sessionRecording.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audio is recorded continuously while monitoring is active. When you stop monitoring, one file is saved automatically to Files."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

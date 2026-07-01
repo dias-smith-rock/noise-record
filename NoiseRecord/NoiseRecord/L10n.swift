@@ -79,6 +79,7 @@ nonisolated enum L10n {
     static var recordingVoiceStandby: String { localized("recordingStatus.voiceStandby") }
     static var recordingActive: String { localized("recordingStatus.recording") }
     static var recordingAuto: String { localized("recordingStatus.autoRecording") }
+    static var recordingSessionMonitoring: String { localized("recordingStatus.sessionMonitoring") }
     static var recordingTailDelay: String { localized("recordingStatus.tailDelay") }
 
     // MARK: - Recorder settings
@@ -91,7 +92,11 @@ nonisolated enum L10n {
     static var recorderMetricStart: String { localized("recorderSettings.metric.start") }
     static var recorderMetricStop: String { localized("recorderSettings.metric.stop") }
     static var recorderMetricCurrentDb: String { localized("recorderSettings.metric.currentDb") }
+    static var recorderMetricMonitoring: String { localized("recorderSettings.metric.monitoring") }
     static var recorderStatusOff: String { localized("recorderSettings.status.off") }
+    static var recorderStatusOn: String { localized("recorderSettings.status.on") }
+    static var recorderSessionRecordingTitle: String { localized("recorderSettings.sessionRecording.title") }
+    static var recorderSessionRecordingSubtitle: String { localized("recorderSettings.sessionRecording.subtitle") }
     static var recorderThresholdsTitle: String { localized("recorderSettings.thresholds.title") }
     static var recorderThresholdsSubtitle: String { localized("recorderSettings.thresholds.subtitle") }
     static var recorderThresholdStart: String { localized("recorderSettings.thresholds.start") }
@@ -515,6 +520,62 @@ nonisolated enum L10n {
     static func errorVideoFinishFailed(_ message: String) -> String {
         String(format: localized("error.video.finishFailed"), message)
     }
+
+    // MARK: - Media detail
+
+    static var mediaDetailTabPicker: String { localized("mediaDetail.tabPicker") }
+    static var mediaDetailTabWaveform: String { localized("mediaDetail.tab.waveform") }
+    static var mediaDetailTabLevels: String { localized("mediaDetail.tab.levels") }
+    static var mediaDetailTabExposure: String { localized("mediaDetail.tab.exposure") }
+    static var mediaDetailAnalyzingWaveform: String { localized("mediaDetail.analyzingWaveform") }
+    static var mediaDetailNoWaveformTitle: String { localized("mediaDetail.noWaveform.title") }
+    static var mediaDetailNoWaveformMessage: String { localized("mediaDetail.noWaveform.message") }
+    static var mediaDetailPlay: String { localized("mediaDetail.play") }
+    static var mediaDetailPause: String { localized("mediaDetail.pause") }
+    static var mediaDetailLocationTitle: String { localized("mediaDetail.locationTitle") }
+    static var mediaDetailLocationUnknown: String { localized("mediaDetail.locationUnknown") }
+    static var mediaDetailNotesTitle: String { localized("mediaDetail.notesTitle") }
+    static var mediaDetailNotesPlaceholder: String { localized("mediaDetail.notesPlaceholder") }
+    static var mediaDetailExposureSection: String { localized("mediaDetail.exposureSection") }
+    static var mediaDetailSoundLevelsSection: String { localized("mediaDetail.soundLevelsSection") }
+    static var mediaDetailDuration: String { localized("mediaDetail.duration") }
+    static var mediaDetailDose: String { localized("mediaDetail.dose") }
+    static var mediaDetailProjectedDose: String { localized("mediaDetail.projectedDose") }
+    static var mediaDetailTimeAveragedExposure: String { localized("mediaDetail.timeAveragedExposure") }
+    static var mediaDetailPeak: String { localized("mediaDetail.peak") }
+    static var mediaDetailMaximum: String { localized("mediaDetail.maximum") }
+    static var mediaDetailTimeAveraged: String { localized("mediaDetail.timeAveraged") }
+    static var mediaDetailLAeq: String { localized("mediaDetail.laeq") }
+    static var mediaDetailNotAvailable: String { localized("mediaDetail.notAvailable") }
+    static var mediaDetailMeterConfiguration: String { localized("mediaDetail.meterConfiguration") }
+    static var mediaDetailExposureConfiguration: String { localized("mediaDetail.exposureConfiguration") }
+    static var mediaDetailTimeWeighting: String { localized("mediaDetail.timeWeighting") }
+    static var mediaDetailTimeWeightingSlow: String { localized("mediaDetail.timeWeightingSlow") }
+    static var mediaDetailFrequencyWeighting: String { localized("mediaDetail.frequencyWeighting") }
+    static var mediaDetailPeakFrequencyWeighting: String { localized("mediaDetail.peakFrequencyWeighting") }
+    static var mediaDetailCriterionDuration: String { localized("mediaDetail.criterionDuration") }
+    static var mediaDetailCriterionDurationValue: String { localized("mediaDetail.criterionDurationValue") }
+    static var mediaDetailCriterionLevel: String { localized("mediaDetail.criterionLevel") }
+    static var mediaDetailCriterionLevelValue: String { localized("mediaDetail.criterionLevelValue") }
+    static var mediaDetailThresholdLevel: String { localized("mediaDetail.thresholdLevel") }
+    static var mediaDetailThresholdLevelValue: String { localized("mediaDetail.thresholdLevelValue") }
+    static var mediaDetailExchangeRate: String { localized("mediaDetail.exchangeRate") }
+    static var mediaDetailExchangeRateValue: String { localized("mediaDetail.exchangeRateValue") }
+    static var mediaDetailMetricInfoAccessibility: String { localized("mediaDetail.metricInfoAccessibility") }
+    static var mediaDetailInfoDuration: String { localized("mediaDetail.info.duration") }
+    static var mediaDetailInfoDose: String { localized("mediaDetail.info.dose") }
+    static var mediaDetailInfoProjectedDose: String { localized("mediaDetail.info.projectedDose") }
+    static var mediaDetailInfoTimeAveraged: String { localized("mediaDetail.info.timeAveraged") }
+    static var mediaDetailInfoPeak: String { localized("mediaDetail.info.peak") }
+    static var mediaDetailInfoMaximum: String { localized("mediaDetail.info.maximum") }
+    static var mediaDetailInfoLAeq: String { localized("mediaDetail.info.laeq") }
+    static var mediaDetailInfoTimeWeighting: String { localized("mediaDetail.info.timeWeighting") }
+    static var mediaDetailInfoFrequencyWeighting: String { localized("mediaDetail.info.frequencyWeighting") }
+    static var mediaDetailInfoPeakWeighting: String { localized("mediaDetail.info.peakWeighting") }
+    static var mediaDetailInfoCriterionDuration: String { localized("mediaDetail.info.criterionDuration") }
+    static var mediaDetailInfoCriterionLevel: String { localized("mediaDetail.info.criterionLevel") }
+    static var mediaDetailInfoThresholdLevel: String { localized("mediaDetail.info.thresholdLevel") }
+    static var mediaDetailInfoExchangeRate: String { localized("mediaDetail.info.exchangeRate") }
 
     // MARK: - AI labels
 

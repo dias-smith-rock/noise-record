@@ -5,7 +5,6 @@ import UIKit
 enum RecordingState: String, Sendable {
     case idle
     case recording
-    case coolingDown
 }
 
 struct RecordingFinishedEvent: Sendable {
@@ -16,59 +15,64 @@ struct RecordingFinishedEvent: Sendable {
     let endedAt: Date
     let noiseType: String?
     let segmentIndex: Int
+    let latitude: Double?
+    let longitude: Double?
 }
 
 final class VoiceActivatedRecorder: @unchecked Sendable {
-    /// 单段安全落盘阈值（10 分钟），超时滚动切片。
-    static let maxSegmentDuration: TimeInterval = 600
-    /// 免费用户单次声控触发会话最长录音时长。
+    /// Pro users: maximum continuous write duration per monitoring session.
+    static let maxSessionDurationPro: TimeInterval = 7200
+    /// Free users: maximum continuous write duration per monitoring session.
     static let freeMaxClipDuration: TimeInterval = 180
 
-    var highThreshold: Float = 55
-    var lowThreshold: Float = 48
-    var postRecordingDelay: TimeInterval = 4
-    var preBufferDuration: TimeInterval = 1.5
-    /// 单次触发会话最长时长；Pro 默认与 `maxSegmentDuration` 相同。
-    var maxClipDuration: TimeInterval = maxSegmentDuration
+    /// Legacy alias used by engine configuration.
+    static var maxSegmentDuration: TimeInterval { maxSessionDurationPro }
+
+    /// Maximum write duration for the active monitoring session.
+    var maxClipDuration: TimeInterval = maxSessionDurationPro
     var onClipDurationLimitReached: (() -> Void)?
 
     private(set) var state: RecordingState = .idle
-    private var ringBuffer: RingBuffer?
     private var pcmAccumulator = PCMFrameAccumulator(sampleRate: 44_100)
     private var audioFile: AVAudioFile?
     private var recordingFormat: AVAudioFormat?
-    private var coolingDownDeadline: Date?
 
-    /// 本次声控触发会话的起始时间（跨分段不变）。
-    private var recordingStartDate: Date?
-    /// 当前滚动分段的起始时间。
-    private var segmentStartTime: Date?
-    /// 当前分段在触发序列中的序号（从 1 起）。
-    private var currentSegmentIndex: Int = 1
-    /// 触发时刻文件名时间戳（跨分段共享）。
-    private var sessionTriggerTimestamp: String?
-    /// 触发峰值 dB（文件名后缀，跨分段共享）。
-    private var sessionTriggerPeakDB: Int?
-
-    private var segmentPeakDB: Float = 0
-    private var segmentDbSum: Float = 0
-    private var segmentDbCount: Int = 0
+    private var isSessionActive = false
+    private var isWritingPaused = false
+    private var sessionStartDate: Date?
+    private var sessionTimestamp: String?
+    private var hasWrittenAudio = false
     private var currentNoiseType: String?
     private var lastFlushTime: CFAbsoluteTime = 0
     private let flushInterval: CFAbsoluteTime = 0.2
     private var didNotifyClipDurationLimit = false
 
+    private var noiseTimelineSamples: [VideoNoiseSample] = []
+    private var lastTimelineSampleTime: Double = -1
+    private var timelineFrameCount = 0
+    private let timelineSampleInterval: TimeInterval = 0.1
+    private let timelineLock = NSLock()
+
     private let fileQueue = DispatchQueue(label: "com.noiseapp.recording.file")
     var onRecordingFinished: ((RecordingFinishedEvent) -> Void)?
 
     func configure(sampleRate: Double) {
-        let capacity = Int(sampleRate * preBufferDuration)
-        ringBuffer = RingBuffer(capacity: capacity)
         pcmAccumulator = PCMFrameAccumulator(sampleRate: sampleRate)
     }
 
     func setNoiseType(_ type: String?) {
         currentNoiseType = type
+    }
+
+    func beginSession() {
+        fileQueue.sync {
+            resetSessionLocked()
+            isSessionActive = true
+            isWritingPaused = false
+            sessionStartDate = Date()
+            sessionTimestamp = Self.timestampString(from: sessionStartDate!)
+            didNotifyClipDurationLimit = false
+        }
     }
 
     func process(
@@ -77,222 +81,97 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
         dbSPL: Float,
         format: AVAudioFormat
     ) {
+        guard isSessionActive, !isWritingPaused else { return }
+
         recordingFormat = format
-        ringBuffer?.write(filteredSamples, count: frameLength)
 
-        switch state {
-        case .idle:
-            if dbSPL >= highThreshold {
-                startRecording(format: format, currentDB: dbSPL)
+        fileQueue.sync {
+            guard isSessionActive, !isWritingPaused else { return }
+            if audioFile == nil {
+                if UIApplication.shared.applicationState == .background {
+                    AppTelemetry.logBackgroundRecordingStart(peakDB: dbSPL)
+                }
+                try? openSessionFileLocked(format: format)
             }
-        case .recording:
-            updateSegmentMetrics(dbSPL: dbSPL)
-            pcmAccumulator.append(filteredSamples, count: frameLength)
-            flushToFileIfNeeded()
-            ensureOpenSegmentFile(format: format)
-            rotateSegmentIfNeeded(format: format)
-            enforceClipDurationLimitIfNeeded()
-
-            if dbSPL < lowThreshold {
-                state = .coolingDown
-                coolingDownDeadline = Date().addingTimeInterval(postRecordingDelay)
-            }
-        case .coolingDown:
-            updateSegmentMetrics(dbSPL: dbSPL)
-            pcmAccumulator.append(filteredSamples, count: frameLength)
-            flushToFileIfNeeded()
-            ensureOpenSegmentFile(format: format)
-            rotateSegmentIfNeeded(format: format)
-            enforceClipDurationLimitIfNeeded()
-
-            if dbSPL >= highThreshold {
+            if audioFile != nil {
                 state = .recording
-                coolingDownDeadline = nil
-            } else if let deadline = coolingDownDeadline, Date() >= deadline {
-                stopRecording()
+                hasWrittenAudio = true
             }
+        }
+
+        pcmAccumulator.append(filteredSamples, count: frameLength)
+        appendTimelineSample(frameLength: frameLength, dbSPL: dbSPL, format: format)
+        flushToFileIfNeeded()
+
+        fileQueue.sync {
+            enforceSessionDurationLimitIfNeeded()
         }
     }
 
-    /// 电话切入、进后台等生命周期事件：优先落盘当前分段并无缝续开新流（不停止 tap）。
+    func endSession(
+        peakDB: Float,
+        averageDB: Float,
+        noiseType: String?,
+        latitude: Double?,
+        longitude: Double?
+    ) {
+        fileQueue.sync {
+            guard isSessionActive else { return }
+            defer { resetSessionLocked() }
+
+            guard hasWrittenAudio, audioFile != nil else {
+                if let url = audioFile?.url {
+                    try? FileManager.default.removeItem(at: url)
+                }
+                return
+            }
+
+            try? flushToFileLocked()
+            guard let file = audioFile,
+                  let sessionStart = sessionStartDate else { return }
+
+            let url = file.url
+            audioFile = nil
+            saveNoiseTimeline(for: url)
+
+            let event = RecordingFinishedEvent(
+                fileURL: url,
+                peakDB: peakDB,
+                averageDB: averageDB,
+                startedAt: sessionStart,
+                endedAt: Date(),
+                noiseType: noiseType ?? currentNoiseType,
+                segmentIndex: 1,
+                latitude: latitude,
+                longitude: longitude
+            )
+            onRecordingFinished?(event)
+        }
+        state = .idle
+    }
+
+    /// Flush buffered PCM during lifecycle events without ending the session file.
     func emergencyFinalizeForLifecycleEvent() {
         fileQueue.sync {
-            guard state == .recording || state == .coolingDown else { return }
-            guard let format = recordingFormat else { return }
-
-            if audioFile != nil {
-                try? finalizeOpenSegmentLocked(emitEvent: true)
-            }
-
-            guard state == .recording || state == .coolingDown else { return }
-
-            currentSegmentIndex += 1
-            beginNewSegmentTiming()
-            try? openSegmentFileLocked(format: format, index: currentSegmentIndex)
+            guard isSessionActive, audioFile != nil else { return }
+            try? flushToFileLocked()
         }
     }
 
-    func forceStop() {
-        if state == .recording || state == .coolingDown {
-            stopRecording()
-        }
-    }
+    // MARK: - Session duration limit
 
-    // MARK: - Session lifecycle
-
-    private func startRecording(format: AVAudioFormat, currentDB: Float) {
-        guard let ringBuffer else { return }
-        if UIApplication.shared.applicationState == .background {
-            AppTelemetry.logBackgroundRecordingStart(peakDB: currentDB)
-        }
-
-        let now = Date()
-        state = .recording
-        recordingStartDate = now
-        coolingDownDeadline = nil
-        currentSegmentIndex = 1
-        sessionTriggerTimestamp = Self.timestampString(from: now)
-        sessionTriggerPeakDB = Int(currentDB)
-        beginNewSegmentTiming(at: now)
-        didNotifyClipDurationLimit = false
-        segmentPeakDB = currentDB
-        segmentDbSum = currentDB
-        segmentDbCount = 1
-
-        let preSamples = ringBuffer.readAll()
-
-        fileQueue.sync {
-            do {
-                try openSegmentFileLocked(format: format, index: currentSegmentIndex)
-                if !preSamples.isEmpty {
-                    pcmAccumulator.appendFromArray(preSamples)
-                }
-                try flushToFileLocked()
-            } catch {
-                resetSessionLocked()
-            }
-        }
-
-        if audioFile == nil {
-            resetSession()
-        }
-    }
-
-    private func stopRecording() {
-        guard state != .idle else { return }
-
-        fileQueue.sync {
-            if audioFile != nil {
-                try? finalizeOpenSegmentLocked(emitEvent: true)
-            }
-        }
-        resetSession()
-    }
-
-    private func resetSession() {
-        fileQueue.sync {
-            resetSessionLocked()
-        }
-    }
-
-    private func resetSessionLocked() {
-        state = .idle
-        audioFile = nil
-        recordingFormat = nil
-        coolingDownDeadline = nil
-        recordingStartDate = nil
-        segmentStartTime = nil
-        segmentStartDate = nil
-        currentSegmentIndex = 1
-        sessionTriggerTimestamp = nil
-        sessionTriggerPeakDB = nil
-        segmentPeakDB = 0
-        segmentDbSum = 0
-        segmentDbCount = 0
-        lastFlushTime = 0
-        didNotifyClipDurationLimit = false
-        pcmAccumulator.reset()
-    }
-
-    // MARK: - Segment metrics
-
-    private var segmentStartDate: Date?
-
-    private func beginNewSegmentTiming(at date: Date = Date()) {
-        segmentStartTime = date
-        segmentStartDate = date
-        segmentPeakDB = 0
-        segmentDbSum = 0
-        segmentDbCount = 0
-    }
-
-    private func updateSegmentMetrics(dbSPL: Float) {
-        segmentPeakDB = max(segmentPeakDB, dbSPL)
-        segmentDbSum += dbSPL
-        segmentDbCount += 1
-    }
-
-    // MARK: - Clip duration limit (free tier)
-
-    private func enforceClipDurationLimitIfNeeded() {
-        guard state == .recording || state == .coolingDown else { return }
-        guard let sessionStart = recordingStartDate,
+    private func enforceSessionDurationLimitIfNeeded() {
+        guard isSessionActive, !isWritingPaused,
+              let sessionStart = sessionStartDate,
               Date().timeIntervalSince(sessionStart) >= maxClipDuration else { return }
+
+        isWritingPaused = true
+        state = .idle
+        try? flushToFileLocked()
 
         if !didNotifyClipDurationLimit {
             didNotifyClipDurationLimit = true
             onClipDurationLimitReached?()
-        }
-        stopRecording()
-    }
-
-    // MARK: - Rolling segment rotation
-
-    private func rotateSegmentIfNeeded(format: AVAudioFormat) {
-        guard state == .recording || state == .coolingDown else { return }
-        guard let segmentStart = segmentStartTime,
-              Date().timeIntervalSince(segmentStart) >= Self.maxSegmentDuration else { return }
-
-        fileQueue.sync {
-            guard state == .recording || state == .coolingDown,
-                  let activeSegmentStart = segmentStartTime,
-                  Date().timeIntervalSince(activeSegmentStart) >= Self.maxSegmentDuration,
-                  audioFile != nil else { return }
-            try? rotateSegmentLocked(format: format)
-        }
-    }
-
-    private func rotateSegmentLocked(format: AVAudioFormat) throws {
-        var reopened = false
-        defer {
-            if !reopened, audioFile == nil, state == .recording || state == .coolingDown {
-                try? openSegmentFileLocked(format: format, index: currentSegmentIndex)
-            }
-        }
-
-        try finalizeOpenSegmentLocked(emitEvent: true)
-        currentSegmentIndex += 1
-        beginNewSegmentTiming()
-        try openSegmentFileLocked(format: format, index: currentSegmentIndex)
-        reopened = audioFile != nil
-    }
-
-    private func ensureOpenSegmentFile(format: AVAudioFormat) {
-        guard audioFile == nil, state == .recording || state == .coolingDown else { return }
-
-        fileQueue.sync {
-            guard audioFile == nil, state == .recording || state == .coolingDown else { return }
-            if sessionTriggerTimestamp == nil {
-                let now = Date()
-                sessionTriggerTimestamp = Self.timestampString(from: now)
-                if sessionTriggerPeakDB == nil {
-                    sessionTriggerPeakDB = Int(segmentPeakDB.rounded())
-                }
-                if segmentStartDate == nil {
-                    beginNewSegmentTiming(at: now)
-                }
-            }
-            try? openSegmentFileLocked(format: format, index: currentSegmentIndex)
         }
     }
 
@@ -305,24 +184,24 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
         return dir
     }
 
-    private func segmentFileName(index: Int) -> String? {
-        guard let timestamp = sessionTriggerTimestamp,
-              let peakDB = sessionTriggerPeakDB else { return nil }
-        return Self.makeSegmentFileName(timestamp: timestamp, peakDB: peakDB, index: index)
+    static func makeSessionFileName(timestamp: String) -> String {
+        "\(timestamp)_session.m4a"
     }
 
+    /// Legacy helper kept for tests migrating from segment naming.
     static func makeSegmentFileName(timestamp: String, peakDB: Int, index: Int) -> String {
         if index <= 1 {
-            return "\(timestamp)_\(peakDB)dB.m4a"
+            return makeSessionFileName(timestamp: timestamp)
         }
-        return "\(timestamp)_\(peakDB)dB_part\(index).m4a"
+        return "\(timestamp)_session_part\(index).m4a"
     }
 
-    private func openSegmentFileLocked(format: AVAudioFormat, index: Int) throws {
-        guard let fileName = segmentFileName(index: index) else {
+    private func openSessionFileLocked(format: AVAudioFormat) throws {
+        guard let timestamp = sessionTimestamp else {
             throw VoiceRecorderError.missingSessionMetadata
         }
 
+        let fileName = Self.makeSessionFileName(timestamp: timestamp)
         let fileURL = try recordingsDirectory().appendingPathComponent(fileName)
         audioFile = try AVAudioFile(forWriting: fileURL, settings: [
             AVFormatIDKey: kAudioFormatMPEG4AAC,
@@ -331,34 +210,6 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
             AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
         ])
         recordingFormat = format
-    }
-
-    @discardableResult
-    private func finalizeOpenSegmentLocked(emitEvent: Bool) throws -> URL? {
-        guard let file = audioFile,
-              let format = recordingFormat,
-              let segmentStart = segmentStartDate else {
-            audioFile = nil
-            return nil
-        }
-
-        try flushToFileLocked()
-        let url = file.url
-        audioFile = nil
-
-        guard emitEvent else { return url }
-
-        let event = RecordingFinishedEvent(
-            fileURL: url,
-            peakDB: segmentPeakDB,
-            averageDB: segmentDbCount > 0 ? segmentDbSum / Float(segmentDbCount) : 0,
-            startedAt: segmentStart,
-            endedAt: Date(),
-            noiseType: currentNoiseType,
-            segmentIndex: currentSegmentIndex
-        )
-        onRecordingFinished?(event)
-        return url
     }
 
     private func flushToFileIfNeeded() {
@@ -377,6 +228,52 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
     private func flushToFileLocked() throws {
         guard let file = audioFile, let format = recordingFormat else { return }
         try pcmAccumulator.drain(into: file, format: format)
+    }
+
+    private func appendTimelineSample(frameLength: Int, dbSPL: Float, format: AVAudioFormat) {
+        timelineLock.lock()
+        defer { timelineLock.unlock() }
+
+        timelineFrameCount += frameLength
+        let relativeTime = Double(timelineFrameCount) / format.sampleRate
+        guard relativeTime >= 0 else { return }
+        guard lastTimelineSampleTime < 0
+            || relativeTime - lastTimelineSampleTime >= timelineSampleInterval else { return }
+
+        noiseTimelineSamples.append(VideoNoiseSample(time: relativeTime, decibel: dbSPL))
+        lastTimelineSampleTime = relativeTime
+    }
+
+    private func saveNoiseTimeline(for url: URL) {
+        timelineLock.lock()
+        let samples = noiseTimelineSamples
+        timelineLock.unlock()
+
+        guard !samples.isEmpty else { return }
+        let timeline = VideoNoiseTimeline(
+            weighting: "dB\(DeviceCalibrationStore.weightingType.rawValue)",
+            samples: samples
+        )
+        try? VideoNoiseTimelineStore.save(timeline, for: url)
+    }
+
+    private func resetSessionLocked() {
+        state = .idle
+        audioFile = nil
+        recordingFormat = nil
+        isSessionActive = false
+        isWritingPaused = false
+        sessionStartDate = nil
+        sessionTimestamp = nil
+        hasWrittenAudio = false
+        lastFlushTime = 0
+        didNotifyClipDurationLimit = false
+        timelineLock.lock()
+        noiseTimelineSamples.removeAll()
+        lastTimelineSampleTime = -1
+        timelineFrameCount = 0
+        timelineLock.unlock()
+        pcmAccumulator.reset()
     }
 
     private static func timestampString(from date: Date) -> String {

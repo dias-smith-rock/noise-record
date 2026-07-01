@@ -1,5 +1,3 @@
-import AVFoundation
-import AVKit
 import SwiftData
 import SwiftUI
 
@@ -60,6 +58,11 @@ private enum RenameTarget: Identifiable {
     }
 }
 
+enum MediaDetailRoute: Hashable {
+    case audio(UUID)
+    case video(UUID)
+}
+
 struct RecordingListView: View {
     @Bindable var engine: NoiseMonitorEngine
     @Bindable var audioStateManager: AudioStateManager
@@ -75,9 +78,7 @@ struct RecordingListView: View {
     @State private var selectedAudioIDs: Set<UUID> = []
     @State private var selectedVideoIDs: Set<UUID> = []
 
-    @State private var audioPlayerController = RecordingAudioPlayer()
-    @State private var presentedVideoURL: URL?
-    @State private var presentedVideoTitle: String?
+    @State private var detailRoute: MediaDetailRoute?
 
     @State private var renameTarget: RenameTarget?
     @State private var renameText = ""
@@ -158,21 +159,22 @@ struct RecordingListView: View {
         .observesAppLanguage()
         .proTabBackground(theme: theme)
         .proTabNavigationChrome()
-        .fullScreenCover(isPresented: Binding(
-            get: { presentedVideoURL != nil },
-            set: { if !$0 { finishVideoPlaybackFromSwipe() } }
-        )) {
-            if let url = presentedVideoURL {
-                SyncedVideoPlayerView(
-                    url: url,
-                    title: presentedVideoTitle ?? url.lastPathComponent,
-                    onDismiss: {
-                        clearVideoPresentation()
-                    },
-                    onPlaybackFinished: {
-                        audioStateManager.handlePlaybackFinished()
-                    }
-                )
+        .navigationDestination(item: $detailRoute) { route in
+            switch route {
+            case .audio(let id):
+                if let session = sessions.first(where: { $0.id == id }) {
+                    MediaEvidenceDetailView(
+                        kind: .audio(session),
+                        audioStateManager: audioStateManager
+                    )
+                }
+            case .video(let id):
+                if let session = videoSessions.first(where: { $0.id == id }) {
+                    MediaEvidenceDetailView(
+                        kind: .video(session),
+                        audioStateManager: audioStateManager
+                    )
+                }
             }
         }
         .alert(L10n.filesRenameTitle, isPresented: Binding(
@@ -344,7 +346,7 @@ struct RecordingListView: View {
                         theme: theme,
                         isSelectionMode: isSelectionMode,
                         isSelected: selectedVideoIDs.contains(video.id),
-                        onPlay: { playVideo(video) },
+                        onOpen: { openVideoDetail(video) },
                         onShare: { shareMedia(video) },
                         onSaveToPhotos: { Task { await saveVideoToPhotos(video) } },
                         onDelete: { deleteVideo(video) },
@@ -375,12 +377,12 @@ struct RecordingListView: View {
                         detailLine: session.startedAt.formatted(date: .abbreviated, time: .shortened),
                         playFooterText: DurationFormatting.hms(from: session.duration),
                         badges: audioBadges(for: session),
-                        isPlaying: audioPlayerController.playingID == session.id,
-                        playIcon: audioPlayerController.playingID == session.id ? "stop.circle.fill" : "play.circle.fill",
+                        isPlaying: false,
+                        playIcon: "play.circle.fill",
                         theme: theme,
                         isSelectionMode: isSelectionMode,
                         isSelected: selectedAudioIDs.contains(session.id),
-                        onPlay: { toggleAudioPlayback(session) },
+                        onOpen: { openAudioDetail(session) },
                         onShare: { shareMedia(session) },
                         onDelete: { deleteAudio(session) },
                         onRename: { beginRename(.audio(session)) },
@@ -465,6 +467,9 @@ struct RecordingListView: View {
 
     private func audioBadges(for session: RecordingSession) -> [String] {
         var badges = [L10n.filesPeakBadge(Int(session.peakDB)), L10n.filesAvgBadge(Int(session.averageDB))]
+        if let lat = session.latitude, let lon = session.longitude {
+            badges.append(String(format: "%.4f, %.4f", lat, lon))
+        }
         if let type = session.noiseType {
             badges.append(type)
         }
@@ -479,109 +484,30 @@ struct RecordingListView: View {
         return String(hash.prefix(8))
     }
 
-    // MARK: - Playback
+    // MARK: - Detail navigation
 
-    private func playVideo(_ session: VideoEvidenceSession) {
-        guard !isSelectionMode else {
-            toggleVideoSelection(session.id)
-            return
-        }
-        markVideoAsRead(session)
-        guard session.fileExists else {
-            playbackErrorMessage = L10n.filesVideoNotFound(session.fileName)
-            return
-        }
-        audioPlayerController.stop(restoreIdleState: true)
-        do {
-            try audioStateManager.prepareAndStartPlayback()
-        } catch {
-            playbackErrorMessage = error.localizedDescription
-            return
-        }
-        presentedVideoURL = session.fileURL
-        presentedVideoTitle = session.fileName
-    }
-
-    private func clearVideoPresentation() {
-        presentedVideoURL = nil
-        presentedVideoTitle = nil
-    }
-
-    private func finishVideoPlaybackFromSwipe() {
-        audioStateManager.handlePlaybackFinished()
-        clearVideoPresentation()
-    }
-
-    private func toggleAudioPlayback(_ session: RecordingSession) {
+    private func openAudioDetail(_ session: RecordingSession) {
         guard !isSelectionMode else {
             toggleAudioSelection(session.id)
             return
         }
-        markAudioAsRead(session)
         guard session.fileExists else {
             playbackErrorMessage = L10n.filesAudioNotFound(session.fileName)
             return
         }
-        if audioPlayerController.playingID == session.id {
-            audioPlayerController.stop(restoreIdleState: true)
+        detailRoute = .audio(session.id)
+    }
+
+    private func openVideoDetail(_ session: VideoEvidenceSession) {
+        guard !isSelectionMode else {
+            toggleVideoSelection(session.id)
             return
         }
-
-        do {
-            try audioStateManager.prepareAndStartPlayback()
-        } catch {
-            playbackErrorMessage = error.localizedDescription
+        guard session.fileExists else {
+            playbackErrorMessage = L10n.filesVideoNotFound(session.fileName)
             return
         }
-
-        if let error = audioPlayerController.togglePlayback(for: session, onPlaybackFinished: {
-            audioStateManager.handlePlaybackFinished()
-        }) {
-            audioStateManager.handlePlaybackFinished()
-            playbackErrorMessage = error
-        }
-    }
-
-    private func markAudioAsRead(_ session: RecordingSession) {
-        guard session.isNew else { return }
-        session.isNew = false
-        try? modelContext.save()
-    }
-
-    private func markVideoAsRead(_ session: VideoEvidenceSession) {
-        guard session.isNew else { return }
-        session.isNew = false
-        try? modelContext.save()
-    }
-
-    private func repairStoredMediaPaths() {
-        var didRepair = false
-
-        for session in sessions {
-            if let repaired = EvidenceFileResolver.repairedRelativePath(
-                storedPath: session.filePath,
-                fileName: session.fileName,
-                folder: .recordings
-            ) {
-                session.filePath = repaired
-                didRepair = true
-            }
-        }
-
-        for session in videoSessions {
-            if let repaired = EvidenceFileResolver.repairedRelativePath(
-                storedPath: session.filePath,
-                fileName: session.fileName,
-                folder: .videoEvidence
-            ) {
-                session.filePath = repaired
-                didRepair = true
-            }
-        }
-
-        if didRepair {
-            try? modelContext.save()
-        }
+        detailRoute = .video(session.id)
     }
 
     // MARK: - Selection
@@ -622,6 +548,36 @@ struct RecordingListView: View {
             } else {
                 selectedVideoIDs = Set(sortedVideoSessions.map(\.id))
             }
+        }
+    }
+
+    private func repairStoredMediaPaths() {
+        var didRepair = false
+
+        for session in sessions {
+            if let repaired = EvidenceFileResolver.repairedRelativePath(
+                storedPath: session.filePath,
+                fileName: session.fileName,
+                folder: .recordings
+            ) {
+                session.filePath = repaired
+                didRepair = true
+            }
+        }
+
+        for session in videoSessions {
+            if let repaired = EvidenceFileResolver.repairedRelativePath(
+                storedPath: session.filePath,
+                fileName: session.fileName,
+                folder: .videoEvidence
+            ) {
+                session.filePath = repaired
+                didRepair = true
+            }
+        }
+
+        if didRepair {
+            try? modelContext.save()
         }
     }
 
@@ -708,17 +664,14 @@ struct RecordingListView: View {
     // MARK: - Delete
 
     private func deleteAudio(_ session: RecordingSession) {
-        audioPlayerController.stopIfPlaying(id: session.id)
         try? FileManager.default.removeItem(at: session.fileURL)
+        VideoNoiseTimelineStore.remove(for: session.fileURL)
         modelContext.delete(session)
         selectedAudioIDs.remove(session.id)
         try? modelContext.save()
     }
 
     private func deleteVideo(_ session: VideoEvidenceSession) {
-        if presentedVideoURL == session.fileURL {
-            finishVideoPlaybackFromSwipe()
-        }
         try? FileManager.default.removeItem(at: session.fileURL)
         VideoNoiseTimelineStore.remove(for: session.fileURL)
         modelContext.delete(session)
@@ -804,9 +757,7 @@ struct RecordingListView: View {
         }
         do {
             try FileManager.default.moveItem(at: oldURL, to: newURL)
-            if session is VideoEvidenceSession {
-                try? VideoNoiseTimelineStore.moveSidecar(from: oldURL, to: newURL)
-            }
+            try? VideoNoiseTimelineStore.moveSidecar(from: oldURL, to: newURL)
             update(newURL)
         } catch {
             renameErrorMessage = L10n.filesRenameFailed
@@ -838,7 +789,7 @@ private struct MediaListCard: View {
     let theme: ModeVisualTheme
     let isSelectionMode: Bool
     let isSelected: Bool
-    let onPlay: () -> Void
+    let onOpen: () -> Void
     let onShare: () -> Void
     var onSaveToPhotos: (() -> Void)?
     let onDelete: () -> Void
@@ -852,7 +803,7 @@ private struct MediaListCard: View {
                     if isSelectionMode {
                         onToggleSelection()
                     } else {
-                        onPlay()
+                        onOpen()
                     }
                 } label: {
                     HStack(alignment: .top, spacing: 12) {

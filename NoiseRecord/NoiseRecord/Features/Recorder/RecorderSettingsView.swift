@@ -29,26 +29,7 @@ struct RecorderSettingsView: View {
                 VStack(spacing: 20) {
                     statusHero
 
-                    if engine.voiceActivatedEnabled && !engine.isMonitoring {
-                        monitoringRequiredBanner
-                    }
-
-                ProCard(theme: theme) {
-                    ProToggleRow(
-                        title: L10n.recorderVoiceTitle,
-                        subtitle: L10n.recorderVoiceSubtitle,
-                        isOn: $engine.voiceActivatedEnabled,
-                        theme: theme,
-                        icon: "record.circle"
-                    )
-                    .onChange(of: engine.voiceActivatedEnabled) { _, _ in
-                        engine.persistSettings()
-                    }
-                }
-
-                if engine.voiceActivatedEnabled {
-                    thresholdCard
-                }
+                    sessionRecordingCard
 
                 ProCard(theme: theme) {
                     ProToggleRow(
@@ -106,22 +87,18 @@ struct RecorderSettingsView: View {
         cachedRecordingState = engine.recordingState
     }
 
-    private var monitoringRequiredBanner: some View {
+    private var sessionRecordingCard: some View {
         ProCard(theme: theme) {
-            VStack(alignment: .leading, spacing: 12) {
-                Label(L10n.recorderMonitoringRequiredTitle, systemImage: "exclamationmark.triangle.fill")
+            VStack(alignment: .leading, spacing: 10) {
+                Label(L10n.recorderSessionRecordingTitle, systemImage: "record.circle")
                     .font(.subheadline.bold())
                     .foregroundStyle(theme.accent)
-                Text(L10n.recorderMonitoringRequiredMessage)
+                Text(L10n.recorderSessionRecordingSubtitle)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Button(L10n.recorderMonitoringRequiredStart) {
-                    AdSceneLifecycle.recordFirstInteraction(source: "monitor_start_from_voice")
-                    Task { await engine.requestPermissionAndStart() }
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(theme.accent)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -129,13 +106,8 @@ struct RecorderSettingsView: View {
         VStack(spacing: 14) {
             HStack(spacing: 12) {
                 ProMetricCard(
-                    title: L10n.recorderMetricStart,
-                    value: "\(Int(engine.highThreshold))",
-                    theme: theme
-                )
-                ProMetricCard(
-                    title: L10n.recorderMetricStop,
-                    value: "\(Int(engine.lowThreshold))",
+                    title: L10n.recorderMetricMonitoring,
+                    value: engine.isMonitoring ? L10n.recorderStatusOn : L10n.recorderStatusOff,
                     theme: theme
                 )
                 ProMetricCard(
@@ -145,51 +117,9 @@ struct RecorderSettingsView: View {
                 )
             }
 
-            if engine.voiceActivatedEnabled {
+            if engine.isMonitoring {
                 ProRecordingStatusBadge(state: cachedRecordingState, theme: theme)
                     .id(appLanguageRevision)
-            } else {
-                Text(L10n.recorderStatusOff)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    private var thresholdCard: some View {
-        ProCard(theme: theme) {
-            VStack(alignment: .leading, spacing: 18) {
-                ProSectionHeader(
-                    title: L10n.recorderThresholdsTitle,
-                    subtitle: L10n.recorderThresholdsSubtitle,
-                    theme: theme
-                )
-
-                ProSliderRow(
-                    title: L10n.recorderThresholdStart,
-                    value: $engine.highThreshold,
-                    range: 30...90,
-                    step: 1,
-                    theme: theme
-                )
-                .onChange(of: engine.highThreshold) { _, _ in engine.persistSettings() }
-
-                ProSliderRow(
-                    title: L10n.recorderThresholdStop,
-                    value: $engine.lowThreshold,
-                    range: 20...80,
-                    step: 1,
-                    theme: theme
-                )
-                .onChange(of: engine.lowThreshold) { _, _ in engine.persistSettings() }
-
-                HStack(spacing: 8) {
-                    Image(systemName: "info.circle")
-                        .foregroundStyle(theme.accent)
-                    Text(L10n.recorderThresholdModeHint(measurementMode.segmentLabel))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
             }
         }
     }

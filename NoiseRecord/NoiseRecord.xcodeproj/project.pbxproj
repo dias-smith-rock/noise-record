@@ -551,7 +551,7 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is required to record evidence video with decibel overlays.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Location is used to embed GPS coordinates in evidence video.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Location is used to embed GPS coordinates in audio and video evidence.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone access is required to measure noise and record voice-activated audio.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Photo library access is required to save evidence videos to your album.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -602,7 +602,7 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is required to record evidence video with decibel overlays.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Location is used to embed GPS coordinates in evidence video.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Location is used to embed GPS coordinates in audio and video evidence.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone access is required to measure noise and record voice-activated audio.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Photo library access is required to save evidence videos to your album.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;

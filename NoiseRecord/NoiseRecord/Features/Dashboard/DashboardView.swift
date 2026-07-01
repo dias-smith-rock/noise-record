@@ -14,7 +14,6 @@ struct DashboardView: View {
     @State private var showReportSheet = false
     @State private var csvShareURL: URL?
     @State private var showCSVShare = false
-    @State private var showStopRecordingPrompt = false
     @State private var csvExportErrorMessage: String?
     @State private var measurementPersistTick = 0
     @State private var isFullScreenPresented = false
@@ -124,15 +123,13 @@ struct DashboardView: View {
         } message: {
             Text(csvExportErrorMessage ?? "")
         }
-        .alert(L10n.dashboardStopPromptTitle, isPresented: $showStopRecordingPrompt) {
-            Button(L10n.dashboardStopPromptSave, role: .destructive) {
-                commitStopSaveDecision(keep: true)
-            }
-            Button(L10n.dashboardStopPromptDiscard) {
-                commitStopSaveDecision(keep: false)
-            }
+        .alert(L10n.errorTitle, isPresented: Binding(
+            get: { csvExportErrorMessage != nil },
+            set: { if !$0 { csvExportErrorMessage = nil } }
+        )) {
+            Button(L10n.ok, role: .cancel) { csvExportErrorMessage = nil }
         } message: {
-            Text(stopRecordingPromptMessage)
+            Text(csvExportErrorMessage ?? "")
         }
         .fullScreenCover(isPresented: $isFullScreenPresented) {
             FullscreenLEDView(
@@ -212,7 +209,7 @@ struct DashboardView: View {
                 StatCard(title: L10n.dashboardLeq, value: engine.leq, theme: theme)
             }
 
-            if engine.voiceActivatedEnabled {
+            if engine.isMonitoring {
                 ProRecordingStatusBadge(state: engine.recordingState, theme: theme)
             }
 
@@ -298,12 +295,8 @@ struct DashboardView: View {
         }
     }
 
-    private var stopRecordingPromptMessage: String {
-        let total = engine.currentSessionRecordingCount + engine.deferredRecordingsForStopPrompt.count
-        if total > 1 {
-            return L10n.dashboardStopPromptMultiple(total)
-        }
-        return L10n.dashboardStopPromptInProgress
+    private func handleStopMonitoringTapped() {
+        audioStateManager.stopMonitoringManually()
     }
 
     private func refreshFullscreenLEDGuideVisibility() {
@@ -324,59 +317,6 @@ struct DashboardView: View {
         }
         showsFullscreenLEDGuide = false
         FullscreenLEDGuideStore.markSeen()
-    }
-
-    /// 停止监测：与 `voiceActivatedEnabled` 当前开关无关；有录音 / 曾录制 / deferred 非空即询问是否保留。
-    private func handleStopMonitoringTapped() {
-        let hadSavedRecordings = !engine.currentSessionRecordingIDs.isEmpty
-        let wasCapturing = engine.activeVoiceCaptureState != .idle
-        if hadSavedRecordings || wasCapturing {
-            engine.prepareStopWithSavePrompt()
-        }
-
-        audioStateManager.stopMonitoringManually()
-
-        let needsSavePrompt = hadSavedRecordings
-            || wasCapturing
-            || !engine.deferredRecordingsForStopPrompt.isEmpty
-            || !engine.currentSessionRecordingIDs.isEmpty
-
-        if needsSavePrompt {
-            Task { @MainActor in
-                await Task.yield()
-                showStopRecordingPrompt = true
-            }
-        } else {
-            engine.clearMonitoringSessionTracking()
-        }
-    }
-
-    private func commitStopSaveDecision(keep: Bool) {
-        if keep {
-            engine.commitDeferredRecordings()
-        } else {
-            engine.isDiscardingSessionRecordings = true
-            engine.discardDeferredRecordings()
-            deleteCurrentSessionRecordings()
-            engine.isDiscardingSessionRecordings = false
-        }
-        engine.clearMonitoringSessionTracking()
-    }
-
-    private func deleteCurrentSessionRecordings() {
-        let ids = engine.currentSessionRecordingIDs
-        guard !ids.isEmpty else { return }
-
-        for id in ids {
-            var descriptor = FetchDescriptor<RecordingSession>(
-                predicate: #Predicate { $0.id == id }
-            )
-            descriptor.fetchLimit = 1
-            guard let session = try? modelContext.fetch(descriptor).first else { continue }
-            try? FileManager.default.removeItem(at: session.fileURL)
-            modelContext.delete(session)
-        }
-        try? modelContext.save()
     }
 
     private var footerNote: String {

@@ -14,6 +14,9 @@ final class RecordingSession {
     var noiseType: String?
     var fileHash: String?
     var isNew: Bool = false
+    var notes: String = ""
+    var latitude: Double?
+    var longitude: Double?
 
     init(
         fileName: String,
@@ -22,7 +25,9 @@ final class RecordingSession {
         endedAt: Date,
         peakDB: Float,
         averageDB: Float,
-        noiseType: String? = nil
+        noiseType: String? = nil,
+        latitude: Double? = nil,
+        longitude: Double? = nil
     ) {
         self.id = UUID()
         self.fileName = fileName
@@ -32,6 +37,8 @@ final class RecordingSession {
         self.peakDB = peakDB
         self.averageDB = averageDB
         self.noiseType = noiseType
+        self.latitude = latitude
+        self.longitude = longitude
         self.fileHash = Self.hashFile(at: filePath)
         self.isNew = true
     }
@@ -54,6 +61,10 @@ final class RecordingSession {
 
     var duration: TimeInterval {
         endedAt.timeIntervalSince(startedAt)
+    }
+
+    var noiseTimeline: VideoNoiseTimeline? {
+        VideoNoiseTimelineStore.load(for: fileURL)
     }
 
     static func hashFile(at path: String) -> String? {

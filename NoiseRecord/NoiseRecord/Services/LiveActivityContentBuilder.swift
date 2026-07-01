@@ -13,18 +13,12 @@ enum LiveActivityContentBuilder {
 
     static func statusMessage(
         isHighSensitivity: Bool,
-        recordingState: RecordingState,
-        voiceActivatedEnabled: Bool
+        recordingState: RecordingState
     ) -> String {
         switch recordingState {
         case .recording:
             return L10n.liveActivityStatusVoiceRecording
-        case .coolingDown:
-            return L10n.recordingTailDelay
         case .idle:
-            if voiceActivatedEnabled {
-                return L10n.liveActivityStatusVoiceStandby
-            }
             return isHighSensitivity
                 ? L10n.liveActivityStatusMonitoringHighSensitivity
                 : L10n.liveActivityStatusMonitoringStandard

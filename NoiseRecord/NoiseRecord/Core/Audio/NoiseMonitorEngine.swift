@@ -110,6 +110,7 @@ final class NoiseMonitorEngine {
     private var activeFFTConfiguration: FFTConfiguration = .standard
     private var uiFrameCounter = 0
     private let voiceRecorder = VoiceActivatedRecorder()
+    private let locationProvider = LocationEvidenceProvider()
     private var noiseClassifier: NoiseClassifierManager?
     private var sampleCount = 0
     private var lastUIUpdate = Date.distantPast
@@ -149,39 +150,18 @@ final class NoiseMonitorEngine {
     private var interruptionObserver: NSObjectProtocol?
     private var mediaResetObserver: NSObjectProtocol?
     private var calibrationObserver: NSObjectProtocol?
-    private(set) var currentSessionRecordingIDs: [UUID] = []
-    var isDiscardingSessionRecordings = false
-    private(set) var deferredRecordingsForStopPrompt: [RecordingFinishedEvent] = []
-    private(set) var isAwaitingStopSaveDecision = false
 
     var onRecordingFinished: ((RecordingFinishedEvent) -> Void)?
     var onVideoEmergencyFinalize: (() -> Void)?
 
-    /// 是否与声控开关当前状态无关：只要本次监测有录音待确认即应弹窗。
-    var shouldPromptForRecordingsOnStop: Bool {
-        !currentSessionRecordingIDs.isEmpty || activeVoiceCaptureState != .idle
-    }
-
-    /// 声控录音实时状态（比 UI 帧同步的 `recordingState` 更可靠）。
+    /// 监测期间连续录音实时状态。
     var activeVoiceCaptureState: RecordingState {
         voiceRecorder.state
     }
 
-    /// 监测期间声控采集链路是否运行（与 Voice 开关 UI 状态无关）。
+    /// 监测期间连续录音链路是否运行。
     var isVoiceRecordingRunning: Bool {
         isMonitoring
-    }
-
-    /// 是否将当前帧送入声控录音器（AI 标签过滤仍生效）。
-    private var shouldProcessVoiceRecorder: Bool {
-        if aiClassificationEnabled && !aiFilterLabels.isEmpty {
-            return cachedNoiseLabel.map { aiFilterLabels.contains($0) } ?? false
-        }
-        return true
-    }
-
-    var currentSessionRecordingCount: Int {
-        currentSessionRecordingIDs.count
     }
 
     /// Effective weighting applied to the audio pipeline.
@@ -209,8 +189,6 @@ final class NoiseMonitorEngine {
         aiFilterLabels = VoiceSettingsStore.aiFilterLabels
         isHighSensitivityMode = DeviceCalibrationStore.isHighSensitivityMode
 
-        voiceRecorder.highThreshold = pair.high
-        voiceRecorder.lowThreshold = pair.low
         isNormalizingThresholds = false
         isLoadingPersistedSettings = false
         enforcePremiumFeatureAccessSilently()
@@ -218,12 +196,7 @@ final class NoiseMonitorEngine {
 
         voiceRecorder.onRecordingFinished = { [weak self] event in
             Task { @MainActor in
-                guard let self else { return }
-                if self.isAwaitingStopSaveDecision {
-                    self.deferredRecordingsForStopPrompt.append(event)
-                    return
-                }
-                self.onRecordingFinished?(event)
+                self?.onRecordingFinished?(event)
             }
         }
 
@@ -235,7 +208,7 @@ final class NoiseMonitorEngine {
     private func configureVoiceRecordingLimits() {
         let isPremium = SubscriptionManager.shared.isPremiumUser
         voiceRecorder.maxClipDuration = isPremium
-            ? VoiceActivatedRecorder.maxSegmentDuration
+            ? VoiceActivatedRecorder.maxSessionDurationPro
             : VoiceActivatedRecorder.freeMaxClipDuration
         voiceRecorder.onClipDurationLimitReached = isPremium ? nil : { [weak self] in
             guard self != nil else { return }
@@ -344,13 +317,15 @@ final class NoiseMonitorEngine {
         resetStatistics()
         refreshCalibrationOffset()
         configureVoiceRecordingLimits()
-        beginMonitoringSession()
         setupAudioPipeline()
 
         do {
             audioEngine.prepare()
             try audioEngine.start()
             isMonitoring = true
+            voiceRecorder.beginSession()
+            locationProvider.requestPermission()
+            locationProvider.startUpdating()
             AppTelemetry.setMonitoringActive(true)
             Task {
                 await LiveActivityManager.shared.startLiveActivity(
@@ -368,46 +343,29 @@ final class NoiseMonitorEngine {
         }
     }
 
-    func noteRecordingSaved(id: UUID) {
+    func stopMonitoring() {
         guard isMonitoring else { return }
-        currentSessionRecordingIDs.append(id)
-    }
-
-    func beginMonitoringSession() {
-        currentSessionRecordingIDs.removeAll()
-        isDiscardingSessionRecordings = false
-    }
-
-    func clearMonitoringSessionTracking() {
-        currentSessionRecordingIDs.removeAll()
-        isDiscardingSessionRecordings = false
-        deferredRecordingsForStopPrompt.removeAll()
-        isAwaitingStopSaveDecision = false
-    }
-
-    func prepareStopWithSavePrompt() {
-        isAwaitingStopSaveDecision = true
-        deferredRecordingsForStopPrompt.removeAll()
-    }
-
-    func commitDeferredRecordings() {
-        let events = deferredRecordingsForStopPrompt
-        deferredRecordingsForStopPrompt.removeAll()
-        isAwaitingStopSaveDecision = false
-        for event in events {
-            onRecordingFinished?(event)
+        audioEngine.inputNode.removeTap(onBus: 0)
+        audioEngine.stop()
+        locationProvider.stopUpdating()
+        voiceRecorder.endSession(
+            peakDB: maxDB,
+            averageDB: averageDB,
+            noiseType: latestNoiseLabel,
+            latitude: locationProvider.latitude,
+            longitude: locationProvider.longitude
+        )
+        noiseClassifier?.stop()
+        isMonitoring = false
+        recordingState = .idle
+        minDB = 0
+        sessionMinDB = 120
+        AppTelemetry.setMonitoringActive(false)
+        AppTelemetry.logProductEvent("monitoring_stop")
+        Task {
+            await LiveActivityManager.shared.endLiveActivity()
         }
     }
-
-    func discardDeferredRecordings() {
-        for event in deferredRecordingsForStopPrompt {
-            try? FileManager.default.removeItem(at: event.fileURL)
-        }
-        deferredRecordingsForStopPrompt.removeAll()
-        isAwaitingStopSaveDecision = false
-    }
-
-    /// Starts monitoring while the app is still foreground-eligible so background audio can continue.
     func prepareForBackgroundIfNeeded() {
         guard backgroundMonitoringEnabled else { return }
         guard !isMonitoring else {
@@ -436,23 +394,6 @@ final class NoiseMonitorEngine {
 
     func handleDidBecomeActive() {
         resumeMonitoringIfNeededAfterForeground()
-    }
-
-    func stopMonitoring() {
-        guard isMonitoring else { return }
-        audioEngine.inputNode.removeTap(onBus: 0)
-        audioEngine.stop()
-        voiceRecorder.forceStop()
-        noiseClassifier?.stop()
-        isMonitoring = false
-        recordingState = .idle
-        minDB = 0
-        sessionMinDB = 120
-        AppTelemetry.setMonitoringActive(false)
-        AppTelemetry.logProductEvent("monitoring_stop")
-        Task {
-            await LiveActivityManager.shared.endLiveActivity()
-        }
     }
 
     /// 为媒体播放让路：完全停止引擎与 tap，并清零仪表显示（不自动恢复）。
@@ -575,8 +516,6 @@ final class NoiseMonitorEngine {
         isNormalizingThresholds = true
         highThreshold = pair.high
         lowThreshold = pair.low
-        voiceRecorder.highThreshold = pair.high
-        voiceRecorder.lowThreshold = pair.low
         isNormalizingThresholds = false
         if !isLoadingPersistedSettings {
             persistSettings()
@@ -786,14 +725,12 @@ final class NoiseMonitorEngine {
             dbfs = measurement.dbfs
             smoothed = slidingAverage.add(dbSPL)
 
-            if shouldProcessVoiceRecorder {
-                voiceRecorder.process(
-                    filteredSamples: base,
-                    frameLength: frameLength,
-                    dbSPL: dbSPL,
-                    format: buffer.format
-                )
-            }
+            voiceRecorder.process(
+                filteredSamples: base,
+                frameLength: frameLength,
+                dbSPL: dbSPL,
+                format: buffer.format
+            )
         }
 
         leqCalculator.addSample(dbSPL: dbSPL)
@@ -876,7 +813,6 @@ final class NoiseMonitorEngine {
             currentDB: snapshotSmoothed,
             isHighSensitivity: isHighSensitivityMode,
             weightingType: weightingType,
-            voiceActivatedEnabled: voiceActivatedEnabled,
             recordingState: state,
             historyTail: historySnapshot
         )
