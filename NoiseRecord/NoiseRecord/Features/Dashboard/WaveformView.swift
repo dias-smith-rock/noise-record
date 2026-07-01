@@ -3,11 +3,9 @@ import SwiftUI
 struct WaveformView: View, Equatable {
     let samples: [Float]
     var mode: AcousticMeasurementMode = .standard
-    var accentOverride: Color? = nil
     var usesCardChrome: Bool = true
 
     private var theme: ModeVisualTheme { .theme(for: mode) }
-    private var strokeColor: Color { accentOverride ?? theme.accent }
     private var minDB: Float { mode.waveformMinDB }
     private var maxDB: Float { mode.waveformMaxDB }
 
@@ -22,33 +20,27 @@ struct WaveformView: View, Equatable {
         Canvas { context, size in
             guard samples.count > 1, size.width > 1, size.height > 1 else { return }
 
-            let pointCount = min(samples.count, max(Int(size.width), 2))
-            let dbRange = max(maxDB - minDB, 1)
-            var path = Path()
+            let points = resampledPoints(samples: samples, size: size, minDB: minDB, maxDB: maxDB)
+            guard points.count > 1 else { return }
 
-            for pointIndex in 0..<pointCount {
-                let sampleIndex = pointIndex * (samples.count - 1) / max(pointCount - 1, 1)
-                let sample = samples[sampleIndex]
-                let x = size.width * CGFloat(pointIndex) / CGFloat(max(pointCount - 1, 1))
-                let normalized = CGFloat((sample - minDB) / dbRange)
-                let y = size.height * (1 - min(max(normalized, 0), 1))
-                let point = CGPoint(x: x, y: y)
-                if pointIndex == 0 {
-                    path.move(to: point)
-                } else {
-                    path.addLine(to: point)
-                }
-            }
-
-            context.stroke(
-                path,
-                with: .color(strokeColor),
-                style: StrokeStyle(
-                    lineWidth: usesCardChrome ? theme.waveformLineWidth : 2,
-                    lineCap: .round,
-                    lineJoin: .round
-                )
+            let strokeStyle = StrokeStyle(
+                lineWidth: usesCardChrome ? theme.waveformLineWidth : 2,
+                lineCap: .round,
+                lineJoin: .round
             )
+
+            for index in 1..<points.count {
+                let (startPoint, startDB) = points[index - 1]
+                let (endPoint, endDB) = points[index]
+                let segmentColor = AcousticGaugeStyle.color(
+                    forDecibel: (startDB + endDB) * 0.5
+                )
+
+                var segment = Path()
+                segment.move(to: startPoint)
+                segment.addLine(to: endPoint)
+                context.stroke(segment, with: .color(segmentColor), style: strokeStyle)
+            }
         }
         .background(usesCardChrome ? AnyShapeStyle(Color(.secondarySystemGroupedBackground)) : AnyShapeStyle(Color.clear))
         .overlay {
@@ -60,6 +52,31 @@ struct WaveformView: View, Equatable {
         .clipShape(RoundedRectangle(cornerRadius: usesCardChrome ? 12 : 0))
         .drawingGroup()
     }
+}
+
+// MARK: - Sampling
+
+private func resampledPoints(
+    samples: [Float],
+    size: CGSize,
+    minDB: Float,
+    maxDB: Float
+) -> [(CGPoint, Float)] {
+    let pointCount = min(samples.count, max(Int(size.width), 2))
+    let dbRange = max(maxDB - minDB, 1)
+    var points: [(CGPoint, Float)] = []
+    points.reserveCapacity(pointCount)
+
+    for pointIndex in 0..<pointCount {
+        let sampleIndex = pointIndex * (samples.count - 1) / max(pointCount - 1, 1)
+        let sample = samples[sampleIndex]
+        let x = size.width * CGFloat(pointIndex) / CGFloat(max(pointCount - 1, 1))
+        let normalized = CGFloat((sample - minDB) / dbRange)
+        let y = size.height * (1 - min(max(normalized, 0), 1))
+        points.append((CGPoint(x: x, y: y), sample))
+    }
+
+    return points
 }
 
 struct SpectrumView: View, Equatable {

@@ -29,4 +29,16 @@ final class AcousticGaugeStyleTests: XCTestCase {
         let boundaryAccent = AcousticGaugeStyle.color(forDecibel: 30)
         XCTAssertEqual(quietAccent, boundaryAccent)
     }
+
+    func testColorsDifferBetweenQuietAndLoudDecibels() {
+        let quiet = AcousticGaugeStyle.color(forDecibel: 40)
+        let loud = AcousticGaugeStyle.color(forDecibel: 90)
+        XCTAssertNotEqual(quiet, loud)
+    }
+
+    func testSegmentMidpointColorMatchesMeanDecibel() {
+        let segment = AcousticGaugeStyle.color(forDecibel: (50 + 80) * 0.5)
+        let direct = AcousticGaugeStyle.color(forDecibel: 65)
+        XCTAssertEqual(segment, direct)
+    }
 }

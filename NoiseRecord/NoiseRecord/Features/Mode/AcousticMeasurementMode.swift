@@ -30,14 +30,14 @@ enum AcousticMeasurementMode: String, CaseIterable, Identifiable, Sendable {
     var waveformMinDB: Float {
         switch self {
         case .standard: 30
-        case .highSensitivity: 42
+        case .highSensitivity: 35
         }
     }
 
     var waveformMaxDB: Float {
         switch self {
         case .standard: 72
-        case .highSensitivity: 68
+        case .highSensitivity: 100
         }
     }
 }
