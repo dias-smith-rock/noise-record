@@ -368,22 +368,18 @@ struct ProFloatingActionButton: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 10) {
-                Image(systemName: systemImage)
-                    .font(.title2.weight(.semibold))
-                Text(title)
-                    .font(.headline)
-            }
-            .foregroundStyle(.white)
-            .padding(.horizontal, 28)
-            .padding(.vertical, 16)
-            .background(
-                Capsule()
-                    .fill(isDestructive ? Color.red : theme.accent)
-                    .shadow(color: .black.opacity(0.28), radius: 14, y: 8)
-            )
+            Image(systemName: systemImage)
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(.white)
+                .frame(width: 56, height: 56)
+                .background(
+                    Circle()
+                        .fill(isDestructive ? Color.red : theme.accent)
+                        .shadow(color: .black.opacity(0.28), radius: 14, y: 8)
+                )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(title)
     }
 }
 

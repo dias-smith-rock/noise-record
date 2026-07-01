@@ -1,28 +1,5 @@
 import SwiftUI
 
-// MARK: - 刻度与色带
-
-private enum DecibelGaugeScale {
-    static let minDB: Float = 20
-    static let maxDB: Float = 140
-    static let span: Float = maxDB - minDB
-
-    static let quietUpper: Float = 50
-    static let moderateUpper: Float = 90
-
-    /// 表盘弧起点（7:30）与扫掠角（经 12 点至 4:30，底部留空）。
-    static let startClockDegrees: Double = 225
-    static let sweepDegrees: Double = 270
-
-    static let quietColor = Color(red: 0.28, green: 0.76, blue: 0.48)
-    static let moderateColor = Color(red: 1.0, green: 0.62, blue: 0.18)
-    static let loudColor = Color(red: 0.94, green: 0.27, blue: 0.24)
-    static let trackColor = Color.primary.opacity(0.10)
-    static let tickMajorColor = Color.primary.opacity(0.42)
-    static let tickMinorColor = Color.primary.opacity(0.18)
-    static let needleColor = Color(red: 0.94, green: 0.27, blue: 0.24)
-}
-
 struct NoiseLevelGauge: View {
     let db: Float
     var mode: AcousticMeasurementMode = .standard
@@ -32,17 +9,24 @@ struct NoiseLevelGauge: View {
     var onFullscreenTap: (() -> Void)?
 
     private var theme: ModeVisualTheme { .theme(for: mode) }
-    private var risk: NoiseRiskLevel { .from(db: db, highSensitivity: mode.isHighSensitivity) }
 
     private var animatedDB: Float {
         (db * 2).rounded() / 2
+    }
+
+    private var ambientNoiseDescription: String {
+        AcousticGaugeStyle.ambientNoiseDescription(forDecibel: db)
+    }
+
+    private var zoneAccentColor: Color {
+        AcousticGaugeStyle.zoneAccentColor(forDecibel: db)
     }
 
     var body: some View {
         VStack(spacing: 10) {
             ZStack(alignment: .topTrailing) {
                 gaugeDial
-                    .frame(height: 210)
+                    .frame(height: 232)
                     .frame(maxWidth: .infinity)
 
                 if let onFullscreenTap {
@@ -67,10 +51,12 @@ struct NoiseLevelGauge: View {
                     tint: Color(red: 0.35, green: 0.68, blue: 0.92)
                 )
 
-                Text(risk.label)
-                    .font(.subheadline)
-                    .foregroundStyle(risk.color)
+                Text(ambientNoiseDescription)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(zoneAccentColor)
                     .multilineTextAlignment(.center)
+                    .shadow(color: zoneAccentColor.opacity(0.30), radius: 5)
+                    .animation(.easeOut(duration: 0.18), value: ambientNoiseDescription)
 
                 EnvironmentInlineMetric(
                     symbol: "thermometer.medium",
@@ -108,61 +94,63 @@ struct NoiseLevelGauge: View {
             ZStack {
                 Canvas { context, _ in
                     drawTrack(context: &context, layout: layout)
-                    drawColorZones(context: &context, layout: layout)
+                    drawGradientArc(context: &context, layout: layout)
                     drawTicks(context: &context, layout: layout)
                     drawNeedle(context: &context, layout: layout, db: animatedDB)
                 }
 
                 VStack(spacing: 4) {
                     Text(String(format: "%.1f", db))
-                        .font(.system(size: 46, weight: .bold, design: .rounded))
+                        .font(.system(size: 50, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundStyle(.primary)
                         .contentTransition(.numericText())
                         .animation(.linear(duration: 0.08), value: animatedDB)
-
-                    Text(mode.technicalBadge)
-                        .font(.caption.bold())
-                        .foregroundStyle(theme.accent)
                 }
-                .position(x: layout.center.x, y: layout.center.y + layout.size * 0.06)
+                .position(x: layout.center.x, y: layout.center.y + layout.size * 0.04)
             }
         }
-        .aspectRatio(1.15, contentMode: .fit)
-        .padding(.horizontal, 8)
+        .aspectRatio(1.08, contentMode: .fit)
+        .padding(.horizontal, 2)
     }
 
-    // MARK: - Canvas 绘制
+    // MARK: - Canvas
 
     private func drawTrack(context: inout GraphicsContext, layout: GaugeLayout) {
-        let path = layout.arcPath(from: DecibelGaugeScale.minDB, to: DecibelGaugeScale.maxDB)
+        let path = layout.arcPath(
+            from: AcousticGaugeStyle.displayMinDecibel,
+            to: AcousticGaugeStyle.displayMaxDecibel
+        )
         context.stroke(
             path,
-            with: .color(DecibelGaugeScale.trackColor),
+            with: .color(AcousticGaugeStyle.trackColor),
             style: StrokeStyle(lineWidth: layout.trackWidth, lineCap: .round)
         )
     }
 
-    private func drawColorZones(context: inout GraphicsContext, layout: GaugeLayout) {
-        let zones: [(Float, Float, Color)] = [
-            (DecibelGaugeScale.minDB, DecibelGaugeScale.quietUpper, DecibelGaugeScale.quietColor),
-            (DecibelGaugeScale.quietUpper, DecibelGaugeScale.moderateUpper, DecibelGaugeScale.moderateColor),
-            (DecibelGaugeScale.moderateUpper, DecibelGaugeScale.maxDB, DecibelGaugeScale.loudColor),
-        ]
+    /// 按 dB 分段采样渐变 stop，与 150°–390° 弧长严格等比例。
+    private func drawGradientArc(context: inout GraphicsContext, layout: GaugeLayout) {
+        let segmentCount = Int(AcousticGaugeStyle.displaySpan)
+        context.drawLayer { layer in
+            layer.addFilter(.shadow(color: .black.opacity(0.35), radius: 2, x: 0, y: 1))
 
-        for (start, end, color) in zones {
-            let path = layout.arcPath(from: start, to: end)
-            context.stroke(
-                path,
-                with: .color(color.opacity(0.92)),
-                style: StrokeStyle(lineWidth: layout.zoneWidth, lineCap: .butt)
-            )
+            for index in 0..<segmentCount {
+                let startDB = AcousticGaugeStyle.displayMinDecibel + Float(index)
+                let endDB = startDB + 1
+                let color = AcousticGaugeStyle.color(forDecibel: (startDB + endDB) * 0.5)
+                let path = layout.arcPath(from: startDB, to: endDB)
+                layer.stroke(
+                    path,
+                    with: .color(color),
+                    style: StrokeStyle(lineWidth: layout.zoneWidth, lineCap: .butt, lineJoin: .round)
+                )
+            }
         }
     }
 
     private func drawTicks(context: inout GraphicsContext, layout: GaugeLayout) {
-        var db = DecibelGaugeScale.minDB
-        while db <= DecibelGaugeScale.maxDB + 0.1 {
+        var db = AcousticGaugeStyle.displayMinDecibel
+        while db <= AcousticGaugeStyle.displayMaxDecibel + 0.1 {
             let isMajor = Int(db) % 20 == 0
             let outer = layout.point(for: db, radius: layout.radius)
             let inner = layout.point(
@@ -175,7 +163,7 @@ struct NoiseLevelGauge: View {
             tick.addLine(to: inner)
             context.stroke(
                 tick,
-                with: .color(isMajor ? DecibelGaugeScale.tickMajorColor : DecibelGaugeScale.tickMinorColor),
+                with: .color(isMajor ? AcousticGaugeStyle.tickMajorColor : AcousticGaugeStyle.tickMinorColor),
                 style: StrokeStyle(lineWidth: isMajor ? 1.5 : 0.75, lineCap: .round)
             )
 
@@ -197,28 +185,33 @@ struct NoiseLevelGauge: View {
     private func drawNeedle(context: inout GraphicsContext, layout: GaugeLayout, db: Float) {
         let hub = layout.center
         let tip = layout.point(for: db, radius: layout.radius - layout.zoneWidth * 0.5 - 6)
+        let needleColor = AcousticGaugeStyle.color(forDecibel: db)
 
-        var needle = Path()
-        needle.move(to: hub)
-        needle.addLine(to: tip)
-        context.stroke(
-            needle,
-            with: .color(DecibelGaugeScale.needleColor),
-            style: StrokeStyle(lineWidth: 2, lineCap: .round)
-        )
+        context.drawLayer { layer in
+            layer.addFilter(.shadow(color: needleColor.opacity(0.35), radius: 4, x: 0, y: 0))
 
-        let hubRadius: CGFloat = 5
-        let hubRect = CGRect(
-            x: hub.x - hubRadius,
-            y: hub.y - hubRadius,
-            width: hubRadius * 2,
-            height: hubRadius * 2
-        )
-        context.fill(Path(ellipseIn: hubRect), with: .color(DecibelGaugeScale.needleColor))
-        context.fill(
-            Path(ellipseIn: hubRect.insetBy(dx: 1.5, dy: 1.5)),
-            with: .color(Color(.secondarySystemGroupedBackground))
-        )
+            var needle = Path()
+            needle.move(to: hub)
+            needle.addLine(to: tip)
+            layer.stroke(
+                needle,
+                with: .color(needleColor),
+                style: StrokeStyle(lineWidth: 2.5, lineCap: .round)
+            )
+
+            let hubRadius: CGFloat = 5
+            let hubRect = CGRect(
+                x: hub.x - hubRadius,
+                y: hub.y - hubRadius,
+                width: hubRadius * 2,
+                height: hubRadius * 2
+            )
+            layer.fill(Path(ellipseIn: hubRect), with: .color(needleColor))
+            layer.fill(
+                Path(ellipseIn: hubRect.insetBy(dx: 1.5, dy: 1.5)),
+                with: .color(Color.black.opacity(0.88))
+            )
+        }
     }
 }
 
@@ -237,15 +230,12 @@ private struct GaugeLayout {
     init(size: CGSize) {
         let side = min(size.width, size.height)
         self.size = side
-        self.radius = side * 0.40
-        self.center = CGPoint(x: size.width * 0.5, y: size.height * 0.52)
+        self.radius = side * 0.48
+        self.center = CGPoint(x: size.width * 0.5, y: size.height * 0.50)
     }
 
     func point(for db: Float, radius: CGFloat) -> CGPoint {
-        let clamped = min(max(db, DecibelGaugeScale.minDB), DecibelGaugeScale.maxDB)
-        let fraction = CGFloat((clamped - DecibelGaugeScale.minDB) / DecibelGaugeScale.span)
-        let degrees = DecibelGaugeScale.startClockDegrees + Double(fraction) * DecibelGaugeScale.sweepDegrees
-        let radians = (degrees - 90) * .pi / 180
+        let radians = AcousticGaugeStyle.angleDegrees(forDecibel: db) * .pi / 180
         return CGPoint(
             x: center.x + radius * cos(radians),
             y: center.y + radius * sin(radians)
@@ -254,7 +244,7 @@ private struct GaugeLayout {
 
     func arcPath(from startDB: Float, to endDB: Float) -> Path {
         var path = Path()
-        let steps = max(2, Int((endDB - startDB) / 4))
+        let steps = max(2, Int((endDB - startDB) * 2))
         for step in 0...steps {
             let db = startDB + (endDB - startDB) * Float(step) / Float(steps)
             let point = point(for: db, radius: radius)
