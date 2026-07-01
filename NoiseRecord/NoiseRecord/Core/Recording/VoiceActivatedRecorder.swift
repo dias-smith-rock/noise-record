@@ -153,18 +153,22 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
         }
     }
 
+    @discardableResult
     func endSession(
         peakDB: Float,
         averageDB: Float,
         noiseType: String?,
         latitude: Double?,
         longitude: Double?
-    ) {
+    ) -> [RecordingFinishedEvent] {
+        var events: [RecordingFinishedEvent] = []
         fileQueue.sync {
             guard isSessionActive else { return }
             defer { resetAllLocked() }
 
-            finalizeActiveVADSegmentLocked()
+            if let segmentEvent = finalizeActiveVADSegmentLocked(emitEvent: false) {
+                events.append(segmentEvent)
+            }
 
             try? flushSessionToFileLocked()
 
@@ -185,22 +189,24 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
             sessionAudioFile = nil
             saveNoiseTimeline(samples: takeSessionTimelineSamples(), for: url)
 
-            let event = RecordingFinishedEvent(
-                fileURL: url,
-                peakDB: peakDB,
-                averageDB: averageDB,
-                startedAt: sessionStart,
-                endedAt: Date(),
-                noiseType: noiseType ?? currentNoiseType,
-                segmentIndex: 0,
-                latitude: latitude,
-                longitude: longitude,
-                isSessionRecording: true,
-                segmentGroupID: monitoringSessionGroupID
+            events.append(
+                RecordingFinishedEvent(
+                    fileURL: url,
+                    peakDB: peakDB,
+                    averageDB: averageDB,
+                    startedAt: sessionStart,
+                    endedAt: Date(),
+                    noiseType: noiseType ?? currentNoiseType,
+                    segmentIndex: 0,
+                    latitude: latitude,
+                    longitude: longitude,
+                    isSessionRecording: true,
+                    segmentGroupID: monitoringSessionGroupID
+                )
             )
-            onRecordingFinished?(event)
         }
         state = .idle
+        return events
     }
 
     /// Flush buffered PCM during lifecycle events without ending the session file.
@@ -373,12 +379,14 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
         resetVADState()
     }
 
-    private func finalizeActiveVADSegmentLocked() {
-        guard state == .recording || state == .coolingDown else { return }
-        if segmentAudioFile != nil {
-            try? finalizeOpenSegmentLocked(emitEvent: true)
-        }
+    @discardableResult
+    private func finalizeActiveVADSegmentLocked(emitEvent: Bool) -> RecordingFinishedEvent? {
+        guard state == .recording || state == .coolingDown else { return nil }
+        let event = segmentAudioFile != nil
+            ? try? finalizeOpenSegmentLocked(emitEvent: emitEvent)
+            : nil
         resetVADLocked()
+        return event
     }
 
     private func resetVADState() {
@@ -502,7 +510,7 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
     }
 
     @discardableResult
-    private func finalizeOpenSegmentLocked(emitEvent: Bool) throws -> URL? {
+    private func finalizeOpenSegmentLocked(emitEvent: Bool) throws -> RecordingFinishedEvent? {
         guard let file = segmentAudioFile,
               let segmentStart = segmentStartDate else {
             segmentAudioFile = nil
@@ -513,8 +521,6 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
         let url = file.url
         segmentAudioFile = nil
         saveNoiseTimeline(samples: takeSegmentTimelineSamples(), for: url)
-
-        guard emitEvent else { return url }
 
         let location = locationSnapshot()
         let event = RecordingFinishedEvent(
@@ -530,8 +536,10 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
             isSessionRecording: false,
             segmentGroupID: monitoringSessionGroupID
         )
-        onRecordingFinished?(event)
-        return url
+        if emitEvent {
+            onRecordingFinished?(event)
+        }
+        return event
     }
 
     private func aacSettings(sampleRate: Double) -> [String: Any] {

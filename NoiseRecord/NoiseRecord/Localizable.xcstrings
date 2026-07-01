@@ -11303,6 +11303,40 @@
         }
       }
     },
+    "dashboard.stopPrompt.session.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duration: %1$@\nSize: %2$@\nAuto-saved clips: %3$d"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "时长：%1$@\n大小：%2$@\n已自动存档片段：%3$d 个"
+          }
+        }
+      }
+    },
+    "dashboard.stopPrompt.session.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save full session recording?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "是否保存整段监测录音？"
+          }
+        }
+      }
+    },
     "dashboard.stopPrompt.title": {
       "extractionState": "manual",
       "localizations": {

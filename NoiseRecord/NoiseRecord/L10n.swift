@@ -73,6 +73,20 @@ nonisolated enum L10n {
     }
 
     static var dashboardStopPromptInProgress: String { localized("dashboard.stopPrompt.message.inProgress") }
+    static var dashboardStopPromptSessionTitle: String { localized("dashboard.stopPrompt.session.title") }
+
+    static func dashboardStopPromptSessionMessage(
+        duration: String,
+        fileSize: String,
+        segmentCount: Int
+    ) -> String {
+        String(
+            format: localized("dashboard.stopPrompt.session.message"),
+            duration,
+            fileSize,
+            segmentCount
+        )
+    }
 
     // MARK: - Recording status
 

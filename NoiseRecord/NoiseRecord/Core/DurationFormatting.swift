@@ -16,4 +16,8 @@ enum DurationFormatting {
         }
         return String(format: "00:%02d", seconds)
     }
+
+    static func fileSize(from bytes: Int64) -> String {
+        ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
+    }
 }

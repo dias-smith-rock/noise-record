@@ -156,6 +156,12 @@ final class NoiseMonitorEngine {
     private var mediaResetObserver: NSObjectProtocol?
     private var calibrationObserver: NSObjectProtocol?
 
+    private(set) var pendingSessionStopSummary: SessionStopSummary?
+    private(set) var sessionStopPromptID: UUID?
+    private var deferredSessionRecording: RecordingFinishedEvent?
+    private var isAwaitingStopSaveDecision = false
+    private(set) var currentMonitoringSegmentSaveCount = 0
+
     var onRecordingFinished: ((RecordingFinishedEvent) -> Void)?
     var onVideoEmergencyFinalize: (() -> Void)?
 
@@ -217,7 +223,7 @@ final class NoiseMonitorEngine {
 
         voiceRecorder.onRecordingFinished = { [weak self] event in
             Task { @MainActor in
-                self?.onRecordingFinished?(event)
+                self?.handleRecordingFinished(event)
             }
         }
 
@@ -344,6 +350,7 @@ final class NoiseMonitorEngine {
             audioEngine.prepare()
             try audioEngine.start()
             isMonitoring = true
+            currentMonitoringSegmentSaveCount = 0
             voiceRecorder.beginSession()
             locationProvider.requestPermission()
             locationProvider.startUpdating()
@@ -364,18 +371,28 @@ final class NoiseMonitorEngine {
         }
     }
 
-    func stopMonitoring() {
+    func requestMonitoringStopWithSavePrompt() {
+        stopMonitoring(presentSessionSavePrompt: true)
+    }
+
+    func stopMonitoring(presentSessionSavePrompt: Bool = true) {
         guard isMonitoring else { return }
+        if presentSessionSavePrompt {
+            prepareStopWithSavePrompt()
+        }
         audioEngine.inputNode.removeTap(onBus: 0)
         audioEngine.stop()
         locationProvider.stopUpdating()
-        voiceRecorder.endSession(
+        let finishedEvents = voiceRecorder.endSession(
             peakDB: maxDB,
             averageDB: averageDB,
             noiseType: latestNoiseLabel,
             latitude: locationProvider.latitude,
             longitude: locationProvider.longitude
         )
+        for event in finishedEvents {
+            handleRecordingFinished(event)
+        }
         noiseClassifier?.stop()
         isMonitoring = false
         recordingState = .idle
@@ -386,6 +403,80 @@ final class NoiseMonitorEngine {
         Task {
             await LiveActivityManager.shared.endLiveActivity()
         }
+        if presentSessionSavePrompt {
+            buildPendingSessionStopSummaryIfNeeded()
+        } else {
+            clearStopSavePromptState()
+        }
+    }
+
+    func prepareStopWithSavePrompt() {
+        isAwaitingStopSaveDecision = true
+        deferredSessionRecording = nil
+        pendingSessionStopSummary = nil
+        sessionStopPromptID = nil
+    }
+
+    func buildPendingSessionStopSummaryIfNeeded() {
+        isAwaitingStopSaveDecision = false
+        guard let event = deferredSessionRecording else {
+            clearStopSavePromptState()
+            return
+        }
+
+        let fileName = event.fileURL.lastPathComponent
+        let startedAt = RecordingSession.parseStartDate(from: fileName) ?? event.startedAt
+        let fileSize = Int64(
+            (try? event.fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+        )
+        pendingSessionStopSummary = SessionStopSummary(
+            duration: max(0, event.endedAt.timeIntervalSince(startedAt)),
+            fileSizeBytes: fileSize,
+            autoSavedSegmentCount: currentMonitoringSegmentSaveCount,
+            deferredEvent: event
+        )
+        sessionStopPromptID = UUID()
+    }
+
+    func commitDeferredSessionRecording() {
+        guard let event = deferredSessionRecording else {
+            clearStopSavePromptState()
+            return
+        }
+        deferredSessionRecording = nil
+        pendingSessionStopSummary = nil
+        sessionStopPromptID = nil
+        onRecordingFinished?(event)
+    }
+
+    func discardDeferredSessionRecording() {
+        guard let event = deferredSessionRecording else {
+            clearStopSavePromptState()
+            return
+        }
+        try? FileManager.default.removeItem(at: event.fileURL)
+        VideoNoiseTimelineStore.remove(for: event.fileURL)
+        clearStopSavePromptState()
+    }
+
+    func clearStopSavePromptState() {
+        deferredSessionRecording = nil
+        pendingSessionStopSummary = nil
+        sessionStopPromptID = nil
+        isAwaitingStopSaveDecision = false
+        currentMonitoringSegmentSaveCount = 0
+    }
+
+    private func handleRecordingFinished(_ event: RecordingFinishedEvent) {
+        if event.isSessionRecording, isAwaitingStopSaveDecision {
+            deferredSessionRecording = event
+            return
+        }
+
+        if !event.isSessionRecording, isMonitoring || isAwaitingStopSaveDecision {
+            currentMonitoringSegmentSaveCount += 1
+        }
+        onRecordingFinished?(event)
     }
     func prepareForBackgroundIfNeeded() {
         guard backgroundMonitoringEnabled else { return }
@@ -420,7 +511,7 @@ final class NoiseMonitorEngine {
     /// 为媒体播放让路：完全停止引擎与 tap，并清零仪表显示（不自动恢复）。
     func suspendMonitoringForPlayback() {
         if isMonitoring {
-            stopMonitoring()
+            stopMonitoring(presentSessionSavePrompt: false)
         }
         resetStatistics()
     }

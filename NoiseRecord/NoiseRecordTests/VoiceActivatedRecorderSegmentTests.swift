@@ -91,13 +91,14 @@ final class VoiceActivatedRecorderSegmentTests: XCTestCase {
         XCTAssertEqual(finishedEvents[0].segmentGroupID, finishedEvents[0].segmentGroupID)
         XCTAssertTrue(FileManager.default.fileExists(atPath: finishedEvents[0].fileURL.path))
 
-        recorder.endSession(
+        let endSessionEvents = recorder.endSession(
             peakDB: 70,
             averageDB: 55,
             noiseType: nil,
             latitude: 37.34,
             longitude: -122.04
         )
+        finishedEvents.append(contentsOf: endSessionEvents)
 
         XCTAssertEqual(finishedEvents.count, 2)
         XCTAssertTrue(finishedEvents[1].isSessionRecording)
@@ -189,13 +190,14 @@ final class VoiceActivatedRecorderSegmentTests: XCTestCase {
             }
         }
 
-        recorder.endSession(
+        let endSessionEvents = recorder.endSession(
             peakDB: 70,
             averageDB: 55,
             noiseType: nil,
             latitude: nil,
             longitude: nil
         )
+        finishedEvents.append(contentsOf: endSessionEvents)
 
         XCTAssertEqual(finishedEvents.count, 1)
         XCTAssertTrue(finishedEvents[0].isSessionRecording)

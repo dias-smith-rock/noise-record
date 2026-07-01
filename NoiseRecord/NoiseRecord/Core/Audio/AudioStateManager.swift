@@ -77,7 +77,7 @@ final class AudioStateManager {
 
     /// 用户在监测页主动停止监测（非播放场景）。
     func stopMonitoringManually() {
-        engine.stopMonitoring()
+        engine.requestMonitoringStopWithSavePrompt()
         appAudioState = .idle
     }
 

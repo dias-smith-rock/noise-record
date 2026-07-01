@@ -251,7 +251,7 @@ struct RecorderSettingsView: View {
                 }
                 engine.persistSettings()
                 if engine.isMonitoring {
-                    engine.stopMonitoring()
+                    engine.stopMonitoring(presentSessionSavePrompt: false)
                     Task { await engine.requestPermissionAndStart() }
                 }
             }

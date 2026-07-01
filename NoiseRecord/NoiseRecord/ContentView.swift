@@ -17,6 +17,7 @@ struct ContentView: View {
     @State private var mountedTabs: Set<MainTab> = [.monitor]
     @State private var hasUnreadFiles = false
     @State private var showAppReviewPrompt = false
+    @State private var showSessionStopPrompt = false
     @State private var suppressNextTabSelectionAd = false
     @Bindable private var appearance = AppAppearanceSettings.shared
     @Environment(\.modelContext) private var modelContext
@@ -121,6 +122,28 @@ struct ContentView: View {
             }
         }
         .appReviewPrompt(isPresented: $showAppReviewPrompt)
+        .onChange(of: engine.sessionStopPromptID) { _, promptID in
+            showSessionStopPrompt = promptID != nil
+        }
+        .alert(L10n.dashboardStopPromptSessionTitle, isPresented: $showSessionStopPrompt) {
+            Button(L10n.dashboardStopPromptSave) {
+                engine.commitDeferredSessionRecording()
+                refreshUnreadBadge()
+            }
+            Button(L10n.dashboardStopPromptDiscard, role: .destructive) {
+                engine.discardDeferredSessionRecording()
+            }
+        } message: {
+            if let summary = engine.pendingSessionStopSummary {
+                Text(
+                    L10n.dashboardStopPromptSessionMessage(
+                        duration: DurationFormatting.hms(from: summary.duration),
+                        fileSize: DurationFormatting.fileSize(from: summary.fileSizeBytes),
+                        segmentCount: summary.autoSavedSegmentCount
+                    )
+                )
+            }
+        }
         .onChange(of: engine.isMonitoring) { _, isMonitoring in
             if isMonitoring {
                 audioStateManager.noteMonitoringStarted()
