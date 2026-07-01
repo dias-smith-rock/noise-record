@@ -9,32 +9,24 @@ final class VoiceActivatedRecorderSegmentTests: XCTestCase {
         try? AVAudioSession.sharedInstance().setActive(true)
     }
 
-    func testSessionFileNameUsesSessionSuffix() {
+    func testSessionFileNameUsesFullPrefix() {
         XCTAssertEqual(
             VoiceActivatedRecorder.makeSessionFileName(timestamp: "20260410_153045"),
-            "20260410_153045_session.m4a"
+            "F_20260410_153045.m4a"
         )
     }
 
-    func testSegmentFileNameUsesPeakSuffix() {
+    func testSegmentFileNameUsesSegmentPrefix() {
         XCTAssertEqual(
-            VoiceActivatedRecorder.makeSegmentFileName(
-                timestamp: "20260410_153045",
-                peakDB: 65,
-                index: 1
-            ),
-            "20260410_153045_65dB.m4a"
+            VoiceActivatedRecorder.makeSegmentFileName(timestamp: "20260410_153045", index: 1),
+            "S_20260410_153045.m4a"
         )
     }
 
-    func testSegmentFileNameSecondPartUsesPartSuffix() {
+    func testSegmentFileNameSecondPartUsesShortPartSuffix() {
         XCTAssertEqual(
-            VoiceActivatedRecorder.makeSegmentFileName(
-                timestamp: "20260410_153045",
-                peakDB: 65,
-                index: 2
-            ),
-            "20260410_153045_65dB_part2.m4a"
+            VoiceActivatedRecorder.makeSegmentFileName(timestamp: "20260410_153045", index: 2),
+            "S_20260410_153045_p2.m4a"
         )
     }
 
@@ -92,6 +84,7 @@ final class VoiceActivatedRecorderSegmentTests: XCTestCase {
         XCTAssertEqual(recorder.state, .idle)
         XCTAssertEqual(finishedEvents.count, 1)
         XCTAssertFalse(finishedEvents[0].isSessionRecording)
+        XCTAssertTrue(finishedEvents[0].fileURL.lastPathComponent.hasPrefix("S_"))
         XCTAssertEqual(finishedEvents[0].segmentIndex, 1)
         XCTAssertEqual(finishedEvents[0].latitude, 37.33)
         XCTAssertEqual(finishedEvents[0].longitude, -122.03)
@@ -108,6 +101,7 @@ final class VoiceActivatedRecorderSegmentTests: XCTestCase {
 
         XCTAssertEqual(finishedEvents.count, 2)
         XCTAssertTrue(finishedEvents[1].isSessionRecording)
+        XCTAssertTrue(finishedEvents[1].fileURL.lastPathComponent.hasPrefix("F_"))
         XCTAssertEqual(finishedEvents[1].segmentIndex, 0)
         XCTAssertEqual(finishedEvents[1].latitude, 37.34)
         XCTAssertEqual(finishedEvents[1].longitude, -122.04)
@@ -205,7 +199,7 @@ final class VoiceActivatedRecorderSegmentTests: XCTestCase {
 
         XCTAssertEqual(finishedEvents.count, 1)
         XCTAssertTrue(finishedEvents[0].isSessionRecording)
-        XCTAssertTrue(finishedEvents[0].fileURL.lastPathComponent.contains("_session.m4a"))
+        XCTAssertTrue(finishedEvents[0].fileURL.lastPathComponent.hasPrefix("F_"))
     }
 
     private func makeMonoFormat() throws -> AVAudioFormat {

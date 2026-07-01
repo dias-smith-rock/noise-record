@@ -884,7 +884,7 @@ private struct MediaListCard: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text(fileName)
                                 .font(.subheadline.bold())
-                                .lineLimit(2)
+                                .lineLimit(1)
                                 .truncationMode(.middle)
                                 .frame(maxWidth: .infinity, alignment: .leading)
 

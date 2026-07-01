@@ -460,15 +460,18 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
         return dir
     }
 
+    static let sessionFilePrefix = "F_"
+    static let segmentFilePrefix = "S_"
+
     static func makeSessionFileName(timestamp: String) -> String {
-        "\(timestamp)_session.m4a"
+        "\(sessionFilePrefix)\(timestamp).m4a"
     }
 
-    static func makeSegmentFileName(timestamp: String, peakDB: Int, index: Int) -> String {
+    static func makeSegmentFileName(timestamp: String, index: Int) -> String {
         if index <= 1 {
-            return "\(timestamp)_\(peakDB)dB.m4a"
+            return "\(segmentFilePrefix)\(timestamp).m4a"
         }
-        return "\(timestamp)_\(peakDB)dB_part\(index).m4a"
+        return "\(segmentFilePrefix)\(timestamp)_p\(index).m4a"
     }
 
     private func openSessionFileLocked(format: AVAudioFormat) throws {
@@ -494,9 +497,8 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
     }
 
     private func segmentFileName(index: Int) -> String? {
-        guard let timestamp = sessionTriggerTimestamp,
-              let peakDB = sessionTriggerPeakDB else { return nil }
-        return Self.makeSegmentFileName(timestamp: timestamp, peakDB: peakDB, index: index)
+        guard let timestamp = sessionTriggerTimestamp else { return nil }
+        return Self.makeSegmentFileName(timestamp: timestamp, index: index)
     }
 
     @discardableResult

@@ -99,11 +99,21 @@ final class RecordingSession {
     }
 
     /// Parses `yyyyMMdd_HHmmss` from recording file names such as
-    /// `20260701_180613_55dB.m4a` or `20260701_180612_session.m4a`.
+    /// `F_20260701_180612.m4a`, `S_20260701_180613.m4a`, or legacy `*_session.m4a` / `*_55dB.m4a`.
     static func parseStartDate(from fileName: String) -> Date? {
         let stem = (fileName as NSString).deletingPathExtension
-        guard stem.count >= 15 else { return nil }
-        let token = String(stem.prefix(15))
+        let token: String
+        if stem.hasPrefix("F_") || stem.hasPrefix("S_") {
+            let offset = 2
+            guard stem.count >= offset + 15 else { return nil }
+            let start = stem.index(stem.startIndex, offsetBy: offset)
+            let end = stem.index(start, offsetBy: 15)
+            token = String(stem[start..<end])
+        } else if stem.count >= 15 {
+            token = String(stem.prefix(15))
+        } else {
+            return nil
+        }
         return recordingTimestampFormatter.date(from: token)
     }
 
