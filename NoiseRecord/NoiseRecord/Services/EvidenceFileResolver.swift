@@ -68,6 +68,24 @@ enum EvidenceFileResolver {
         return byFileName
     }
 
+    /// Fast URL resolution for list rendering — avoids repeated filesystem checks.
+    static func preferredURL(
+        storedPath: String,
+        fileName: String,
+        folder: EvidenceMediaFolder
+    ) -> URL {
+        let docs = documentsDirectory
+        if storedPath.hasPrefix("/") {
+            return URL(fileURLWithPath: storedPath)
+        }
+        if storedPath.contains("/") {
+            return docs.appendingPathComponent(storedPath)
+        }
+        return docs
+            .appendingPathComponent(folder.rawValue, isDirectory: true)
+            .appendingPathComponent(fileName)
+    }
+
     static func fileExists(
         storedPath: String,
         fileName: String,

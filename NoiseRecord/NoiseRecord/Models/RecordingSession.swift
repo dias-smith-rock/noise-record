@@ -43,6 +43,14 @@ final class RecordingSession {
         self.isNew = true
     }
 
+    var preferredFileURL: URL {
+        EvidenceFileResolver.preferredURL(
+            storedPath: filePath,
+            fileName: fileName,
+            folder: .recordings
+        )
+    }
+
     var fileURL: URL {
         EvidenceFileResolver.resolveURL(
             storedPath: filePath,

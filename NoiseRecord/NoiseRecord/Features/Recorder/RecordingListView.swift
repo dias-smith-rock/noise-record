@@ -63,6 +63,14 @@ enum MediaDetailRoute: Hashable {
     case video(UUID)
 }
 
+private struct FilesTabSummary: Equatable {
+    var clipCount: Int
+    var durationLabel: String
+    var peakLabel: String
+
+    static let empty = FilesTabSummary(clipCount: 0, durationLabel: "—", peakLabel: "—")
+}
+
 struct RecordingListView: View {
     @Bindable var engine: NoiseMonitorEngine
     @Bindable var audioStateManager: AudioStateManager
@@ -79,6 +87,11 @@ struct RecordingListView: View {
     @State private var selectedVideoIDs: Set<UUID> = []
 
     @State private var detailRoute: MediaDetailRoute?
+    @State private var waveformReloadVersions: [String: Int] = [:]
+    @State private var lastDetailFileURL: URL?
+
+    @State private var audioSummary = FilesTabSummary.empty
+    @State private var videoSummary = FilesTabSummary.empty
 
     @State private var renameTarget: RenameTarget?
     @State private var renameText = ""
@@ -139,18 +152,7 @@ struct RecordingListView: View {
                 exitSelectionMode()
             }
 
-            TabView(selection: $selectedTab) {
-                filesTabPage(.video) {
-                    videoListContent
-                }
-                .tag(RecordingListTab.video)
-
-                filesTabPage(.audio) {
-                    audioListContent
-                }
-                .tag(RecordingListTab.audio)
-            }
-            .tabViewStyle(.page(indexDisplayMode: .never))
+            filesListPage
 
             if isSelectionMode {
                 selectionActionBar
@@ -177,6 +179,25 @@ struct RecordingListView: View {
                 }
             }
         }
+        .onChange(of: detailRoute) { _, route in
+            if route == nil, let fileURL = lastDetailFileURL {
+                WaveformThumbnailCache.invalidate(for: fileURL)
+                let key = fileURL.standardizedFileURL.path
+                waveformReloadVersions[key, default: 0] += 1
+                lastDetailFileURL = nil
+            }
+        }
+        .onChange(of: sessions.count) { _, _ in
+            refreshAudioSummary()
+        }
+        .onChange(of: videoSessions.count) { _, _ in
+            refreshVideoSummary()
+        }
+        .onChange(of: isTabActive) { _, active in
+            guard active else { return }
+            refreshAudioSummary()
+            refreshVideoSummary()
+        }
         .alert(L10n.filesRenameTitle, isPresented: Binding(
             get: { renameTarget != nil },
             set: { if !$0 { renameTarget = nil } }
@@ -195,7 +216,13 @@ struct RecordingListView: View {
             Button(L10n.delete, role: .destructive) { deleteSelected() }
             Button(L10n.cancel, role: .cancel) {}
         }
-        .task { repairStoredMediaPaths() }
+        .task(id: isTabActive) {
+            guard isTabActive else { return }
+            await Task.yield()
+            repairStoredMediaPaths()
+            refreshAudioSummary()
+            refreshVideoSummary()
+        }
         .alert(L10n.filesPlaybackErrorTitle, isPresented: Binding(
             get: { playbackErrorMessage != nil },
             set: { if !$0 { playbackErrorMessage = nil } }
@@ -307,15 +334,18 @@ struct RecordingListView: View {
         }
     }
 
-    private func filesTabPage<Content: View>(
-        _ tab: RecordingListTab,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
+    private var filesListPage: some View {
         ScrollView {
             if isTabActive {
-                VStack(spacing: 20) {
-                    summaryBar(for: tab)
-                    content()
+                LazyVStack(spacing: 20) {
+                    summaryBar(for: selectedTab)
+
+                    switch selectedTab {
+                    case .audio:
+                        audioListContent
+                    case .video:
+                        videoListContent
+                    }
                 }
                 .padding()
             }
@@ -332,7 +362,7 @@ struct RecordingListView: View {
                 theme: theme
             )
         } else {
-            VStack(spacing: 12) {
+            LazyVStack(spacing: 12) {
                 ForEach(sortedVideoSessions) { video in
                     MediaListCard(
                         fileName: video.fileName,
@@ -368,7 +398,7 @@ struct RecordingListView: View {
                 theme: theme
             )
         } else {
-            VStack(spacing: 12) {
+            LazyVStack(spacing: 12) {
                 ForEach(sortedAudioSessions) { session in
                     MediaListCard(
                         fileName: session.fileName,
@@ -376,7 +406,10 @@ struct RecordingListView: View {
                         subtitle: nil,
                         detailLine: session.startedAt.formatted(date: .abbreviated, time: .shortened),
                         playFooterText: DurationFormatting.hms(from: session.duration),
-                        badges: audioBadges(for: session),
+                        waveformFileURL: session.preferredFileURL,
+                        waveformMode: measurementMode,
+                        waveformReloadToken: waveformReloadVersions[session.preferredFileURL.standardizedFileURL.path, default: 0],
+                        badges: [],
                         isPlaying: false,
                         playIcon: "play.circle.fill",
                         theme: theme,
@@ -398,35 +431,41 @@ struct RecordingListView: View {
         return selectedTab == .audio ? sessions.isEmpty : videoSessions.isEmpty
     }
 
+    @ViewBuilder
     private func summaryBar(for tab: RecordingListTab) -> some View {
+        let summary = tab == .audio ? audioSummary : videoSummary
         HStack(spacing: 12) {
             switch tab {
             case .audio:
-                ProMetricCard(title: L10n.filesSummaryClips, value: "\(sessions.count)", theme: theme)
-                ProMetricCard(title: L10n.filesSummaryDuration, value: formattedAudioTotalDuration, theme: theme)
-                ProMetricCard(
-                    title: L10n.filesSummaryPeak,
-                    value: sessions.isEmpty ? "—" : "\(Int(sessions.map(\.peakDB).max() ?? 0))",
-                    theme: theme
-                )
+                ProMetricCard(title: L10n.filesSummaryClips, value: "\(summary.clipCount)", theme: theme)
+                ProMetricCard(title: L10n.filesSummaryDuration, value: summary.durationLabel, theme: theme)
+                ProMetricCard(title: L10n.filesSummaryPeak, value: summary.peakLabel, theme: theme)
             case .video:
-                ProMetricCard(title: L10n.filesSummaryVideos, value: "\(videoSessions.count)", theme: theme)
-                ProMetricCard(title: L10n.filesSummaryDuration, value: formattedVideoTotalDuration, theme: theme)
-                ProMetricCard(
-                    title: L10n.filesSummaryPeak,
-                    value: videoSessions.isEmpty ? "—" : "\(Int(videoSessions.map(\.peakDB).max() ?? 0))",
-                    theme: theme
-                )
+                ProMetricCard(title: L10n.filesSummaryVideos, value: "\(summary.clipCount)", theme: theme)
+                ProMetricCard(title: L10n.filesSummaryDuration, value: summary.durationLabel, theme: theme)
+                ProMetricCard(title: L10n.filesSummaryPeak, value: summary.peakLabel, theme: theme)
             }
         }
     }
 
-    private var formattedAudioTotalDuration: String {
-        formatDuration(sessions.reduce(0) { $0 + $1.duration })
+    private func refreshAudioSummary() {
+        let totalDuration = sessions.reduce(0) { $0 + $1.duration }
+        let peak = sessions.map(\.peakDB).max() ?? 0
+        audioSummary = FilesTabSummary(
+            clipCount: sessions.count,
+            durationLabel: formatDuration(totalDuration),
+            peakLabel: sessions.isEmpty ? "—" : "\(Int(peak))"
+        )
     }
 
-    private var formattedVideoTotalDuration: String {
-        formatDuration(videoSessions.reduce(0) { $0 + $1.duration })
+    private func refreshVideoSummary() {
+        let totalDuration = videoSessions.reduce(0) { $0 + $1.duration }
+        let peak = videoSessions.map(\.peakDB).max() ?? 0
+        videoSummary = FilesTabSummary(
+            clipCount: videoSessions.count,
+            durationLabel: formatDuration(totalDuration),
+            peakLabel: videoSessions.isEmpty ? "—" : "\(Int(peak))"
+        )
     }
 
     private func formatDuration(_ total: TimeInterval) -> String {
@@ -465,20 +504,6 @@ struct RecordingListView: View {
         return badges
     }
 
-    private func audioBadges(for session: RecordingSession) -> [String] {
-        var badges = [L10n.filesPeakBadge(Int(session.peakDB)), L10n.filesAvgBadge(Int(session.averageDB))]
-        if let lat = session.latitude, let lon = session.longitude {
-            badges.append(String(format: "%.4f, %.4f", lat, lon))
-        }
-        if let type = session.noiseType {
-            badges.append(type)
-        }
-        if let hash = truncatedHash(session.fileHash) {
-            badges.append("\(L10n.filesFileHash) \(hash)")
-        }
-        return badges
-    }
-
     private func truncatedHash(_ hash: String?) -> String? {
         guard let hash, !hash.isEmpty else { return nil }
         return String(hash.prefix(8))
@@ -496,6 +521,7 @@ struct RecordingListView: View {
             return
         }
         detailRoute = .audio(session.id)
+        lastDetailFileURL = session.preferredFileURL
     }
 
     private func openVideoDetail(_ session: VideoEvidenceSession) {
@@ -508,6 +534,7 @@ struct RecordingListView: View {
             return
         }
         detailRoute = .video(session.id)
+        lastDetailFileURL = session.fileURL
     }
 
     // MARK: - Selection
@@ -664,6 +691,7 @@ struct RecordingListView: View {
     // MARK: - Delete
 
     private func deleteAudio(_ session: RecordingSession) {
+        WaveformThumbnailCache.invalidate(for: session.preferredFileURL)
         try? FileManager.default.removeItem(at: session.fileURL)
         VideoNoiseTimelineStore.remove(for: session.fileURL)
         modelContext.delete(session)
@@ -783,7 +811,10 @@ private struct MediaListCard: View {
     let subtitle: String?
     var detailLine: String?
     var playFooterText: String?
-    let badges: [String]
+    var waveformFileURL: URL?
+    var waveformMode: AcousticMeasurementMode?
+    var waveformReloadToken: Int = 0
+    var badges: [String] = []
     let isPlaying: Bool
     let playIcon: String
     let theme: ModeVisualTheme
@@ -857,7 +888,15 @@ private struct MediaListCard: View {
                                     .foregroundStyle(.secondary)
                             }
 
-                            FlowBadgeRow(badges: badges, theme: theme)
+                            if let waveformFileURL, let waveformMode {
+                                RecordingWaveformThumbnailView(
+                                    fileURL: waveformFileURL,
+                                    mode: waveformMode,
+                                    reloadToken: waveformReloadToken
+                                )
+                            } else if !badges.isEmpty {
+                                FlowBadgeRow(badges: badges, theme: theme)
+                            }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }

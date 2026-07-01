@@ -4,6 +4,12 @@ import Foundation
 enum RecordingWaveformAnalyzer {
     static let sampleInterval: Double = 0.1
 
+    static func loadCachedDecibels(for fileURL: URL) -> [Float]? {
+        guard let cached = VideoNoiseTimelineStore.load(for: fileURL),
+              !cached.samples.isEmpty else { return nil }
+        return cached.samples.map(\.decibel)
+    }
+
     static func loadOrAnalyze(
         fileURL: URL,
         weighting: WeightingType = DeviceCalibrationStore.weightingType

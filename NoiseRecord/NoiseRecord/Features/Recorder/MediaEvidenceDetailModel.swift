@@ -31,11 +31,7 @@ final class MediaEvidenceDetailModel {
         defer { isLoadingTimeline = false }
 
         do {
-            if isVideo, let cached = VideoNoiseTimelineStore.load(for: url) {
-                timeline = cached
-            } else {
-                timeline = try await RecordingWaveformAnalyzer.loadOrAnalyze(fileURL: url)
-            }
+            timeline = try await RecordingWaveformAnalyzer.loadOrAnalyze(fileURL: url)
         } catch {
             timelineError = error.localizedDescription
             timeline = VideoNoiseTimelineStore.load(for: url)
