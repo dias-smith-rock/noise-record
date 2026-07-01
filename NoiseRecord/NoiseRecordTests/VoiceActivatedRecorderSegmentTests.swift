@@ -167,6 +167,47 @@ final class VoiceActivatedRecorderSegmentTests: XCTestCase {
         XCTAssertFalse(timeline?.samples.isEmpty ?? true)
     }
 
+    func testSessionRecordingSavedOnEndEvenWhenVADGated() throws {
+        let recorder = VoiceActivatedRecorder()
+        recorder.voiceActivatedEnabled = true
+        recorder.highThreshold = 40
+        recorder.lowThreshold = 30
+
+        let format = try makeMonoFormat()
+        recorder.configure(sampleRate: format.sampleRate)
+
+        var finishedEvents: [RecordingFinishedEvent] = []
+        recorder.onRecordingFinished = { finishedEvents.append($0) }
+
+        recorder.beginSession()
+
+        let loud = [Float](repeating: 0.8, count: 4096)
+        loud.withUnsafeBufferPointer { ptr in
+            guard let base = ptr.baseAddress else { return }
+            for _ in 0..<6 {
+                recorder.process(
+                    filteredSamples: base,
+                    frameLength: loud.count,
+                    dbSPL: 70,
+                    format: format,
+                    vadGatedByFilter: false
+                )
+            }
+        }
+
+        recorder.endSession(
+            peakDB: 70,
+            averageDB: 55,
+            noiseType: nil,
+            latitude: nil,
+            longitude: nil
+        )
+
+        XCTAssertEqual(finishedEvents.count, 1)
+        XCTAssertTrue(finishedEvents[0].isSessionRecording)
+        XCTAssertTrue(finishedEvents[0].fileURL.lastPathComponent.contains("_session.m4a"))
+    }
+
     private func makeMonoFormat() throws -> AVAudioFormat {
         guard let format = AVAudioFormat(
             commonFormat: .pcmFormatFloat32,

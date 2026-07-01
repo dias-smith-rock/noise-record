@@ -169,7 +169,7 @@ final class NoiseMonitorEngine {
         isMonitoring
     }
 
-    /// 是否将当前帧送入录音器（AI 标签过滤仍生效）。
+    /// 是否将当前帧送入声控分段录音（AI 标签过滤）；连续整段录音不受此门控。
     private var shouldProcessVoiceRecorder: Bool {
         if aiClassificationEnabled && !aiFilterLabels.isEmpty {
             return cachedNoiseLabel.map { aiFilterLabels.contains($0) } ?? false
@@ -748,14 +748,13 @@ final class NoiseMonitorEngine {
             dbfs = measurement.dbfs
             smoothed = slidingAverage.add(dbSPL)
 
-            if shouldProcessVoiceRecorder {
-                voiceRecorder.process(
-                    filteredSamples: base,
-                    frameLength: frameLength,
-                    dbSPL: dbSPL,
-                    format: buffer.format
-                )
-            }
+            voiceRecorder.process(
+                filteredSamples: base,
+                frameLength: frameLength,
+                dbSPL: dbSPL,
+                format: buffer.format,
+                vadGatedByFilter: shouldProcessVoiceRecorder
+            )
         }
 
         leqCalculator.addSample(dbSPL: dbSPL)

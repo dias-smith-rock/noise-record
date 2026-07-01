@@ -127,7 +127,8 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
         filteredSamples: UnsafePointer<Float>,
         frameLength: Int,
         dbSPL: Float,
-        format: AVAudioFormat
+        format: AVAudioFormat,
+        vadGatedByFilter: Bool = true
     ) {
         if voiceActivatedEnabled {
             ringBuffer?.write(filteredSamples, count: frameLength)
@@ -142,7 +143,7 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
             )
         }
 
-        if voiceActivatedEnabled {
+        if voiceActivatedEnabled, vadGatedByFilter {
             processVADTrack(
                 filteredSamples: filteredSamples,
                 frameLength: frameLength,
@@ -165,15 +166,21 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
 
             finalizeActiveVADSegmentLocked()
 
-            guard hasWrittenSessionAudio, let file = sessionAudioFile,
+            try? flushSessionToFileLocked()
+
+            guard let file = sessionAudioFile,
                   let sessionStart = sessionStartDate else {
-                if let url = sessionAudioFile?.url {
-                    try? FileManager.default.removeItem(at: url)
-                }
                 return
             }
 
-            try? flushSessionToFileLocked()
+            let sampleRate = file.processingFormat.sampleRate
+            let hasContent = hasWrittenSessionAudio
+                || (sampleRate > 0 && file.length > 0)
+            guard hasContent else {
+                try? FileManager.default.removeItem(at: file.url)
+                return
+            }
+
             let url = file.url
             sessionAudioFile = nil
             saveNoiseTimeline(samples: takeSessionTimelineSamples(), for: url)
@@ -229,6 +236,7 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
     ) {
         sessionFormat = format
 
+        var shouldWrite = false
         fileQueue.sync {
             guard isSessionActive, !isWritingPaused else { return }
             if sessionAudioFile == nil {
@@ -239,13 +247,14 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
             }
             if sessionAudioFile != nil {
                 hasWrittenSessionAudio = true
+                shouldWrite = true
             }
         }
 
+        guard shouldWrite else { return }
+
         sessionPcmAccumulator.append(filteredSamples, count: frameLength)
-        if hasWrittenSessionAudio {
-            appendSessionTimelineSample(frameLength: frameLength, dbSPL: dbSPL, format: format)
-        }
+        appendSessionTimelineSample(frameLength: frameLength, dbSPL: dbSPL, format: format)
         flushSessionToFileIfNeeded()
 
         fileQueue.sync {
