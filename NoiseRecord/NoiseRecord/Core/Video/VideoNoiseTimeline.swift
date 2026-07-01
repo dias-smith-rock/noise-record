@@ -43,6 +43,21 @@ struct VideoNoiseTimeline: Codable, Sendable {
         guard let last = samples.last else { return nil }
         if playbackTime >= last.time { return last.decibel }
 
+        return interpolatedDecibel(at: playbackTime)
+    }
+
+    /// Returns nil outside the sampled time span — use for waveform rendering to avoid flat hold lines.
+    func decibelStrict(at playbackTime: Double) -> Float? {
+        guard let first = samples.first, let last = samples.last else { return nil }
+        guard playbackTime >= first.time, playbackTime <= last.time else { return nil }
+        return interpolatedDecibel(at: playbackTime)
+    }
+
+    private func interpolatedDecibel(at playbackTime: Double) -> Float? {
+        guard let first = samples.first, let last = samples.last else { return nil }
+        if playbackTime <= first.time { return first.decibel }
+        if playbackTime >= last.time { return last.decibel }
+
         var lower = 0
         var upper = samples.count - 1
         while lower + 1 < upper {

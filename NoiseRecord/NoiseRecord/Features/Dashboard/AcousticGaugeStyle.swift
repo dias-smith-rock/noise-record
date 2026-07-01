@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - 0–140 dB 声学生活场景区间（与表盘渐变 stop 严格等比例）
 
@@ -113,6 +114,10 @@ enum AcousticGaugeStyle {
             to: industrialColor(hex: upper.hex),
             amount: localT
         )
+    }
+
+    static func uiColor(forDecibel db: Float) -> UIColor {
+        UIColor(color(forDecibel: db))
     }
 }
 

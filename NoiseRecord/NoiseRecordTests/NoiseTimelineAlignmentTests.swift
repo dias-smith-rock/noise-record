@@ -25,6 +25,21 @@ final class NoiseTimelineAlignmentTests: XCTestCase {
         XCTAssertLessThan(timeline.decibel(at: peakTime + 5) ?? 0, 90)
     }
 
+    func testDecibelStrictReturnsNilOutsideSampleSpan() {
+        let timeline = VideoNoiseTimeline(
+            weighting: "dBA",
+            samples: [
+                VideoNoiseSample(time: 1, decibel: 40),
+                VideoNoiseSample(time: 5, decibel: 80),
+            ]
+        )
+
+        XCTAssertNil(timeline.decibelStrict(at: 0.5))
+        XCTAssertEqual(timeline.decibelStrict(at: 3), Optional(60))
+        XCTAssertNil(timeline.decibelStrict(at: 6))
+        XCTAssertEqual(timeline.decibel(at: 0.5), Optional(40))
+    }
+
     func testNormalizedTimelineScalesTimestampsToFileDuration() {
         let timeline = VideoNoiseTimeline(
             weighting: "dBA",

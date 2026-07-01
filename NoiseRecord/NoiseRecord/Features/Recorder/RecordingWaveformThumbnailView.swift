@@ -65,7 +65,7 @@ struct RecordingWaveformThumbnailView: View {
 
         for pointIndex in 0..<pointCount {
             let time = duration * Double(pointIndex) / Double(max(pointCount - 1, 1))
-            guard let db = timeline.decibel(at: time) else { continue }
+            guard let db = timeline.decibelStrict(at: time) else { continue }
             let x = CGFloat(time / duration) * size.width
             let y = waveformYPosition(for: db, height: size.height, minDB: minDB, maxDB: maxDB)
             points.append((CGPoint(x: x, y: y), db))

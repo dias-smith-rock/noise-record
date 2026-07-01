@@ -60,7 +60,6 @@ private enum RenameTarget: Identifiable {
 
 enum MediaDetailRoute: Hashable {
     case audio(UUID)
-    case video(UUID)
 }
 
 private struct FilesTabSummary: Equatable {
@@ -87,6 +86,7 @@ struct RecordingListView: View {
     @State private var selectedVideoIDs: Set<UUID> = []
 
     @State private var detailRoute: MediaDetailRoute?
+    @State private var presentedVideoSession: VideoEvidenceSession?
     @State private var waveformReloadVersions: [String: Int] = [:]
     @State private var lastDetailFileURL: URL?
 
@@ -162,29 +162,32 @@ struct RecordingListView: View {
         .proTabBackground(theme: theme)
         .proTabNavigationChrome()
         .navigationDestination(item: $detailRoute) { route in
-            switch route {
-            case .audio(let id):
-                if let session = sessions.first(where: { $0.id == id }) {
-                    MediaEvidenceDetailView(
-                        kind: .audio(session),
-                        audioStateManager: audioStateManager
-                    )
-                }
-            case .video(let id):
-                if let session = videoSessions.first(where: { $0.id == id }) {
-                    MediaEvidenceDetailView(
-                        kind: .video(session),
-                        audioStateManager: audioStateManager
-                    )
-                }
+            if case .audio(let id) = route,
+               let session = sessions.first(where: { $0.id == id }) {
+                MediaEvidenceDetailView(
+                    kind: .audio(session),
+                    audioStateManager: audioStateManager
+                )
             }
         }
         .onChange(of: detailRoute) { _, route in
-            if route == nil, let fileURL = lastDetailFileURL {
-                WaveformThumbnailCache.invalidate(for: fileURL)
-                let key = fileURL.standardizedFileURL.path
-                waveformReloadVersions[key, default: 0] += 1
-                lastDetailFileURL = nil
+            if route == nil {
+                invalidateWaveformCacheForLastDetailIfNeeded()
+            }
+        }
+        .fullScreenCover(isPresented: Binding(
+            get: { presentedVideoSession != nil },
+            set: { if !$0 { dismissPresentedVideo() } }
+        )) {
+            if let session = presentedVideoSession {
+                SyncedVideoPlayerView(
+                    url: session.fileURL,
+                    title: session.fileName,
+                    onDismiss: { dismissPresentedVideo() },
+                    onPlaybackFinished: {
+                        audioStateManager.handlePlaybackFinished()
+                    }
+                )
             }
         }
         .onChange(of: sessions.count) { _, _ in
@@ -370,7 +373,10 @@ struct RecordingListView: View {
                         subtitle: nil,
                         detailLine: video.startedAt.formatted(date: .abbreviated, time: .shortened),
                         playFooterText: DurationFormatting.hms(from: video.duration),
-                        badges: videoBadges(for: video),
+                        waveformFileURL: video.fileURL,
+                        waveformMode: measurementMode,
+                        waveformReloadToken: waveformReloadVersions[video.fileURL.standardizedFileURL.path, default: 0],
+                        badges: [],
                         isPlaying: false,
                         playIcon: "play.rectangle.fill",
                         theme: theme,
@@ -494,22 +500,6 @@ struct RecordingListView: View {
         }
     }
 
-    private func videoBadges(for video: VideoEvidenceSession) -> [String] {
-        var badges = [L10n.filesPeakBadge(Int(video.peakDB))]
-        if let lat = video.latitude, let lon = video.longitude {
-            badges.append(String(format: "%.4f, %.4f", lat, lon))
-        }
-        if let hash = truncatedHash(video.fileHash) {
-            badges.append("\(L10n.filesFileHash) \(hash)")
-        }
-        return badges
-    }
-
-    private func truncatedHash(_ hash: String?) -> String? {
-        guard let hash, !hash.isEmpty else { return nil }
-        return String(hash.prefix(8))
-    }
-
     // MARK: - Detail navigation
 
     private func openAudioDetail(_ session: RecordingSession) {
@@ -541,8 +531,29 @@ struct RecordingListView: View {
             playbackErrorMessage = L10n.filesVideoNotFound(session.fileName)
             return
         }
-        detailRoute = .video(session.id)
-        lastDetailFileURL = session.fileURL
+        session.isNew = false
+        try? modelContext.save()
+        do {
+            try audioStateManager.prepareAndStartPlayback()
+            lastDetailFileURL = session.fileURL
+            presentedVideoSession = session
+        } catch {
+            playbackErrorMessage = error.localizedDescription
+        }
+    }
+
+    private func dismissPresentedVideo() {
+        invalidateWaveformCacheForLastDetailIfNeeded()
+        audioStateManager.handlePlaybackFinished()
+        presentedVideoSession = nil
+    }
+
+    private func invalidateWaveformCacheForLastDetailIfNeeded() {
+        guard let fileURL = lastDetailFileURL else { return }
+        WaveformThumbnailCache.invalidate(for: fileURL)
+        let key = fileURL.standardizedFileURL.path
+        waveformReloadVersions[key, default: 0] += 1
+        lastDetailFileURL = nil
     }
 
     // MARK: - Selection
@@ -711,6 +722,7 @@ struct RecordingListView: View {
     }
 
     private func deleteVideo(_ session: VideoEvidenceSession) {
+        WaveformThumbnailCache.invalidate(for: session.fileURL)
         try? FileManager.default.removeItem(at: session.fileURL)
         VideoNoiseTimelineStore.remove(for: session.fileURL)
         modelContext.delete(session)

@@ -346,7 +346,7 @@ struct VideoEvidenceView: View {
     }
 
     private var previewSection: some View {
-        ZStack(alignment: .bottomLeading) {
+        ZStack {
             CameraPreviewView(
                 session: coordinator.recorder.captureSessionForPreview,
                 isFrontCamera: { coordinator.cameraPosition == .front },
@@ -372,6 +372,35 @@ struct VideoEvidenceView: View {
                     }
                 }
             }
+            .overlay {
+                previewOverlayContent
+            }
+        }
+    }
+
+    private var previewOverlayContent: some View {
+        ZStack {
+            VStack(alignment: .leading, spacing: 8) {
+                timeLocationOverlay
+
+                if !coordinator.isRecording {
+                    Button {
+                        coordinator.switchCamera()
+                        previewZoomFactor = 1.0
+                    } label: {
+                        Image(systemName: "arrow.triangle.2.circlepath.camera")
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .padding(10)
+                            .background(.black.opacity(0.55))
+                            .clipShape(Circle())
+                    }
+                    .accessibilityLabel(L10n.videoSwitchCamera)
+                    .disabled(!coordinator.isSessionReady || !coordinator.isPreviewReady)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .padding(12)
 
             if previewZoomFactor > 1.05, !coordinator.isRecording {
                 Text(String(format: "%.1fx", previewZoomFactor))
@@ -412,22 +441,6 @@ struct VideoEvidenceView: View {
                 .allowsHitTesting(false)
             }
 
-            Button {
-                coordinator.switchCamera()
-                previewZoomFactor = 1.0
-            } label: {
-                Image(systemName: "arrow.triangle.2.circlepath.camera")
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .padding(10)
-                    .background(.black.opacity(0.55))
-                    .clipShape(Circle())
-            }
-            .accessibilityLabel(L10n.videoSwitchCamera)
-            .disabled(!coordinator.isSessionReady || !coordinator.isPreviewReady || coordinator.isRecording)
-            .padding(12)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-
             if coordinator.isRecording {
                 HStack(spacing: 8) {
                     BlinkingRecDot()
@@ -439,37 +452,62 @@ struct VideoEvidenceView: View {
                 .padding(.vertical, 6)
                 .background(.black.opacity(0.55))
                 .clipShape(Capsule())
-                .padding(12)
+                .padding(.top, 12)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .allowsHitTesting(false)
             }
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(L10n.overlayTimeLabel)
-                    .font(.caption.bold())
-                    .foregroundStyle(theme.accent)
-                Text(Date().formatted(date: .numeric, time: .standard))
-                    .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.9))
+            if coordinator.isRecording || engine.isMonitoring {
+                WaveformView(
+                    samples: engine.history,
+                    mode: measurementMode,
+                    usesCardChrome: false,
+                    showsYAxisLabels: false,
+                    showsReferenceLimitLine: false,
+                    axisLabelColor: .white.opacity(0.7)
+                )
+                .frame(height: 56)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color.black.opacity(0.35))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .padding(.horizontal, 12)
+                .padding(.bottom, 12)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                .allowsHitTesting(false)
             }
-            .padding(10)
-            .background(.black.opacity(0.55))
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .padding(12)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-            .allowsHitTesting(false)
         }
+    }
+
+    private var timeLocationOverlay: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(L10n.overlayTimeAndLocationLabel)
+                .font(.caption.bold())
+                .foregroundStyle(theme.accent)
+            Text(Date().formatted(date: .numeric, time: .standard))
+                .font(.caption2)
+                .foregroundStyle(.white.opacity(0.9))
+            Text(previewGPSOverlayText)
+                .font(.caption2)
+                .foregroundStyle(.white.opacity(0.9))
+                .lineLimit(2)
+        }
+        .padding(10)
+        .background(.black.opacity(0.55))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .allowsHitTesting(false)
+    }
+
+    private var previewGPSOverlayText: String {
+        if let latitude = coordinator.locationProvider.latitude,
+           let longitude = coordinator.locationProvider.longitude {
+            return L10n.overlayGpsCoordinates(latitude: latitude, longitude: longitude)
+        }
+        return L10n.overlayGpsUnavailable
     }
 
     private var controlSection: some View {
         VStack(spacing: 12) {
-            HStack(spacing: 12) {
-                ProMetricCard(
-                    title: L10n.videoCurrentDb,
-                    value: String(format: "%.1f %@", engine.currentDB, engine.effectiveWeighting.rawValue),
-                    theme: theme
-                )
-                ProMetricCard(title: L10n.videoClipPeak, value: String(format: "%.0f", coordinator.peakDB), theme: theme)
-            }
-
             if !engine.isMonitoring || !engine.isHighSensitivityMode {
                 Text(L10n.videoAutoMonitoringHint)
                     .font(.caption)
