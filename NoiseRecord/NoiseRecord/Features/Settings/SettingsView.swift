@@ -99,6 +99,27 @@ struct SettingsView: View {
                 Text(measurementMode.coreDescription)
             }
 
+            Section {
+                ProCard(theme: theme) {
+                    ProToggleRow(
+                        title: L10n.settingsAutoStartMonitoringTitle,
+                        subtitle: L10n.settingsAutoStartMonitoringSubtitle,
+                        isOn: Binding(
+                            get: { MonitorSettingsStore.autoStartMonitoringOnLaunch },
+                            set: { MonitorSettingsStore.autoStartMonitoringOnLaunch = $0 }
+                        ),
+                        theme: theme,
+                        icon: "waveform.circle.fill"
+                    )
+                }
+                .listRowInsets(EdgeInsets(top: 12, leading: 0, bottom: 12, trailing: 0))
+                .listRowBackground(Color.clear)
+            } header: {
+                Text(L10n.settingsMonitoringHeader)
+            } footer: {
+                Text(L10n.settingsAutoStartMonitoringFooter)
+            }
+
             if !engine.isHighSensitivityMode {
                 Section {
                     Picker(L10n.settingsWeightingPicker, selection: Binding(

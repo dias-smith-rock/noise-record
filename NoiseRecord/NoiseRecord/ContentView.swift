@@ -112,6 +112,7 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .launchAutoStartMonitoring)) { _ in
             Task {
+                guard MonitorSettingsStore.autoStartMonitoringOnLaunch else { return }
                 guard audioStateManager.appAudioState != .playing else { return }
                 await audioStateManager.manuallyResumeMonitoring()
                 if engine.isMonitoring {

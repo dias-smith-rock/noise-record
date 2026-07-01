@@ -114,6 +114,7 @@ enum AdSceneLifecycle {
 
     /// 通知 `ContentView` 在冷启动后自动开启监测。
     static func requestLaunchAutoStartMonitoring() {
+        guard MonitorSettingsStore.autoStartMonitoringOnLaunch else { return }
         guard consumeLaunchMonitoringAutoStart() else { return }
         NotificationCenter.default.post(name: .launchAutoStartMonitoring, object: nil)
     }

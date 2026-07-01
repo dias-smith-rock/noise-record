@@ -192,6 +192,10 @@ nonisolated enum L10n {
 
     static var settingsTitle: String { localized("settings.title") }
     static var settingsMeasurementMode: String { localized("settings.measurementMode.header") }
+    static var settingsMonitoringHeader: String { localized("settings.monitoring.header") }
+    static var settingsAutoStartMonitoringTitle: String { localized("settings.autoStartMonitoring.title") }
+    static var settingsAutoStartMonitoringSubtitle: String { localized("settings.autoStartMonitoring.subtitle") }
+    static var settingsAutoStartMonitoringFooter: String { localized("settings.autoStartMonitoring.footer") }
     static var settingsWeightingHeader: String { localized("settings.weighting.header") }
     static var settingsWeightingFooter: String { localized("settings.weighting.footer") }
     static var settingsWeightingPicker: String { localized("settings.weighting.picker.label") }

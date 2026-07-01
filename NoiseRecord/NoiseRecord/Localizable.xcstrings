@@ -64128,6 +64128,74 @@
         }
       }
     },
+    "settings.autoStartMonitoring.footer": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When enabled, monitoring starts automatically each time you open the app."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开启后，每次打开 App 都会自动开始监测。"
+          }
+        }
+      }
+    },
+    "settings.autoStartMonitoring.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start measuring as soon as the app launches"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App 启动后立即开始测量"
+          }
+        }
+      }
+    },
+    "settings.autoStartMonitoring.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-start monitoring"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启动时自动开启监测"
+          }
+        }
+      }
+    },
+    "settings.monitoring.header": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monitoring"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "监测"
+          }
+        }
+      }
+    },
     "settings.weighting.header": {
       "extractionState": "manual",
       "localizations": {
