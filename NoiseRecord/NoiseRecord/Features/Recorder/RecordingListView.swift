@@ -848,65 +848,72 @@ private struct MediaListCard: View {
     var body: some View {
         ProCard(theme: theme) {
             HStack(alignment: .top, spacing: 12) {
-                if isSelectionMode {
-                    Button(action: onToggleSelection) {
-                        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                            .font(.title2)
-                            .foregroundStyle(isSelected ? theme.accent : .secondary)
+                Button {
+                    if isSelectionMode {
+                        onToggleSelection()
+                    } else {
+                        onPlay()
                     }
-                    .buttonStyle(.plain)
-                }
+                } label: {
+                    HStack(alignment: .top, spacing: 12) {
+                        if isSelectionMode {
+                            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                                .font(.title2)
+                                .foregroundStyle(isSelected ? theme.accent : .secondary)
+                        }
 
-                Button(action: onPlay) {
-                    VStack(spacing: 4) {
-                        ZStack(alignment: .topTrailing) {
-                            Image(systemName: playIcon)
-                                .font(.system(size: 36))
-                                .foregroundStyle(theme.accent)
+                        VStack(spacing: 4) {
+                            ZStack(alignment: .topTrailing) {
+                                Image(systemName: playIcon)
+                                    .font(.system(size: 36))
+                                    .foregroundStyle(theme.accent)
 
-                            if isNew {
-                                Circle()
-                                    .fill(Color.red)
-                                    .frame(width: 8, height: 8)
-                                    .offset(x: 4, y: -4)
+                                if isNew {
+                                    Circle()
+                                        .fill(Color.red)
+                                        .frame(width: 8, height: 8)
+                                        .offset(x: 4, y: -4)
+                                }
+                            }
+
+                            if let playFooterText {
+                                Text(playFooterText)
+                                    .font(.caption2.weight(.medium))
+                                    .monospacedDigit()
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.8)
                             }
                         }
+                        .frame(width: 52)
 
-                        if let playFooterText {
-                            Text(playFooterText)
-                                .font(.caption2.weight(.medium))
-                                .monospacedDigit()
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.8)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(fileName)
+                                .font(.subheadline.bold())
+                                .lineLimit(2)
+                                .truncationMode(.middle)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+
+                            if let subtitle {
+                                Text(subtitle)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            if let detailLine {
+                                Text(detailLine)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            FlowBadgeRow(badges: badges, theme: theme)
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .frame(width: 52)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(fileName)
-                        .font(.subheadline.bold())
-                        .lineLimit(2)
-                        .truncationMode(.middle)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                    if let subtitle {
-                        Text(subtitle)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    if let detailLine {
-                        Text(detailLine)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    FlowBadgeRow(badges: badges, theme: theme)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
 
                 if !isSelectionMode {
                     Menu {
@@ -935,14 +942,7 @@ private struct MediaListCard: View {
                     .buttonStyle(.plain)
                 }
             }
-        }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            if isSelectionMode {
-                onToggleSelection()
-            } else {
-                onPlay()
-            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .contextMenu {
             if !isSelectionMode {
