@@ -5,7 +5,8 @@ struct RecordingWaveformThumbnailView: View {
     var mode: AcousticMeasurementMode = .standard
     var reloadToken: Int = 0
 
-    @State private var samples: [Float] = []
+    @State private var timeline: VideoNoiseTimeline?
+    @State private var playbackDuration: TimeInterval = 0
 
     private var minDB: Float { mode.waveformMinDB }
     private var maxDB: Float { mode.waveformMaxDB }
@@ -23,10 +24,11 @@ struct RecordingWaveformThumbnailView: View {
         .frame(maxWidth: .infinity)
         .accessibilityLabel(L10n.mediaDetailTabWaveform)
         .task(id: taskID) {
-            let cached = await Task.detached(priority: .utility) {
-                WaveformThumbnailCache.decibels(for: fileURL) ?? []
+            let data = await Task.detached(priority: .utility) {
+                WaveformThumbnailCache.thumbnail(for: fileURL)
             }.value
-            samples = cached
+            timeline = data?.timeline
+            playbackDuration = data?.playbackDuration ?? 0
         }
     }
 
@@ -35,33 +37,24 @@ struct RecordingWaveformThumbnailView: View {
     }
 
     private func drawWaveform(in context: inout GraphicsContext, size: CGSize) {
-        guard size.width > 1, size.height > 1, !samples.isEmpty else { return }
+        guard size.width > 1, size.height > 1,
+              let timeline, timeline.samples.count > 1,
+              playbackDuration > 0 else { return }
 
-        if samples.count == 1, let sample = samples.first {
-            let y = waveformYPosition(for: sample, height: size.height, minDB: minDB, maxDB: maxDB)
-            var path = Path()
-            path.move(to: CGPoint(x: 0, y: y))
-            path.addLine(to: CGPoint(x: size.width, y: y))
-            let color = AcousticGaugeStyle.color(forDecibel: sample)
-            context.stroke(
-                path,
-                with: .color(color),
-                style: StrokeStyle(lineWidth: 1.5, lineCap: .round)
-            )
-            return
-        }
-
-        let pointCount = min(samples.count, max(Int(size.width), 2))
+        let duration = playbackDuration
+        let pointCount = min(max(Int(size.width), 2), 120)
         var points: [(CGPoint, Float)] = []
         points.reserveCapacity(pointCount)
 
         for pointIndex in 0..<pointCount {
-            let sampleIndex = pointIndex * (samples.count - 1) / max(pointCount - 1, 1)
-            let sample = samples[sampleIndex]
-            let x = size.width * CGFloat(pointIndex) / CGFloat(max(pointCount - 1, 1))
-            let y = waveformYPosition(for: sample, height: size.height, minDB: minDB, maxDB: maxDB)
-            points.append((CGPoint(x: x, y: y), sample))
+            let time = duration * Double(pointIndex) / Double(max(pointCount - 1, 1))
+            guard let db = timeline.decibel(at: time) else { continue }
+            let x = CGFloat(time / duration) * size.width
+            let y = waveformYPosition(for: db, height: size.height, minDB: minDB, maxDB: maxDB)
+            points.append((CGPoint(x: x, y: y), db))
         }
+
+        guard points.count > 1 else { return }
 
         let strokeStyle = StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round)
         for index in 1..<points.count {

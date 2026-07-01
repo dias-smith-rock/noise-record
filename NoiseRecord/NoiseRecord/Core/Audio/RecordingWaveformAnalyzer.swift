@@ -4,10 +4,14 @@ import Foundation
 enum RecordingWaveformAnalyzer {
     static let sampleInterval: Double = 0.1
 
-    static func loadCachedDecibels(for fileURL: URL) -> [Float]? {
+    static func loadCachedTimeline(for fileURL: URL) -> VideoNoiseTimeline? {
         guard let cached = VideoNoiseTimelineStore.load(for: fileURL),
-              !cached.samples.isEmpty else { return nil }
-        return cached.samples.map(\.decibel)
+              isCacheValidForDisplay(cached) else { return nil }
+        return cached
+    }
+
+    static func loadCachedDecibels(for fileURL: URL) -> [Float]? {
+        loadCachedTimeline(for: fileURL)?.samples.map(\.decibel)
     }
 
     static func loadOrAnalyze(
@@ -15,7 +19,7 @@ enum RecordingWaveformAnalyzer {
         weighting: WeightingType = DeviceCalibrationStore.weightingType
     ) async throws -> VideoNoiseTimeline {
         if let cached = VideoNoiseTimelineStore.load(for: fileURL),
-           hasMeaningfulVariation(cached) {
+           isCacheValidForDisplay(cached) {
             return cached
         }
 
@@ -27,6 +31,11 @@ enum RecordingWaveformAnalyzer {
 
     private static func isPreWeightedAudio(_ fileURL: URL) -> Bool {
         fileURL.pathExtension.lowercased() == "m4a"
+    }
+
+    private static func isCacheValidForDisplay(_ timeline: VideoNoiseTimeline) -> Bool {
+        guard timeline.isValidForPlaybackAlignment, !timeline.samples.isEmpty else { return false }
+        return hasMeaningfulVariation(timeline)
     }
 
     private static func hasMeaningfulVariation(_ timeline: VideoNoiseTimeline) -> Bool {
@@ -136,7 +145,14 @@ enum RecordingWaveformAnalyzer {
         guard !samples.isEmpty else { throw AnalysisError.noAudioTrack }
 
         let weightingLabel = "dB\(weighting.rawValue)"
-        return VideoNoiseTimeline(weighting: weightingLabel, samples: samples)
+        let fileDuration = Double(file.length) / sampleRate
+        let timeline = VideoNoiseTimeline(
+            weighting: weightingLabel,
+            samples: samples,
+            source: .offline,
+            normalized: true
+        )
+        return timeline.normalized(to: fileDuration, source: .offline) ?? timeline
     }
 
     private static func appendWindow(

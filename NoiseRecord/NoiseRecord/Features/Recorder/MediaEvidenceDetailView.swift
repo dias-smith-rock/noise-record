@@ -191,17 +191,19 @@ struct MediaEvidenceDetailView: View {
             if model.isLoadingTimeline {
                 ProgressView(L10n.mediaDetailAnalyzingWaveform)
                     .frame(maxWidth: .infinity, minHeight: 160)
-            } else if model.waveformSamples.isEmpty {
+            } else if !model.hasWaveformTimeline {
                 ContentUnavailableView(
                     L10n.mediaDetailNoWaveformTitle,
                     systemImage: "waveform",
                     description: Text(model.timelineError ?? L10n.mediaDetailNoWaveformMessage)
                 )
                 .frame(minHeight: 160)
-            } else {
+            } else if let timeline = model.timeline {
                 EvidenceBarWaveformView(
-                    samples: model.waveformSamples,
-                    duration: max(model.duration, sessionDuration),
+                    timeline: timeline,
+                    playbackDuration: model.playbackDuration > 0
+                        ? model.playbackDuration
+                        : max(timeline.timelineDuration, sessionDuration),
                     currentTime: model.currentTime,
                     mode: measurementMode,
                     referenceLimitDB: waveformReferenceLimitDB,

@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct EvidenceBarWaveformView: View {
-    let samples: [Float]
-    let duration: TimeInterval
+    let timeline: VideoNoiseTimeline
+    let playbackDuration: TimeInterval
     let currentTime: TimeInterval
     var mode: AcousticMeasurementMode = .standard
     var referenceLimitDB: Float = NoiseReferenceLimits.residentialNightDB
@@ -11,6 +11,10 @@ struct EvidenceBarWaveformView: View {
     private var theme: ModeVisualTheme { .theme(for: mode) }
     private var minDB: Float { mode.waveformMinDB }
     private var maxDB: Float { mode.waveformMaxDB }
+
+    private var duration: TimeInterval {
+        max(playbackDuration, 0.001)
+    }
 
     private var shouldDrawReferenceLine: Bool {
         NoiseReferenceLimits.shouldShowReferenceLine(
@@ -55,19 +59,21 @@ struct EvidenceBarWaveformView: View {
     }
 
     private func drawWaveform(in context: inout GraphicsContext, size: CGSize) {
-        guard size.width > 1, size.height > 1, samples.count > 1 else { return }
+        guard size.width > 1, size.height > 1, timeline.samples.count > 1, duration > 0 else { return }
 
-        let pointCount = min(samples.count, max(Int(size.width), 2))
+        let pointCount = min(max(Int(size.width), 2), 512)
         var points: [(CGPoint, Float)] = []
         points.reserveCapacity(pointCount)
 
         for pointIndex in 0..<pointCount {
-            let sampleIndex = pointIndex * (samples.count - 1) / max(pointCount - 1, 1)
-            let sample = samples[sampleIndex]
-            let x = size.width * CGFloat(pointIndex) / CGFloat(max(pointCount - 1, 1))
-            let y = yPosition(for: sample, height: size.height)
-            points.append((CGPoint(x: x, y: y), sample))
+            let time = duration * Double(pointIndex) / Double(max(pointCount - 1, 1))
+            guard let db = timeline.decibel(at: time) else { continue }
+            let x = CGFloat(time / duration) * size.width
+            let y = yPosition(for: db, height: size.height)
+            points.append((CGPoint(x: x, y: y), db))
         }
+
+        guard points.count > 1 else { return }
 
         let strokeStyle = StrokeStyle(
             lineWidth: theme.waveformLineWidth,

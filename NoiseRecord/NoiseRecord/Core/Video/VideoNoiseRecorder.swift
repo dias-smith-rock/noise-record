@@ -656,10 +656,21 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
 
     private func saveNoiseTimeline(for videoURL: URL) {
         guard !noiseTimelineSamples.isEmpty else { return }
-        let timeline = VideoNoiseTimeline(
+
+        var timeline = VideoNoiseTimeline(
             weighting: dataBridge.currentWeighting,
-            samples: noiseTimelineSamples
+            samples: noiseTimelineSamples,
+            source: .live,
+            normalized: false
         )
+
+        let asset = AVURLAsset(url: videoURL)
+        let fileDuration = CMTimeGetSeconds(asset.duration)
+        if fileDuration.isFinite, fileDuration > 0,
+           let normalized = timeline.normalized(to: fileDuration, source: .live) {
+            timeline = normalized
+        }
+
         try? VideoNoiseTimelineStore.save(timeline, for: videoURL)
     }
 

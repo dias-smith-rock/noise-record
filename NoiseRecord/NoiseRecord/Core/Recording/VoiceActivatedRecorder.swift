@@ -100,7 +100,9 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
         }
 
         pcmAccumulator.append(filteredSamples, count: frameLength)
-        appendTimelineSample(frameLength: frameLength, dbSPL: dbSPL, format: format)
+        if hasWrittenAudio {
+            appendTimelineSample(frameLength: frameLength, dbSPL: dbSPL, format: format)
+        }
         flushToFileIfNeeded()
 
         fileQueue.sync {
@@ -231,6 +233,8 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
     }
 
     private func appendTimelineSample(frameLength: Int, dbSPL: Float, format: AVAudioFormat) {
+        guard hasWrittenAudio else { return }
+
         timelineLock.lock()
         defer { timelineLock.unlock() }
 
@@ -250,10 +254,26 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
         timelineLock.unlock()
 
         guard !samples.isEmpty else { return }
-        let timeline = VideoNoiseTimeline(
+
+        var timeline = VideoNoiseTimeline(
             weighting: "dB\(DeviceCalibrationStore.weightingType.rawValue)",
-            samples: samples
+            samples: samples,
+            source: .live,
+            normalized: false
         )
+
+        if let file = try? AVAudioFile(forReading: url) {
+            let sampleRate = file.processingFormat.sampleRate
+            guard sampleRate > 0 else {
+                try? VideoNoiseTimelineStore.save(timeline, for: url)
+                return
+            }
+            let fileDuration = Double(file.length) / sampleRate
+            if fileDuration > 0, let normalized = timeline.normalized(to: fileDuration, source: .live) {
+                timeline = normalized
+            }
+        }
+
         try? VideoNoiseTimelineStore.save(timeline, for: url)
     }
 

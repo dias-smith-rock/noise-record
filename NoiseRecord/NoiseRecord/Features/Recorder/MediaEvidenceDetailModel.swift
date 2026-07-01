@@ -20,8 +20,17 @@ final class MediaEvidenceDetailModel {
     private var mediaURL: URL?
     private var isVideo = false
 
-    var waveformSamples: [Float] {
-        timeline?.samples.map(\.decibel) ?? []
+    var hasWaveformTimeline: Bool {
+        guard let timeline else { return false }
+        return !timeline.samples.isEmpty
+    }
+
+    var playbackDuration: TimeInterval {
+        if duration > 0 { return duration }
+        if let timelineDuration = timeline?.timelineDuration, timelineDuration > 0 {
+            return timelineDuration
+        }
+        return 0
     }
 
     func loadTimeline(from url: URL, isVideo: Bool) async {
@@ -34,7 +43,10 @@ final class MediaEvidenceDetailModel {
             timeline = try await RecordingWaveformAnalyzer.loadOrAnalyze(fileURL: url)
         } catch {
             timelineError = error.localizedDescription
-            timeline = VideoNoiseTimelineStore.load(for: url)
+            if let cached = VideoNoiseTimelineStore.load(for: url),
+               cached.isValidForPlaybackAlignment {
+                timeline = cached
+            }
         }
     }
 

@@ -5,17 +5,36 @@ struct VideoNoiseSample: Codable, Sendable, Equatable {
     let decibel: Float
 }
 
+enum VideoNoiseTimelineSource: String, Codable, Sendable {
+    case live
+    case offline
+}
+
 struct VideoNoiseTimeline: Codable, Sendable {
-    static let currentVersion = 1
+    static let currentVersion = 2
 
     let version: Int
     let weighting: String
     let samples: [VideoNoiseSample]
+    let source: VideoNoiseTimelineSource?
+    let normalized: Bool?
 
-    init(weighting: String, samples: [VideoNoiseSample]) {
+    init(
+        weighting: String,
+        samples: [VideoNoiseSample],
+        source: VideoNoiseTimelineSource = .offline,
+        normalized: Bool = true
+    ) {
         self.version = Self.currentVersion
         self.weighting = weighting
         self.samples = samples
+        self.source = source
+        self.normalized = normalized
+    }
+
+    /// v1 live-recorded sidecars may have misaligned timestamps relative to playback.
+    var isValidForPlaybackAlignment: Bool {
+        version >= Self.currentVersion && (normalized ?? false)
     }
 
     func decibel(at playbackTime: Double) -> Float? {
@@ -41,5 +60,32 @@ struct VideoNoiseTimeline: Codable, Sendable {
         guard span > 0 else { return start.decibel }
         let progress = (playbackTime - start.time) / span
         return start.decibel + Float(progress) * (end.decibel - start.decibel)
+    }
+
+    var timelineDuration: TimeInterval {
+        samples.last?.time ?? 0
+    }
+
+    func normalized(to targetDuration: TimeInterval, source: VideoNoiseTimelineSource) -> VideoNoiseTimeline? {
+        guard targetDuration > 0, let last = samples.last, last.time > 0 else { return nil }
+        let scale = targetDuration / last.time
+        guard abs(scale - 1) > 0.001 else {
+            return VideoNoiseTimeline(
+                weighting: weighting,
+                samples: samples,
+                source: source,
+                normalized: true
+            )
+        }
+
+        let scaled = samples.map {
+            VideoNoiseSample(time: $0.time * scale, decibel: $0.decibel)
+        }
+        return VideoNoiseTimeline(
+            weighting: weighting,
+            samples: scaled,
+            source: source,
+            normalized: true
+        )
     }
 }
