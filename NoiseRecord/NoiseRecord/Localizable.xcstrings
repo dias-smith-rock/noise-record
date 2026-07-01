@@ -12139,6 +12139,23 @@
         }
       }
     },
+    "dashboard.waveform.referenceCaption": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dashed line: residential night reference (~%d dB(A)). Local limits vary; not for enforcement."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "虚线：住宅夜间参考（约 %d dB(A)）。各地法规不同，仅供参考，非执法测量。"
+          }
+        }
+      }
+    },
     "dB": {
       "localizations": {
         "ar": {
@@ -29954,7 +29971,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "[Standard] Closest to subjective hearing. Best for everyday speech, TV noise, mall crowds, or neighbor disputes. Residential noise standards (e.g. 45 dB at night) are based on this mode."
+            "value": "[Standard] Closest to subjective hearing. Best for everyday speech, TV noise, mall crowds, or neighbor disputes. Residential guidelines vary (e.g. ~45 dB WHO bedroom, ~55 dB common US ordinance). Use Standard mode and the waveform reference line for comparison."
           }
         },
         "es": {
@@ -30104,7 +30121,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "【标准】最接近主观听感。适合日常说话、电视声、商场人群或邻里纠纷。住宅噪声标准（如夜间 45 dB）基于此模式。"
+            "value": "【标准】最接近主观听感。适合日常说话、电视声、商场人群或邻里纠纷。各地住宅指南不同（如 WHO 卧室约 45 dB、美国常见条例约 55 dB）。请用 Standard 模式并对照波形参考线。"
           }
         },
         "zh-Hant": {
@@ -52544,6 +52561,74 @@
           "stringUnit": {
             "state": "translated",
             "value": "測量歷史已清除。"
+          }
+        }
+      }
+    },
+    "settings.waveformReference.footer": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shown as a dashed line on the waveform. Adjust to match your local ordinance or lease. Informational only—not a certified legal measurement."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在波形上以虚线显示。可按当地条例或租约调整。仅供参考，非执法测量。"
+          }
+        }
+      }
+    },
+    "settings.waveformReference.header": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waveform reference line"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "波形参考线"
+          }
+        }
+      }
+    },
+    "settings.waveformReference.limit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Residential night reference"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "住宅夜间参考值"
+          }
+        }
+      }
+    },
+    "settings.waveformReference.reset": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset to 55 dB"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢复为 55 dB"
           }
         }
       }

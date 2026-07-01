@@ -21,6 +21,7 @@ struct DashboardView: View {
     @State private var showsFullscreenLEDGuide = false
     @State private var fullscreenButtonFrame: CGRect = .zero
     @State private var environment = AmbientEnvironmentProvider()
+    @State private var waveformReferenceLimitDB = NoiseReferenceLimits.residentialNightDB
 
     private var measurementMode: AcousticMeasurementMode {
         AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
@@ -47,6 +48,10 @@ struct DashboardView: View {
             LaunchPerformance.mark(.launchFirstInteractive)
             environment.startUpdating()
             refreshFullscreenLEDGuideVisibility()
+            waveformReferenceLimitDB = NoiseReferenceLimits.residentialNightDB
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NoiseReferenceLimits.didChangeNotification)) { _ in
+            waveformReferenceLimitDB = NoiseReferenceLimits.residentialNightDB
         }
         .onChange(of: isTabActive) { _, _ in
             refreshFullscreenLEDGuideVisibility()
@@ -234,9 +239,17 @@ struct DashboardView: View {
                             .clipShape(Capsule())
                     }
                 }
-                WaveformView(samples: engine.history, mode: measurementMode)
+                WaveformView(
+                    samples: engine.history,
+                    mode: measurementMode,
+                    referenceLimitDB: waveformReferenceLimitDB
+                )
                     .equatable()
                     .frame(height: 120)
+
+                Text(L10n.dashboardWaveformReferenceCaption(limit: Int(waveformReferenceLimitDB)))
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
             }
 
             Text(footerNote)

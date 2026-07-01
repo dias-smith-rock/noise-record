@@ -45,6 +45,9 @@ nonisolated enum L10n {
     static var dashboardLeq: String { localized("dashboard.stat.leq") }
     static var dashboardWaveform: String { localized("dashboard.waveform.title") }
     static var dashboardFullBand: String { localized("dashboard.waveform.fullBandBadge") }
+    static func dashboardWaveformReferenceCaption(limit: Int) -> String {
+        String(format: localized("dashboard.waveform.referenceCaption"), limit)
+    }
     static var dashboardSpectrum: String { localized("dashboard.spectrum.title") }
     static var dashboardReport: String { localized("dashboard.button.report") }
     static var dashboardExportCSV: String { localized("dashboard.button.exportCSV") }
@@ -187,6 +190,10 @@ nonisolated enum L10n {
     static var settingsWeightingHeader: String { localized("settings.weighting.header") }
     static var settingsWeightingFooter: String { localized("settings.weighting.footer") }
     static var settingsWeightingPicker: String { localized("settings.weighting.picker.label") }
+    static var settingsWaveformReferenceHeader: String { localized("settings.waveformReference.header") }
+    static var settingsWaveformReferenceLimit: String { localized("settings.waveformReference.limit") }
+    static var settingsWaveformReferenceReset: String { localized("settings.waveformReference.reset") }
+    static var settingsWaveformReferenceFooter: String { localized("settings.waveformReference.footer") }
     static var settingsCalibrationHeader: String { localized("settings.calibration.header") }
     static var settingsCalibrationFooter: String { localized("settings.calibration.footer") }
     static var settingsCurrentMode: String { localized("settings.calibration.currentMode") }

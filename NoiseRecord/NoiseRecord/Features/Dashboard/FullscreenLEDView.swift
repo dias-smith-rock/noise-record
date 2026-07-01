@@ -18,6 +18,7 @@ struct FullscreenLEDView: View {
     /// 夜间模式下限流展示的分贝值；后台 `engine.currentDB` 仍实时更新。
     @State private var throttledDecibel: Float = 0
     @State private var ecoWaveformSnapshot: [Float] = []
+    @State private var waveformReferenceLimitDB = NoiseReferenceLimits.residentialNightDB
 
     private var risk: NoiseRiskLevel {
         .from(db: engine.currentDB, highSensitivity: mode.isHighSensitivity)
@@ -93,6 +94,7 @@ struct FullscreenLEDView: View {
         .onAppear {
             throttledDecibel = engine.currentDB
             ecoWaveformSnapshot = engine.history
+            waveformReferenceLimitDB = NoiseReferenceLimits.residentialNightDB
             if isEcoModeActive {
                 ecoClockTimelineAnchor = FullscreenLEDEcoModePolicy.startOfCurrentMinute()
             }
@@ -135,6 +137,9 @@ struct FullscreenLEDView: View {
         ) { _ in
             guard isEcoModeActive else { return }
             captureEcoWaveformSnapshot()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NoiseReferenceLimits.didChangeNotification)) { _ in
+            waveformReferenceLimitDB = NoiseReferenceLimits.residentialNightDB
         }
         .background {
             LandscapeOrientationEnforcer()
@@ -293,6 +298,7 @@ struct FullscreenLEDView: View {
             mode: mode,
             usesCardChrome: false,
             showsYAxisLabels: true,
+            referenceLimitDB: waveformReferenceLimitDB,
             axisLabelColor: ledAccent
         )
         .equatable()

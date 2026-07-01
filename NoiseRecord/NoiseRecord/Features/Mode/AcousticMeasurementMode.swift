@@ -29,14 +29,14 @@ enum AcousticMeasurementMode: String, CaseIterable, Identifiable, Sendable {
     /// 波形图纵向标度（收窄范围以增强视觉起伏）。
     var waveformMinDB: Float {
         switch self {
-        case .standard: 30
+        case .standard: 20
         case .highSensitivity: 35
         }
     }
 
     var waveformMaxDB: Float {
         switch self {
-        case .standard: 72
+        case .standard: 70
         case .highSensitivity: 100
         }
     }

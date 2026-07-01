@@ -24,6 +24,7 @@ struct SettingsView: View {
 
     @State private var displayedUserAdjustment: Float = DeviceCalibrationStore.userAdjustment
     @State private var displayedTotalOffset: Float = DeviceCalibrationStore.totalOffset
+    @State private var waveformReferenceLimit: Float = NoiseReferenceLimits.residentialNightDB
     @State private var showAppReviewPrompt = false
     @State private var showsPrivacyChoices = false
 
@@ -114,6 +115,28 @@ struct SettingsView: View {
                 } footer: {
                     Text(L10n.settingsWeightingFooter)
                 }
+            }
+
+            Section {
+                VStack(alignment: .leading, spacing: 8) {
+                    LabeledContent(
+                        L10n.settingsWaveformReferenceLimit,
+                        value: "\(Int(waveformReferenceLimit)) dB"
+                    )
+                    Slider(
+                        value: $waveformReferenceLimit,
+                        in: NoiseReferenceLimits.configurableMinDB...NoiseReferenceLimits.configurableMaxDB,
+                        step: 1
+                    )
+                    Button(L10n.settingsWaveformReferenceReset) {
+                        NoiseReferenceLimits.resetResidentialNightReference()
+                        waveformReferenceLimit = NoiseReferenceLimits.residentialNightDB
+                    }
+                }
+            } header: {
+                Text(L10n.settingsWaveformReferenceHeader)
+            } footer: {
+                Text(L10n.settingsWaveformReferenceFooter)
             }
 
             Section {
@@ -217,6 +240,13 @@ struct SettingsView: View {
             refreshCalibrationDisplay()
             refreshMeasurementSampleCount()
             refreshPrivacyChoicesVisibility()
+            waveformReferenceLimit = NoiseReferenceLimits.residentialNightDB
+        }
+        .onChange(of: waveformReferenceLimit) { _, newValue in
+            NoiseReferenceLimits.residentialNightDB = newValue
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NoiseReferenceLimits.didChangeNotification)) { _ in
+            waveformReferenceLimit = NoiseReferenceLimits.residentialNightDB
         }
         .onChange(of: isTabActive) { _, isActive in
             if isActive {

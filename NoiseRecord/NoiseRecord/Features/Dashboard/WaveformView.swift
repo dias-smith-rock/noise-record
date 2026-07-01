@@ -5,11 +5,21 @@ struct WaveformView: View, Equatable {
     var mode: AcousticMeasurementMode = .standard
     var usesCardChrome: Bool = true
     var showsYAxisLabels: Bool = true
+    var showsReferenceLimitLine: Bool = true
+    var referenceLimitDB: Float = NoiseReferenceLimits.residentialNightDB
     var axisLabelColor: Color = .secondary
 
     private var theme: ModeVisualTheme { .theme(for: mode) }
     private var minDB: Float { mode.waveformMinDB }
     private var maxDB: Float { mode.waveformMaxDB }
+
+    private var shouldDrawReferenceLine: Bool {
+        NoiseReferenceLimits.shouldShowReferenceLine(
+            mode: mode,
+            showsReferenceLimitLine: showsReferenceLimitLine,
+            referenceDB: referenceLimitDB
+        )
+    }
 
     static func == (lhs: WaveformView, rhs: WaveformView) -> Bool {
         lhs.samples.count == rhs.samples.count
@@ -17,6 +27,8 @@ struct WaveformView: View, Equatable {
             && lhs.mode == rhs.mode
             && lhs.usesCardChrome == rhs.usesCardChrome
             && lhs.showsYAxisLabels == rhs.showsYAxisLabels
+            && lhs.showsReferenceLimitLine == rhs.showsReferenceLimitLine
+            && lhs.referenceLimitDB == rhs.referenceLimitDB
     }
 
     var body: some View {
@@ -49,6 +61,10 @@ struct WaveformView: View, Equatable {
 
             if showsYAxisLabels {
                 drawYAxisGrid(in: &context, size: size)
+            }
+
+            if shouldDrawReferenceLine {
+                drawReferenceLimitLine(in: &context, size: size)
             }
 
             guard samples.count > 1 else { return }
@@ -86,6 +102,28 @@ struct WaveformView: View, Equatable {
         .drawingGroup()
     }
 
+    private func drawReferenceLimitLine(in context: inout GraphicsContext, size: CGSize) {
+        let lineColor = axisLabelColor.opacity(0.55)
+        let y = waveformYPosition(for: referenceLimitDB, height: size.height, minDB: minDB, maxDB: maxDB)
+        var path = Path()
+        path.move(to: CGPoint(x: 0, y: y))
+        path.addLine(to: CGPoint(x: size.width, y: y))
+        context.stroke(
+            path,
+            with: .color(lineColor),
+            style: StrokeStyle(lineWidth: 1, dash: [4, 3])
+        )
+
+        let label = Text(formatReferenceLimitLabel(referenceLimitDB))
+            .font(.system(size: 10, weight: .medium, design: .monospaced))
+            .foregroundColor(lineColor)
+        context.draw(label, at: CGPoint(x: size.width - 2, y: y - 6), anchor: .bottomTrailing)
+    }
+
+    private func formatReferenceLimitLabel(_ db: Float) -> String {
+        "\(Int(db.rounded())) dB"
+    }
+
     private func drawYAxisGrid(in context: inout GraphicsContext, size: CGSize) {
         let gridColor = axisLabelColor.opacity(0.22)
         let gridStyle = StrokeStyle(lineWidth: 0.5, dash: [4, 4])
@@ -100,16 +138,13 @@ struct WaveformView: View, Equatable {
     }
 
     private func formatAxisLabel(_ db: Float) -> String {
-        if db.rounded() == db {
-            return String(format: "%.0f", db)
-        }
-        return String(format: "%.1f", db)
+        String(Int(db.rounded()))
     }
 }
 
 // MARK: - Sampling
 
-private func waveformYPosition(for db: Float, height: CGFloat, minDB: Float, maxDB: Float) -> CGFloat {
+func waveformYPosition(for db: Float, height: CGFloat, minDB: Float, maxDB: Float) -> CGFloat {
     let dbRange = max(maxDB - minDB, 1)
     let normalized = CGFloat((db - minDB) / dbRange)
     return height * (1 - min(max(normalized, 0), 1))
