@@ -48,7 +48,7 @@ struct MediaEvidenceDetailView: View {
 
     private var startedAt: Date {
         switch kind {
-        case .audio(let session): session.startedAt
+        case .audio(let session): session.recordingStartDate
         case .video(let session): session.startedAt
         }
     }

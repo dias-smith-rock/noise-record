@@ -1,0 +1,43 @@
+import XCTest
+@testable import NoiseRecord
+
+final class RecordingSessionTimestampTests: XCTestCase {
+    func testParseStartDateFromVADSegmentFileName() {
+        let date = RecordingSession.parseStartDate(from: "20260701_180613_55dB.m4a")
+        XCTAssertNotNil(date)
+
+        let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date!)
+        XCTAssertEqual(components.year, 2026)
+        XCTAssertEqual(components.month, 7)
+        XCTAssertEqual(components.day, 1)
+        XCTAssertEqual(components.hour, 18)
+        XCTAssertEqual(components.minute, 6)
+        XCTAssertEqual(components.second, 13)
+    }
+
+    func testParseStartDateFromSessionFileName() {
+        let date = RecordingSession.parseStartDate(from: "20260701_180612_session.m4a")
+        XCTAssertNotNil(date)
+
+        let components = Calendar.current.dateComponents([.hour, .minute, .second], from: date!)
+        XCTAssertEqual(components.hour, 18)
+        XCTAssertEqual(components.minute, 6)
+        XCTAssertEqual(components.second, 12)
+    }
+
+    func testRecordingStartDatePrefersFileNameForFirstSegment() {
+        let parsed = RecordingSession.parseStartDate(from: "20260701_180613_55dB.m4a")!
+        let session = RecordingSession(
+            fileName: "20260701_180613_55dB.m4a",
+            filePath: "Recordings/20260701_180613_55dB.m4a",
+            startedAt: parsed.addingTimeInterval(31),
+            endedAt: parsed.addingTimeInterval(62),
+            peakDB: 55,
+            averageDB: 50,
+            segmentIndex: 1
+        )
+
+        XCTAssertEqual(session.recordingStartDate, parsed)
+        XCTAssertEqual(session.duration, 62, accuracy: 0.001)
+    }
+}

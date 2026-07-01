@@ -321,13 +321,13 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
             AppTelemetry.logBackgroundRecordingStart(peakDB: currentDB)
         }
 
-        let now = Date()
+        let triggerTime = Date()
         state = .recording
         coolingDownDeadline = nil
         currentSegmentIndex = 1
-        sessionTriggerTimestamp = Self.timestampString(from: now)
+        sessionTriggerTimestamp = Self.timestampString(from: triggerTime)
         sessionTriggerPeakDB = Int(currentDB)
-        beginNewSegmentTiming(at: now)
+        beginNewSegmentTiming(at: triggerTime)
         segmentPeakDB = currentDB
         segmentDbSum = currentDB
         segmentDbCount = 1
@@ -510,7 +510,7 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
             fileURL: url,
             peakDB: segmentPeakDB,
             averageDB: segmentDbCount > 0 ? segmentDbSum / Float(segmentDbCount) : 0,
-            startedAt: segmentStart,
+            startedAt: segmentEventStartDate(fallback: segmentStart),
             endedAt: Date(),
             noiseType: currentNoiseType,
             segmentIndex: currentSegmentIndex,
@@ -673,6 +673,23 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
         hasWrittenSegmentAudio = false
         resetSegmentTimelineLocked()
         segmentPcmAccumulator.reset()
+    }
+
+    private func segmentEventStartDate(fallback: Date) -> Date {
+        if currentSegmentIndex == 1,
+           let timestamp = sessionTriggerTimestamp,
+           let triggerDate = Self.date(fromTimestamp: timestamp) {
+            return triggerDate
+        }
+        return fallback
+    }
+
+    private static func date(fromTimestamp timestamp: String) -> Date? {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = .current
+        formatter.dateFormat = "yyyyMMdd_HHmmss"
+        return formatter.date(from: timestamp)
     }
 
     private static func timestampString(from date: Date) -> String {

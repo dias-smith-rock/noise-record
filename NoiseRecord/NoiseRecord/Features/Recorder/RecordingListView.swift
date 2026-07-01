@@ -404,7 +404,7 @@ struct RecordingListView: View {
                         fileName: session.fileName,
                         isNew: session.isNew,
                         subtitle: nil,
-                        detailLine: session.startedAt.formatted(date: .abbreviated, time: .shortened),
+                        detailLine: session.recordingStartDate.formatted(date: .abbreviated, time: .shortened),
                         playFooterText: DurationFormatting.hms(from: session.duration),
                         waveformFileURL: session.fileURL,
                         waveformAlternateURLs: waveformAlternateURLs(for: session),

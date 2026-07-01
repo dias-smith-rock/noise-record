@@ -250,10 +250,12 @@ struct ContentView: View {
     }
 
     private func saveRecording(_ event: RecordingFinishedEvent) {
+        let fileName = event.fileURL.lastPathComponent
+        let startedAt = RecordingSession.parseStartDate(from: fileName) ?? event.startedAt
         let session = RecordingSession(
-            fileName: event.fileURL.lastPathComponent,
+            fileName: fileName,
             filePath: EvidenceFileResolver.makeRelativePath(from: event.fileURL),
-            startedAt: event.startedAt,
+            startedAt: startedAt,
             endedAt: event.endedAt,
             peakDB: event.peakDB,
             averageDB: event.averageDB,

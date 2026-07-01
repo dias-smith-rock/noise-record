@@ -77,7 +77,15 @@ final class RecordingSession {
     }
 
     var duration: TimeInterval {
-        endedAt.timeIntervalSince(startedAt)
+        max(0, endedAt.timeIntervalSince(recordingStartDate))
+    }
+
+    /// UI-facing recording start — prefers the timestamp embedded in the file name.
+    var recordingStartDate: Date {
+        if segmentIndex > 1 {
+            return startedAt
+        }
+        return Self.parseStartDate(from: fileName) ?? startedAt
     }
 
     var noiseTimeline: VideoNoiseTimeline? {
@@ -89,4 +97,21 @@ final class RecordingSession {
         let digest = SHA256.hash(data: data)
         return digest.map { String(format: "%02x", $0) }.joined()
     }
+
+    /// Parses `yyyyMMdd_HHmmss` from recording file names such as
+    /// `20260701_180613_55dB.m4a` or `20260701_180612_session.m4a`.
+    static func parseStartDate(from fileName: String) -> Date? {
+        let stem = (fileName as NSString).deletingPathExtension
+        guard stem.count >= 15 else { return nil }
+        let token = String(stem.prefix(15))
+        return recordingTimestampFormatter.date(from: token)
+    }
+
+    private static let recordingTimestampFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = .current
+        formatter.dateFormat = "yyyyMMdd_HHmmss"
+        return formatter
+    }()
 }
