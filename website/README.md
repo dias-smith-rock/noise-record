@@ -11,8 +11,10 @@ website/
 │   └── index.html                # Mega SEO landing page
 ├── knowledge/
 │   ├── index.html                # Guides hub
-│   └── how-to-sue-neighbor-small-claims-court-noise/
-│       └── index.html            # Small claims court spoke article
+│   ├── how-to-sue-neighbor-small-claims-court-noise/
+│   │   └── index.html            # Small claims court spoke article
+│   └── science-of-hearing-and-noise-monitoring/
+│       └── index.html            # Hearing science & monitoring modes spoke
 ├── privacy.html
 ├── terms.html
 ├── support.html
@@ -43,6 +45,7 @@ SEO guide pages (after starting the server):
 - [http://localhost:8080/apartment-noise-complaint-guide/](http://localhost:8080/apartment-noise-complaint-guide/)
 - [http://localhost:8080/knowledge/](http://localhost:8080/knowledge/)
 - [http://localhost:8080/knowledge/how-to-sue-neighbor-small-claims-court-noise/](http://localhost:8080/knowledge/how-to-sue-neighbor-small-claims-court-noise/)
+- [http://localhost:8080/knowledge/science-of-hearing-and-noise-monitoring/](http://localhost:8080/knowledge/science-of-hearing-and-noise-monitoring/)
 
 ## Deployment (GitHub Pages)
 

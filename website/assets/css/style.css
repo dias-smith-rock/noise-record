@@ -571,6 +571,41 @@ a.knowledge-card:hover {
   color: var(--text-muted);
 }
 
+.table-scroll {
+  overflow-x: auto;
+  margin: 1.25rem 0 1.5rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.comparison-table {
+  width: 100%;
+  min-width: 32rem;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.comparison-table th,
+.comparison-table td {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.comparison-table th {
+  background: var(--bg-card);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.comparison-table td {
+  color: var(--text-muted);
+}
+
+.comparison-table tbody tr:nth-child(even) td {
+  background: rgba(20, 27, 36, 0.45);
+}
+
 /* Footer */
 .site-footer {
   border-top: 1px solid var(--border);
