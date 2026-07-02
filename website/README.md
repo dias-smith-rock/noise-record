@@ -22,7 +22,9 @@ website/
 ├── sitemap.xml
 ├── assets/
 │   ├── css/style.css
-│   ├── js/main.js
+│   ├── js/
+│   │   ├── main.js
+│   │   └── firebase-analytics.js # Firebase GA4 (project website-decibelmeter)
 │   └── images/
 ├── CNAME
 ├── CNAME.example
@@ -87,13 +89,37 @@ dig www.decibelmeterpro.com CNAME +short
 
 Site URL: **https://www.decibelmeterpro.com**
 
+### HTTPS / SSL checklist (post-deploy)
+
+After DNS and GitHub Pages custom domain are configured:
+
+1. **GitHub Pages** — Repo **Settings → Pages** → enable **Enforce HTTPS** (available once DNS verification completes).
+2. **GoDaddy apex redirect** — Forward `decibelmeterpro.com` (`@`) with **301** to `https://www.decibelmeterpro.com` so crawlers see a single canonical host.
+3. **Smoke test** — Visit `http://www.decibelmeterpro.com` and `http://decibelmeterpro.com`; both should redirect to `https://www.decibelmeterpro.com`.
+4. **SSL Labs** — Re-test at [SSL Labs](https://www.ssllabs.com/ssltest/) after changes propagate.
+
+All site HTML uses root-relative asset paths (`/assets/...`) and HTTPS canonical URLs.
+
+## Analytics (Firebase / GA4)
+
+Every page loads `assets/js/firebase-analytics.js` as an ES module at the end of `<body>`, before any other Firebase services.
+
+- **Firebase project:** `website-decibelmeter`
+- **Measurement ID:** `G-WG20DNR6DY`
+- **Config file:** `assets/js/firebase-analytics.js`
+
+After deploy, verify in browser DevTools → **Network** → filter `google-analytics` or `firebase`.
+
+To rotate keys or add Firebase products, edit `firebase-analytics.js` in [Firebase Console](https://console.firebase.google.com/) → **website-decibelmeter** → Project settings → Your apps.
+
 ## SEO files
 
 | File | Purpose |
 |------|---------|
 | `robots.txt` | Allows all crawlers; points to sitemap |
 | `sitemap.xml` | Lists homepage, SEO guides, privacy, terms, support |
-| `index.html` `<head>` | Canonical URL, JSON-LD, Smart App Banner |
+| `index.html` `<head>` | Canonical URL, JSON-LD, Smart App Banner, Open Graph |
+| `assets/js/firebase-analytics.js` | Firebase Analytics (GA4) module |
 
 ## Updating content
 
