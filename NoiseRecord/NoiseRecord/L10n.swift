@@ -608,6 +608,62 @@ nonisolated enum L10n {
     static var mediaDetailInfoThresholdLevel: String { localized("mediaDetail.info.thresholdLevel") }
     static var mediaDetailInfoExchangeRate: String { localized("mediaDetail.info.exchangeRate") }
 
+    // MARK: - Sleep monitor
+
+    static var sleepMonitorTitle: String { localized("sleep.monitor.title") }
+    static var sleepMonitorSubtitle: String { localized("sleep.monitor.subtitle") }
+    static var sleepMonitorPowerHint: String { localized("sleep.monitor.powerHint") }
+    static var sleepMonitorModeHint: String { localized("sleep.monitor.modeHint") }
+    static var sleepMonitorStart: String { localized("sleep.monitor.start") }
+    static var sleepActiveTitle: String { localized("sleep.active.title") }
+    static var sleepActiveCurrent: String { localized("sleep.active.current") }
+    static var sleepActiveNoiseFloor: String { localized("sleep.active.noiseFloor") }
+    static var sleepActiveAnomalies: String { localized("sleep.active.anomalies") }
+    static var sleepEndSession: String { localized("sleep.endSession") }
+    static var sleepReportTitle: String { localized("sleep.report.title") }
+    static var sleepReportDisclaimer: String { localized("sleep.report.disclaimer") }
+    static var sleepReportAnomaliesTitle: String { localized("sleep.report.anomaliesTitle") }
+    static var sleepReportViewHistory: String { localized("sleep.report.viewHistory") }
+    static var sleepReportExport: String { localized("sleep.report.export") }
+    static var sleepReportImpactDeepSleep: String { localized("sleep.report.impactDeepSleep") }
+    static var sleepReportImpactLightSleep: String { localized("sleep.report.impactLightSleep") }
+    static var sleepHistoryTitle: String { localized("sleep.history.title") }
+    static var sleepHistoryEmpty: String { localized("sleep.history.empty") }
+    static var sleepHistoryTrendTitle: String { localized("sleep.history.trendTitle") }
+    static var sleepSettingsHeader: String { localized("sleep.settings.header") }
+    static var sleepSettingsWakeTime: String { localized("sleep.settings.wakeTime") }
+    static var sleepSettingsNotifications: String { localized("sleep.settings.notifications") }
+    static var sleepNotificationWakeTitle: String { localized("sleep.notification.wakeTitle") }
+    static var sleepNotificationWakeBody: String { localized("sleep.notification.wakeBody") }
+    static var sleepNotificationReportTitle: String { localized("sleep.notification.reportTitle") }
+    static var paywallContextSleepHistory: String { localized("paywall.context.sleepHistory") }
+    static var paywallContextSleepExport: String { localized("paywall.context.sleepExport") }
+
+    static func sleepReportOverallLevel(_ level: String) -> String {
+        String(format: localized("sleep.report.overallLevel"), level)
+    }
+
+    static func sleepReportFloorLevel(_ level: String) -> String {
+        String(format: localized("sleep.report.floorLevel"), level)
+    }
+
+    static func sleepReportSummaryQuiet(_ overall: String) -> String {
+        String(format: localized("sleep.report.summaryQuiet"), overall)
+    }
+
+    static func sleepReportSummaryWithAnomaly(
+        _ overall: String,
+        _ time: String,
+        _ peak: String,
+        _ impact: String
+    ) -> String {
+        String(format: localized("sleep.report.summaryWithAnomaly"), overall, time, peak, impact)
+    }
+
+    static func sleepHistoryRowSummary(leq: String, floor: String, anomalies: Int) -> String {
+        String(format: localized("sleep.history.rowSummary"), leq, floor, anomalies)
+    }
+
     // MARK: - AI labels
 
     static func aiLabel(_ key: String) -> String {

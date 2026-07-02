@@ -137,6 +137,8 @@ struct PaywallView: View {
         case .voiceDurationLimit: L10n.paywallContextVoiceDuration
         case .videoDailyLimit: L10n.paywallContextVideoDaily
         case .videoDurationLimit: L10n.paywallContextVideoDuration
+        case .sleepHistory: L10n.paywallContextSleepHistory
+        case .sleepExport: L10n.paywallContextSleepExport
         case .launch, .settings: nil
         }
     }

@@ -12,6 +12,7 @@ struct ContentView: View {
 
     @State private var engine: NoiseMonitorEngine
     @State private var audioStateManager: AudioStateManager
+    @State private var sleepCoordinator = SleepNoiseMonitorCoordinator()
     @State private var videoCoordinator = VideoEvidenceCoordinator()
     @State private var selectedTab: MainTab = .monitor
     @State private var mountedTabs: Set<MainTab> = [.monitor]
@@ -46,6 +47,7 @@ struct ContentView: View {
         .preferredColorScheme(appearance.colorSchemePreference.colorScheme)
         .onAppear {
             LaunchPerformance.mark(.launchContentViewAppear)
+            sleepCoordinator.configure(engine: engine, modelContext: modelContext)
             refreshUnreadBadge()
             engine.onRecordingFinished = { event in
                 saveRecording(event)
@@ -85,10 +87,28 @@ struct ContentView: View {
             refreshMonitorTabIconIfNeeded()
         }
         .onOpenURL { url in
-            guard url.scheme == LiveActivityDeepLink.scheme,
-                  url.host == LiveActivityDeepLink.monitorHost else { return }
+            guard url.scheme == LiveActivityDeepLink.scheme else { return }
+            if url.host == LiveActivityDeepLink.sleepReportHost,
+               let sessionID = UUID(uuidString: url.lastPathComponent) {
+                sleepCoordinator.presentReport(sessionID: sessionID)
+                suppressNextTabSelectionAd = true
+                selectedTab = .monitor
+                return
+            }
+            guard url.host == LiveActivityDeepLink.monitorHost else { return }
             suppressNextTabSelectionAd = true
             selectedTab = .monitor
+        }
+        .sheet(isPresented: Binding(
+            get: { sleepCoordinator.showReportSheet },
+            set: { if !$0 { sleepCoordinator.dismissReportSheet() } }
+        )) {
+            if let sessionID = sleepCoordinator.latestReportSessionID {
+                SleepReportView(sessionID: sessionID) {
+                    sleepCoordinator.markReportRead(for: sessionID)
+                    sleepCoordinator.dismissReportSheet()
+                }
+            }
         }
         .task(id: engine.isMonitoring) {
             guard engine.isMonitoring else {
@@ -166,6 +186,7 @@ struct ContentView: View {
                 AppTelemetry.log("scene_active")
                 guard audioStateManager.allowsAutomaticMonitoringRecovery else { return }
                 engine.handleDidBecomeActive()
+                sleepCoordinator.presentPendingReportIfNeeded()
                 refreshUnreadBadge()
             @unknown default:
                 break
@@ -179,6 +200,7 @@ struct ContentView: View {
             DashboardView(
                 engine: engine,
                 audioStateManager: audioStateManager,
+                sleepCoordinator: sleepCoordinator,
                 isTabActive: selectedTab == .monitor
             )
         }
@@ -305,6 +327,9 @@ struct ContentView: View {
     private func saveRecording(_ event: RecordingFinishedEvent) {
         let fileName = event.fileURL.lastPathComponent
         let startedAt = RecordingSession.parseStartDate(from: fileName) ?? event.startedAt
+        let sleepSessionID = sleepCoordinator.sleepSessionIDForRecording(
+            isSleepAnomalyClip: event.isSleepAnomalyClip
+        )
         let session = RecordingSession(
             fileName: fileName,
             filePath: EvidenceFileResolver.makeRelativePath(from: event.fileURL),
@@ -317,10 +342,12 @@ struct ContentView: View {
             longitude: event.longitude,
             segmentGroupID: event.segmentGroupID,
             segmentIndex: event.segmentIndex,
-            isSessionRecording: event.isSessionRecording
+            isSessionRecording: event.isSessionRecording,
+            sleepSessionID: sleepSessionID
         )
         modelContext.insert(session)
         try? modelContext.save()
+        sleepCoordinator.noteRecordingSaved(session)
         refreshUnreadBadge()
         AppReviewStore.noteEvidenceFileSaved()
     }
@@ -328,5 +355,11 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: [RecordingSession.self, MeasurementSample.self, VideoEvidenceSession.self], inMemory: true)
+        .modelContainer(for: [
+            RecordingSession.self,
+            MeasurementSample.self,
+            VideoEvidenceSession.self,
+            SleepNoiseSession.self,
+            SleepAnomalyEvent.self,
+        ], inMemory: true)
 }

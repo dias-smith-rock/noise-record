@@ -20,6 +20,7 @@ struct RecordingFinishedEvent: Sendable {
     let longitude: Double?
     let isSessionRecording: Bool
     let segmentGroupID: UUID?
+    let isSleepAnomalyClip: Bool
 }
 
 final class VoiceActivatedRecorder: @unchecked Sendable {
@@ -38,6 +39,7 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
     var postRecordingDelay: TimeInterval = 4
     var preBufferDuration: TimeInterval = 1.5
     var voiceActivatedEnabled = false
+    var sessionTrackEnabled = true
     var locationSnapshot: () -> (latitude: Double?, longitude: Double?) = { (nil, nil) }
 
     /// Maximum write duration for the active monitoring session (continuous track).
@@ -134,7 +136,7 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
             ringBuffer?.write(filteredSamples, count: frameLength)
         }
 
-        if isSessionActive, !isWritingPaused {
+        if isSessionActive, !isWritingPaused, sessionTrackEnabled {
             processSessionTrack(
                 filteredSamples: filteredSamples,
                 frameLength: frameLength,
@@ -201,7 +203,8 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
                     latitude: latitude,
                     longitude: longitude,
                     isSessionRecording: true,
-                    segmentGroupID: monitoringSessionGroupID
+                    segmentGroupID: monitoringSessionGroupID,
+                    isSleepAnomalyClip: false
                 )
             )
         }
@@ -534,7 +537,8 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
             latitude: location.latitude,
             longitude: location.longitude,
             isSessionRecording: false,
-            segmentGroupID: monitoringSessionGroupID
+            segmentGroupID: monitoringSessionGroupID,
+            isSleepAnomalyClip: false
         )
         if emitEvent {
             onRecordingFinished?(event)

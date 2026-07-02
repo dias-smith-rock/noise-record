@@ -90,6 +90,8 @@ enum PaywallContext: String, Sendable {
     case voiceDurationLimit
     case videoDailyLimit
     case videoDurationLimit
+    case sleepHistory
+    case sleepExport
 }
 
 enum SubscriptionPurchaseResult: Sendable, Equatable {

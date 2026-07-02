@@ -99,6 +99,13 @@ final class NoiseMonitorEngine {
     var aiClassificationErrorMessage: String?
     var showMicrophonePermissionDenied = false
 
+    /// Overnight sleep noise-floor monitoring profile.
+    var isSleepModeActive = false
+    var sleepSessionID: UUID?
+    var onSleepSampleDue: (() -> Void)?
+    var onSleepAnomalyClipFinished: ((RecordingFinishedEvent) -> Void)?
+    var onSleepMetricsRefresh: ((Float, Float, Float) -> Void)?
+
     private let audioEngine = AVAudioEngine()
     private let processingQueue = DispatchQueue(label: "com.noiseapp.processing", qos: .userInteractive)
     private var weightingFilter: AudioWeightingFilter?
@@ -161,6 +168,9 @@ final class NoiseMonitorEngine {
     private var interruptionObserver: NSObjectProtocol?
     private var mediaResetObserver: NSObjectProtocol?
     private var calibrationObserver: NSObjectProtocol?
+    private var lastSleepSampleTime = Date.distantPast
+    private var lastSleepLiveActivityTime = Date.distantPast
+    private var isAppInBackground = false
 
     private(set) var pendingSessionStopSummary: SessionStopSummary?
     private(set) var sessionStopPromptID: UUID?
@@ -490,6 +500,26 @@ final class NoiseMonitorEngine {
     }
 
     private func handleRecordingFinished(_ event: RecordingFinishedEvent) {
+        if isSleepModeActive, !event.isSessionRecording {
+            let sleepEvent = RecordingFinishedEvent(
+                fileURL: event.fileURL,
+                peakDB: event.peakDB,
+                averageDB: event.averageDB,
+                startedAt: event.startedAt,
+                endedAt: event.endedAt,
+                noiseType: event.noiseType,
+                segmentIndex: event.segmentIndex,
+                latitude: event.latitude,
+                longitude: event.longitude,
+                isSessionRecording: false,
+                segmentGroupID: event.segmentGroupID,
+                isSleepAnomalyClip: true
+            )
+            onSleepAnomalyClipFinished?(sleepEvent)
+            onRecordingFinished?(sleepEvent)
+            return
+        }
+
         if event.isSessionRecording,
            isAwaitingStopSaveDecision || isProcessingMonitoringStop {
             deferredSessionRecording = event
@@ -516,6 +546,7 @@ final class NoiseMonitorEngine {
     }
 
     func handleDidEnterBackground() {
+        isAppInBackground = true
         if isMonitoring {
             voiceRecorder.emergencyFinalizeForLifecycleEvent()
         }
@@ -528,7 +559,33 @@ final class NoiseMonitorEngine {
     }
 
     func handleDidBecomeActive() {
+        isAppInBackground = false
         resumeMonitoringIfNeededAfterForeground()
+        if isSleepModeActive {
+            lastSleepSampleTime = Date.distantPast
+        }
+    }
+
+    func configureSleepMode(active: Bool, sleepSessionID: UUID?) {
+        isSleepModeActive = active
+        self.sleepSessionID = sleepSessionID
+        voiceRecorder.sessionTrackEnabled = !active
+        if active {
+            voiceActivatedEnabled = true
+            voiceRecorder.voiceActivatedEnabled = true
+            lastSleepSampleTime = Date()
+            lastSleepLiveActivityTime = Date.distantPast
+        }
+    }
+
+    func applySleepVADThresholds(high: Float, low: Float) {
+        guard isSleepModeActive else { return }
+        isNormalizingThresholds = true
+        highThreshold = high
+        lowThreshold = low
+        voiceRecorder.highThreshold = high
+        voiceRecorder.lowThreshold = low
+        isNormalizingThresholds = false
     }
 
     /// 为媒体播放让路：完全停止引擎与 tap，并清零仪表显示（不自动恢复）。
@@ -886,6 +943,14 @@ final class NoiseMonitorEngine {
         }
 
         let now = Date()
+        if isSleepModeActive,
+           now.timeIntervalSince(lastSleepSampleTime) >= SleepMeasurementPersistence.sampleInterval {
+            lastSleepSampleTime = now
+            Task { @MainActor in
+                self.onSleepSampleDue?()
+            }
+        }
+
         guard now.timeIntervalSince(lastUIUpdate) >= Performance.uiInterval else { return }
         lastUIUpdate = now
         uiFrameCounter += 1
@@ -893,7 +958,9 @@ final class NoiseMonitorEngine {
         var spectrum: FFTSpectrum?
         var freshLiveDecibels: [Float]?
         let fftConfiguration = currentFFTConfiguration
-        if uiFrameCounter % Performance.spectrumEveryNthUIFrame == 0,
+        let shouldComputeSpectrum = !(isSleepModeActive && isAppInBackground)
+        if shouldComputeSpectrum,
+           uiFrameCounter % Performance.spectrumEveryNthUIFrame == 0,
            fftSampleRing.isReadyForAnalysis(windowSize: fftConfiguration.fftSize) {
             fftSampleRing.copyLatestWindow(
                 into: &fftScratch,
@@ -947,13 +1014,20 @@ final class NoiseMonitorEngine {
             history: historySnapshot
         )
 
-        LiveActivityManager.shared.pushAudioBufferUpdate(
-            currentDB: snapshotSmoothed,
-            isHighSensitivity: isHighSensitivityMode,
-            weightingType: weightingType,
-            recordingState: state,
-            historyTail: historySnapshot
-        )
+        let shouldPushLiveActivity = !isSleepModeActive
+            || now.timeIntervalSince(lastSleepLiveActivityTime) >= 60
+        if shouldPushLiveActivity {
+            if isSleepModeActive {
+                lastSleepLiveActivityTime = now
+            }
+            LiveActivityManager.shared.pushAudioBufferUpdate(
+                currentDB: snapshotSmoothed,
+                isHighSensitivity: isHighSensitivityMode,
+                weightingType: weightingType,
+                recordingState: state,
+                historyTail: historySnapshot
+            )
+        }
 
         Task { @MainActor in
             self.publishUISnapshot(snapshot)
@@ -972,6 +1046,9 @@ final class NoiseMonitorEngine {
         averageDB = snapshot.averageDB
         leq = snapshot.leq
         recordingState = snapshot.recordingState
+        if isSleepModeActive {
+            onSleepMetricsRefresh?(snapshot.currentDB, snapshot.minDB, snapshot.leq)
+        }
         if let spectrum = snapshot.spectrum {
             latestSpectrum = spectrum
         }

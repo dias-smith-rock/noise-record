@@ -70,18 +70,32 @@ struct NoiseRecordApp: App {
     }
 
     private static func makeModelContainer() -> Result<ModelContainer, Error> {
-        let schema = Schema([
-            RecordingSession.self,
-            MeasurementSample.self,
-            VideoEvidenceSession.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        let schema = Schema(NoiseRecordSchemaV2.models)
+        let storeURL = SwiftDataStoreLocation.url
+        let modelConfiguration = ModelConfiguration(schema: schema, url: storeURL)
 
         do {
-            let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
+            let container = try ModelContainer(
+                for: schema,
+                migrationPlan: NoiseRecordMigrationPlan.self,
+                configurations: [modelConfiguration]
+            )
             return .success(container)
-        } catch {
-            return .failure(error)
+        } catch let migrationError {
+            AppTelemetry.recordError(migrationError, context: "storage_init_migration")
+
+            SwiftDataStoreLocation.removeStoreFiles()
+
+            do {
+                let container = try ModelContainer(
+                    for: schema,
+                    configurations: [modelConfiguration]
+                )
+                AppTelemetry.log("storage_recreated_after_migration_failure")
+                return .success(container)
+            } catch {
+                return .failure(migrationError)
+            }
         }
     }
 }

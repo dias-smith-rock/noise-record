@@ -20,6 +20,7 @@ final class RecordingSession {
     var segmentGroupID: UUID?
     var segmentIndex: Int = 1
     var isSessionRecording: Bool = false
+    var sleepSessionID: UUID?
 
     init(
         fileName: String,
@@ -33,7 +34,8 @@ final class RecordingSession {
         longitude: Double? = nil,
         segmentGroupID: UUID? = nil,
         segmentIndex: Int = 1,
-        isSessionRecording: Bool = false
+        isSessionRecording: Bool = false,
+        sleepSessionID: UUID? = nil
     ) {
         self.id = UUID()
         self.fileName = fileName
@@ -48,6 +50,7 @@ final class RecordingSession {
         self.segmentGroupID = segmentGroupID
         self.segmentIndex = segmentIndex
         self.isSessionRecording = isSessionRecording
+        self.sleepSessionID = sleepSessionID
         self.fileHash = Self.hashFile(at: filePath)
         self.isNew = true
     }

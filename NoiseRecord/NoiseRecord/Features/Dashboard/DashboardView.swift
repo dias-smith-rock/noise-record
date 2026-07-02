@@ -7,6 +7,7 @@ struct DashboardView: View {
 
     @Bindable var engine: NoiseMonitorEngine
     @Bindable var audioStateManager: AudioStateManager
+    @Bindable var sleepCoordinator: SleepNoiseMonitorCoordinator
     @Bindable private var appearance = AppAppearanceSettings.shared
     let isTabActive: Bool
     @Environment(\.modelContext) private var modelContext
@@ -88,7 +89,7 @@ struct DashboardView: View {
         .proTabBackground(theme: theme)
         .proTabNavigationChrome()
         .task(id: engine.isMonitoring) {
-            guard engine.isMonitoring else { return }
+            guard engine.isMonitoring, !engine.isSleepModeActive else { return }
             while !Task.isCancelled, engine.isMonitoring {
                 try? await Task.sleep(for: .seconds(Self.measurementPersistInterval))
                 guard engine.isMonitoring else { break }
@@ -176,6 +177,16 @@ struct DashboardView: View {
 
     private var dashboardContent: some View {
         VStack(spacing: 20) {
+            if sleepCoordinator.isSleepMonitoring {
+                SleepActiveBanner(coordinator: sleepCoordinator, theme: theme)
+            } else {
+                SleepMonitorCard(
+                    coordinator: sleepCoordinator,
+                    engine: engine,
+                    theme: theme
+                )
+            }
+
             VStack(alignment: .leading, spacing: 8) {
                 Text(L10n.dashboardSpectrum)
                     .font(.headline)
@@ -188,6 +199,8 @@ struct DashboardView: View {
             }
 
             EngineModeSwitchView(engine: engine)
+                .disabled(sleepCoordinator.isSleepMonitoring)
+                .opacity(sleepCoordinator.isSleepMonitoring ? 0.45 : 1)
 
             NoiseLevelGauge(
                 db: engine.currentDB,
@@ -280,10 +293,13 @@ struct DashboardView: View {
     }
 
     private var monitorActionTitle: String {
+        if sleepCoordinator.isSleepMonitoring {
+            return L10n.sleepEndSession
+        }
         switch audioStateManager.appAudioState {
-        case .monitoring: L10n.dashboardStop
-        case .idle: L10n.dashboardStart
-        case .playing: L10n.dashboardPlayingPlaceholder
+        case .monitoring: return L10n.dashboardStop
+        case .idle: return L10n.dashboardStart
+        case .playing: return L10n.dashboardPlayingPlaceholder
         }
     }
 
@@ -296,6 +312,10 @@ struct DashboardView: View {
     }
 
     private func handleStopMonitoringTapped() {
+        if sleepCoordinator.isSleepMonitoring {
+            Task { await sleepCoordinator.endSession() }
+            return
+        }
         audioStateManager.stopMonitoringManually()
     }
 

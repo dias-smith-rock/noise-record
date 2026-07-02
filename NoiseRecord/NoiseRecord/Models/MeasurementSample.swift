@@ -12,6 +12,7 @@ final class MeasurementSample {
     var leq: Float
     var weighting: String
     var noiseType: String?
+    var sleepSessionID: UUID?
 
     init(
         timestamp: Date,
@@ -21,7 +22,8 @@ final class MeasurementSample {
         dbAvg: Float,
         leq: Float,
         weighting: String,
-        noiseType: String? = nil
+        noiseType: String? = nil,
+        sleepSessionID: UUID? = nil
     ) {
         self.id = UUID()
         self.timestamp = timestamp
@@ -32,5 +34,6 @@ final class MeasurementSample {
         self.leq = leq
         self.weighting = weighting
         self.noiseType = noiseType
+        self.sleepSessionID = sleepSessionID
     }
 }

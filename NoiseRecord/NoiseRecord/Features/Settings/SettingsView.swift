@@ -27,6 +27,7 @@ struct SettingsView: View {
     @State private var waveformReferenceLimit: Float = NoiseReferenceLimits.residentialNightDB
     @State private var showAppReviewPrompt = false
     @State private var showsPrivacyChoices = false
+    @State private var wakeReminderTime = SleepMonitorSettingsStore.defaultWakeDate
 
     private var measurementMode: AcousticMeasurementMode {
         AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
@@ -118,6 +119,37 @@ struct SettingsView: View {
                 Text(L10n.settingsMonitoringHeader)
             } footer: {
                 Text(L10n.settingsAutoStartMonitoringFooter)
+            }
+
+            Section {
+                DatePicker(
+                    L10n.sleepSettingsWakeTime,
+                    selection: $wakeReminderTime,
+                    displayedComponents: .hourAndMinute
+                )
+                .onChange(of: wakeReminderTime) { _, newValue in
+                    applyWakeReminderTime(newValue)
+                }
+
+                Toggle(L10n.sleepSettingsNotifications, isOn: Binding(
+                    get: { SleepMonitorSettingsStore.notificationsEnabled },
+                    set: { newValue in
+                        SleepMonitorSettingsStore.notificationsEnabled = newValue
+                        Task { await SleepNotificationScheduler.scheduleDailyWakeReminder() }
+                    }
+                ))
+
+                NavigationLink {
+                    if SubscriptionManager.shared.isPremiumUser {
+                        SleepHistoryView()
+                    } else {
+                        SleepHistoryPaywallGateView()
+                    }
+                } label: {
+                    Text(L10n.sleepReportViewHistory)
+                }
+            } header: {
+                Text(L10n.sleepSettingsHeader)
             }
 
             if !engine.isHighSensitivityMode {
@@ -375,5 +407,12 @@ struct SettingsView: View {
 
     private func formatSignedDB(_ value: Float) -> String {
         String(format: "%+.1f dB", value)
+    }
+
+    private func applyWakeReminderTime(_ date: Date) {
+        let components = Calendar.current.dateComponents([.hour, .minute], from: date)
+        SleepMonitorSettingsStore.wakeHour = components.hour ?? 7
+        SleepMonitorSettingsStore.wakeMinute = components.minute ?? 0
+        Task { await SleepNotificationScheduler.scheduleDailyWakeReminder() }
     }
 }
