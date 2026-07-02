@@ -2,9 +2,9 @@
 # Use only the hostname — no https:// or trailing slash.
 #
 # Examples:
-#   www.noise.nx.kg
+#   www.decibelmeterpro.com
 #
-# DNS (zone noise.nx.kg): CNAME www → dias-smith-rock.github.io
+# DNS (GoDaddy): CNAME www → dias-smith-rock.github.io
 # See website/README.md
 
-www.noise.nx.kg
+www.decibelmeterpro.com

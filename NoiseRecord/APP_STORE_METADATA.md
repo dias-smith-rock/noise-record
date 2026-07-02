@@ -6,11 +6,11 @@ Use this when submitting **Decibel Meter** v1.0.
 
 | Field | URL |
 |-------|-----|
-| Privacy Policy | https://www.noise.nx.kg/privacy.html |
-| Terms of Service | https://www.noise.nx.kg/terms.html |
-| Support | https://www.noise.nx.kg/support.html |
+| Privacy Policy | https://www.decibelmeterpro.com/privacy.html |
+| Terms of Service | https://www.decibelmeterpro.com/terms.html |
+| Support | https://www.decibelmeterpro.com/support.html |
 | Support email | music.player.250617@gmail.com |
-| Marketing (optional) | https://www.noise.nx.kg/ |
+| Marketing (optional) | https://www.decibelmeterpro.com/ |
 
 ## App Information
 
@@ -167,7 +167,7 @@ Legacy `com.decibelpro.removeads.lifetime` removes ads only; it does **not** unl
 - Third-party advertising (AdMob): **Yes** — app open + interstitial ads; device identifiers for ad delivery
 - Tracks users: **Yes** — AdMob may use IDFA for personalized ads / ad measurement when user grants ATT (UMP IDFA explainer)
 - Uses encryption: **No** (non-exempt) — `ITSAppUsesNonExemptEncryption = NO`
-- Privacy Choices URL (optional): https://www.noise.nx.kg/privacy.html — document in-app **Settings → Ad Privacy Choices**
+- Privacy Choices URL (optional): https://www.decibelmeterpro.com/privacy.html — document in-app **Settings → Ad Privacy Choices**
 
 ## Screenshots (minimum)
 
@@ -296,5 +296,5 @@ Download Decibel Meter today — measure noise, record proof, and document sound
 - [ ] Paste Title, Subtitle, Keywords, Description into App Store Connect → App Information / Version
 - [ ] Category: **Utilities** (primary); consider **Productivity** as secondary if available
 - [ ] Age Rating: 4+ (no restricted content)
-- [ ] Support URL: https://www.noise.nx.kg/support.html
-- [ ] Privacy Policy URL: https://www.noise.nx.kg/privacy.html
+- [ ] Support URL: https://www.decibelmeterpro.com/support.html
+- [ ] Privacy Policy URL: https://www.decibelmeterpro.com/privacy.html

@@ -8,12 +8,15 @@ Static product landing site for the Decibel Meter iOS app. Lives alongside the X
 website/
 ├── index.html          # Product landing page
 ├── privacy.html        # Privacy policy
+├── terms.html          # Terms of service
 ├── support.html        # FAQ & contact
+├── robots.txt          # Crawler directives
+├── sitemap.xml         # URL index for search engines
 ├── assets/
 │   ├── css/style.css
 │   ├── js/main.js
-│   └── images/         # Add App screenshots / icon here
-├── CNAME               # Custom domain: noise.nx.kg
+│   └── images/         # App screenshots / icon
+├── CNAME               # Custom domain: decibelmeterpro.com
 ├── CNAME.example       # Template reference
 └── README.md
 ```
@@ -40,36 +43,42 @@ You can also trigger a manual deploy from the **Actions** tab → **Deploy Websi
 
 ## Custom domain
 
-**Configured domain:** `www.noise.nx.kg` (see `CNAME` file)
+**Configured domain:** `www.decibelmeterpro.com` (see `CNAME` file)
 
-> The DNS zone is `noise.nx.kg`. Use CNAME on `www` — not CNAME on `@` (conflicts with SOA/NS).
+> Use CNAME on `www` pointing to `dias-smith-rock.github.io`. Configure apex `decibelmeterpro.com` to 301-redirect to `www` at your DNS provider (GoDaddy forwarding) to avoid duplicate-content SEO issues.
 
-### Step 1 — DNS at Stackryze (zone `noise.nx.kg`)
+### Step 1 — DNS at GoDaddy (zone `decibelmeterpro.com`)
 
 | Type  | NAME | Value                     |
 |-------|------|---------------------------|
 | CNAME | www  | dias-smith-rock.github.io |
 
-Preview must show **`www.noise.nx.kg`**, not `noise.noise.nx.kg`.
-
-Optional: remove any **A** record on `@` if GitHub still reports apex `noise.nx.kg` errors (www-only setup does not need apex A records).
+Optional: set up domain forwarding on `@` (apex) → `https://www.decibelmeterpro.com`.
 
 ### Step 2 — GitHub Pages settings
 
-1. Push `website/CNAME` to `main` (content must be exactly `www.noise.nx.kg`).
+1. Push `website/CNAME` to `main` (content must be exactly `www.decibelmeterpro.com`).
 2. Wait for **Deploy Website** workflow to finish.
-3. Repo **Settings → Pages → Custom domain** — enter `www.noise.nx.kg` (must match `CNAME` file).
+3. Repo **Settings → Pages → Custom domain** — enter `www.decibelmeterpro.com` (must match `CNAME` file).
 4. Click **Check again** after deploy.
 5. Enable **Enforce HTTPS** once the warning clears.
 
 ### Step 3 — Verify
 
 ```bash
-dig www.noise.nx.kg CNAME +short
+dig www.decibelmeterpro.com CNAME +short
 # Expected: dias-smith-rock.github.io.
 ```
 
-Site URL: **https://www.noise.nx.kg**
+Site URL: **https://www.decibelmeterpro.com**
+
+## SEO files
+
+| File | Purpose |
+|------|---------|
+| `robots.txt` | Allows all crawlers; points to sitemap |
+| `sitemap.xml` | Lists index, privacy, terms, support |
+| `index.html` `<head>` | Canonical URL, JSON-LD, Smart App Banner |
 
 ## Updating content
 
@@ -77,9 +86,10 @@ Site URL: **https://www.noise.nx.kg**
 |------|------|
 | Hero / features copy | `index.html` |
 | Privacy policy | `privacy.html` |
+| Terms of service | `terms.html` |
 | FAQ / support | `support.html` |
 | Styles | `assets/css/style.css` |
-| App Store link | `index.html` — replace the disabled button `href` and remove `btn-disabled` |
+| App Store link | `index.html` — `#app-store-link` href |
 
 ## App screenshots
 

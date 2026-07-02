@@ -1,7 +1,7 @@
 import Foundation
 
 nonisolated enum LegalURLs {
-    private static let websiteBase = "https://www.noise.nx.kg"
+    private static let websiteBase = "https://www.decibelmeterpro.com"
 
     static var privacyPolicy: URL {
         URL(string: "\(websiteBase)/privacy.html")!
