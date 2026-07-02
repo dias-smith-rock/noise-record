@@ -6,18 +6,24 @@ Static product landing site for the Decibel Meter iOS app. Lives alongside the X
 
 ```text
 website/
-├── index.html          # Product landing page
-├── privacy.html        # Privacy policy
-├── terms.html          # Terms of service
-├── support.html        # FAQ & contact
-├── robots.txt          # Crawler directives
-├── sitemap.xml         # URL index for search engines
+├── index.html                    # Product landing page
+├── apartment-noise-complaint-guide/
+│   └── index.html                # Mega SEO landing page
+├── knowledge/
+│   ├── index.html                # Guides hub
+│   └── how-to-sue-neighbor-small-claims-court-noise/
+│       └── index.html            # Small claims court spoke article
+├── privacy.html
+├── terms.html
+├── support.html
+├── robots.txt
+├── sitemap.xml
 ├── assets/
 │   ├── css/style.css
 │   ├── js/main.js
-│   └── images/         # App screenshots / icon
-├── CNAME               # Custom domain: decibelmeterpro.com
-├── CNAME.example       # Template reference
+│   └── images/
+├── CNAME
+├── CNAME.example
 └── README.md
 ```
 
@@ -31,6 +37,12 @@ python3 -m http.server 8080
 ```
 
 Open [http://localhost:8080](http://localhost:8080).
+
+SEO guide pages (after starting the server):
+
+- [http://localhost:8080/apartment-noise-complaint-guide/](http://localhost:8080/apartment-noise-complaint-guide/)
+- [http://localhost:8080/knowledge/](http://localhost:8080/knowledge/)
+- [http://localhost:8080/knowledge/how-to-sue-neighbor-small-claims-court-noise/](http://localhost:8080/knowledge/how-to-sue-neighbor-small-claims-court-noise/)
 
 ## Deployment (GitHub Pages)
 
@@ -77,7 +89,7 @@ Site URL: **https://www.decibelmeterpro.com**
 | File | Purpose |
 |------|---------|
 | `robots.txt` | Allows all crawlers; points to sitemap |
-| `sitemap.xml` | Lists index, privacy, terms, support |
+| `sitemap.xml` | Lists homepage, SEO guides, privacy, terms, support |
 | `index.html` `<head>` | Canonical URL, JSON-LD, Smart App Banner |
 
 ## Updating content
@@ -85,10 +97,12 @@ Site URL: **https://www.decibelmeterpro.com**
 | Task | File |
 |------|------|
 | Hero / features copy | `index.html` |
+| Apartment noise mega guide | `apartment-noise-complaint-guide/index.html` |
+| Knowledge hub & spoke articles | `knowledge/` |
 | Privacy policy | `privacy.html` |
 | Terms of service | `terms.html` |
 | FAQ / support | `support.html` |
-| Styles | `assets/css/style.css` |
+| Article / guide styles | `assets/css/style.css` |
 | App Store link | `index.html` — `#app-store-link` href |
 
 ## App screenshots

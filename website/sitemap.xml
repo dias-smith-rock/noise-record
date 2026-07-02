@@ -2,25 +2,43 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
         <loc>https://www.decibelmeterpro.com/</loc>
-        <lastmod>2026-06-10</lastmod>
+        <lastmod>2026-07-02</lastmod>
         <changefreq>monthly</changefreq>
         <priority>1.0</priority>
     </url>
     <url>
+        <loc>https://www.decibelmeterpro.com/apartment-noise-complaint-guide/</loc>
+        <lastmod>2026-07-02</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.9</priority>
+    </url>
+    <url>
+        <loc>https://www.decibelmeterpro.com/knowledge/</loc>
+        <lastmod>2026-07-02</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+    <url>
+        <loc>https://www.decibelmeterpro.com/knowledge/how-to-sue-neighbor-small-claims-court-noise/</loc>
+        <lastmod>2026-07-02</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
         <loc>https://www.decibelmeterpro.com/privacy.html</loc>
-        <lastmod>2026-06-10</lastmod>
+        <lastmod>2026-07-02</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.5</priority>
     </url>
     <url>
         <loc>https://www.decibelmeterpro.com/terms.html</loc>
-        <lastmod>2026-06-10</lastmod>
+        <lastmod>2026-07-02</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.4</priority>
     </url>
     <url>
         <loc>https://www.decibelmeterpro.com/support.html</loc>
-        <lastmod>2026-06-10</lastmod>
+        <lastmod>2026-07-02</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.4</priority>
     </url>

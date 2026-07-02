@@ -424,6 +424,153 @@ section {
 
 .prose li { margin-bottom: 0.4rem; }
 
+.prose h3 {
+  font-size: 1.05rem;
+  margin: 1.5rem 0 0.5rem;
+  color: var(--text);
+}
+
+.prose-wide {
+  max-width: 48rem;
+}
+
+.prose strong { color: var(--text); }
+
+.letter-template {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.template-hint {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0.5rem 0 1rem;
+}
+
+.article-step {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.article-step h2 {
+  margin-top: 0;
+  font-size: 1.15rem;
+}
+
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  padding: 1rem 0 0;
+  list-style: none;
+  margin: 0;
+}
+
+.breadcrumb li::after {
+  content: "›";
+  margin-left: 0.5rem;
+  color: var(--text-muted);
+}
+
+.breadcrumb li:last-child::after { content: none; }
+
+.breadcrumb a { color: var(--accent-standard); }
+
+.knowledge-grid {
+  display: grid;
+  gap: 1rem;
+  padding: 2rem 0 3rem;
+}
+
+.knowledge-card {
+  display: block;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease;
+}
+
+a.knowledge-card:hover {
+  text-decoration: none;
+  border-color: var(--accent-standard);
+}
+
+.knowledge-card h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+  color: var(--text);
+}
+
+.knowledge-card p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.knowledge-card.coming-soon {
+  opacity: 0.55;
+  cursor: default;
+  pointer-events: none;
+}
+
+.knowledge-card .badge-soon {
+  display: inline-block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.cta-inline {
+  text-align: center;
+  padding: 2.5rem 0 1rem;
+}
+
+.cta-inline p {
+  color: var(--text-muted);
+  max-width: 36rem;
+  margin: 0 auto 1.25rem;
+}
+
+.related-guides {
+  border-top: 1px solid var(--border);
+  padding-top: 2rem;
+  margin-top: 2rem;
+}
+
+.related-guides h2 {
+  font-size: 1.1rem;
+  margin: 0 0 1rem;
+}
+
+.related-guides ul {
+  padding-left: 1.25rem;
+  margin: 0;
+}
+
+.related-guides li {
+  margin-bottom: 0.5rem;
+  color: var(--text-muted);
+}
+
 /* Footer */
 .site-footer {
   border-top: 1px solid var(--border);
