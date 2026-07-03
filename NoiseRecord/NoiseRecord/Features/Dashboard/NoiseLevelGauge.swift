@@ -149,9 +149,10 @@ struct NoiseLevelGauge: View {
     }
 
     private func drawTicks(context: inout GraphicsContext, layout: GaugeLayout) {
+        let tickStep = Int(AcousticGaugeStyle.displayTickStep)
         var db = AcousticGaugeStyle.displayMinDecibel
         while db <= AcousticGaugeStyle.displayMaxDecibel + 0.1 {
-            let isMajor = Int(db) % 20 == 0
+            let isMajor = Int(db.rounded()) % tickStep == 0
             let outer = layout.point(for: db, radius: layout.radius)
             let inner = layout.point(
                 for: db,
@@ -178,7 +179,7 @@ struct NoiseLevelGauge: View {
                 context.draw(resolved, at: labelPoint, anchor: .center)
             }
 
-            db += 10
+            db += AcousticGaugeStyle.displayTickStep
         }
     }
 

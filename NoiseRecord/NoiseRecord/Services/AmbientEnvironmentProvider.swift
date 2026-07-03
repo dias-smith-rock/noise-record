@@ -1,6 +1,12 @@
 import CoreLocation
 import Foundation
 
+enum LocationAccessPromptAction: Sendable {
+    case none
+    case requestSystemAuthorization
+    case showSettingsPrompt
+}
+
 /// 基于定位与 Open-Meteo 的温湿度快照，供监测页与全屏 LED 看板共享。
 @MainActor
 @Observable
@@ -8,6 +14,7 @@ final class AmbientEnvironmentProvider: NSObject, CLLocationManagerDelegate {
     private(set) var humidityPercent: Int?
     private(set) var temperatureCelsius: Double?
     private(set) var isUpdating = false
+    private(set) var authorizationStatus: CLAuthorizationStatus = .notDetermined
 
     private let locationManager = CLLocationManager()
     private var refreshTask: Task<Void, Never>?
@@ -72,12 +79,40 @@ final class AmbientEnvironmentProvider: NSObject, CLLocationManagerDelegate {
         super.init()
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyKilometer
+        authorizationStatus = locationManager.authorizationStatus
+    }
+
+    func permissionPromptAction() -> LocationAccessPromptAction {
+        switch authorizationStatus {
+        case .notDetermined:
+            return .requestSystemAuthorization
+        case .denied, .restricted:
+            return .showSettingsPrompt
+        case .authorizedWhenInUse, .authorizedAlways:
+            return .none
+        @unknown default:
+            return .none
+        }
+    }
+
+    func requestSystemLocationAuthorization() {
+        locationManager.requestWhenInUseAuthorization()
+    }
+
+    private var isLocationAuthorized: Bool {
+        switch authorizationStatus {
+        case .authorizedWhenInUse, .authorizedAlways:
+            return true
+        default:
+            return false
+        }
     }
 
     func startUpdating() {
         guard refreshTask == nil else { return }
-        requestLocationAccessIfNeeded()
-        locationManager.startUpdatingLocation()
+        if isLocationAuthorized {
+            locationManager.startUpdatingLocation()
+        }
 
         refreshTask = Task { [weak self] in
             while !Task.isCancelled {
@@ -92,15 +127,6 @@ final class AmbientEnvironmentProvider: NSObject, CLLocationManagerDelegate {
         refreshTask?.cancel()
         refreshTask = nil
         locationManager.stopUpdatingLocation()
-    }
-
-    private func requestLocationAccessIfNeeded() {
-        switch locationManager.authorizationStatus {
-        case .notDetermined:
-            locationManager.requestWhenInUseAuthorization()
-        default:
-            break
-        }
     }
 
     private func refreshWeatherIfPossible() async {
@@ -135,9 +161,12 @@ final class AmbientEnvironmentProvider: NSObject, CLLocationManagerDelegate {
 
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         Task { @MainActor in
+            authorizationStatus = manager.authorizationStatus
             if manager.authorizationStatus == .authorizedWhenInUse
                 || manager.authorizationStatus == .authorizedAlways {
                 manager.startUpdatingLocation()
+            } else {
+                manager.stopUpdatingLocation()
             }
         }
     }

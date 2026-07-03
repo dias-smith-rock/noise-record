@@ -1,3 +1,4 @@
+import CoreLocation
 import SwiftData
 import SwiftUI
 
@@ -28,6 +29,8 @@ struct SettingsView: View {
     @State private var showAppReviewPrompt = false
     @State private var showsPrivacyChoices = false
     @State private var wakeReminderTime = SleepMonitorSettingsStore.defaultWakeDate
+    @State private var locationAuthorizationStatus = CLLocationManager().authorizationStatus
+    @State private var showLocationAccessGuide = false
 
     private var measurementMode: AcousticMeasurementMode {
         AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
@@ -41,6 +44,32 @@ struct SettingsView: View {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
         return "\(version) (\(build))"
+    }
+
+    private var locationAuthorizationSummary: String {
+        switch locationAuthorizationStatus {
+        case .authorizedWhenInUse, .authorizedAlways:
+            return L10n.settingsLocationAccessStatusAllowed
+        case .denied, .restricted:
+            return L10n.settingsLocationAccessStatusDenied
+        case .notDetermined:
+            return L10n.settingsLocationAccessStatusNotSet
+        @unknown default:
+            return L10n.settingsLocationAccessStatusNotSet
+        }
+    }
+
+    private var shouldShowLocationAccessGuide: Bool {
+        #if targetEnvironment(simulator)
+        return true
+        #else
+        switch locationAuthorizationStatus {
+        case .denied, .restricted:
+            return true
+        default:
+            return false
+        }
+        #endif
     }
 
     var body: some View {
@@ -115,10 +144,19 @@ struct SettingsView: View {
                 }
                 .listRowInsets(EdgeInsets(top: 12, leading: 0, bottom: 12, trailing: 0))
                 .listRowBackground(Color.clear)
+
+                Button {
+                    handleLocationAccessTapped()
+                } label: {
+                    LabeledContent(L10n.settingsLocationAccess, value: locationAuthorizationSummary)
+                }
             } header: {
                 Text(L10n.settingsMonitoringHeader)
             } footer: {
-                Text(L10n.settingsAutoStartMonitoringFooter)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(L10n.settingsAutoStartMonitoringFooter)
+                    Text(L10n.settingsLocationAccessFooter)
+                }
             }
 
             Section {
@@ -293,6 +331,7 @@ struct SettingsView: View {
             refreshCalibrationDisplay()
             refreshMeasurementSampleCount()
             refreshPrivacyChoicesVisibility()
+            refreshLocationAuthorizationStatus()
             waveformReferenceLimit = NoiseReferenceLimits.residentialNightDB
         }
         .onChange(of: waveformReferenceLimit) { _, newValue in
@@ -306,11 +345,13 @@ struct SettingsView: View {
                 refreshCalibrationDisplay()
                 refreshMeasurementSampleCount()
                 refreshPrivacyChoicesVisibility()
+                refreshLocationAuthorizationStatus()
             }
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active, isTabActive {
                 refreshCalibrationDisplay()
+                refreshLocationAuthorizationStatus()
             }
         }
         .alert(L10n.settingsCalibrationSavedTitle, isPresented: $showCalibrationAlert) {
@@ -347,6 +388,17 @@ struct SettingsView: View {
             Button(L10n.appReviewLater, role: .cancel) {}
         } message: {
             Text(L10n.settingsReviewPromptMessage)
+        }
+        .sheet(isPresented: $showLocationAccessGuide) {
+            LocationAccessGuideSheet()
+        }
+    }
+
+    private func handleLocationAccessTapped() {
+        if shouldShowLocationAccessGuide {
+            showLocationAccessGuide = true
+        } else {
+            PermissionSettings.openLocationAccessSettings()
         }
     }
 
@@ -399,6 +451,10 @@ struct SettingsView: View {
 
     private func refreshPrivacyChoicesVisibility() {
         showsPrivacyChoices = AdMobConfig.adsEnabled && AdConsentManager.isPrivacyOptionsRequired
+    }
+
+    private func refreshLocationAuthorizationStatus() {
+        locationAuthorizationStatus = CLLocationManager().authorizationStatus
     }
 
     private func formatDB(_ value: Float) -> String {

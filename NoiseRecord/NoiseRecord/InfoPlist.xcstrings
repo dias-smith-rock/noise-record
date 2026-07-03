@@ -636,49 +636,49 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "يُستخدم الموقع لتضمين إحداثيات GPS في فيديو الدليل."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to embed GPS coordinates in evidence video."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La ubicación se usa para incrustar coordenadas GPS en el vídeo de prueba."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "La position sert à intégrer les coordonnées GPS dans la preuve vidéo."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "hi": {
           "stringUnit": {
             "state": "translated",
-            "value": "साक्ष्य वीडियो में GPS निर्देशांक जोड़ने के लिए स्थान का उपयोग होता है।"
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "A localização é usada para incorporar coordenadas GPS no vídeo de prova."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Геопозиция используется для встраивания GPS-координат в видеодоказательство."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "使用位置信息将 GPS 坐标嵌入取证视频。"
+            "value": "用于在监测页显示环境温湿度，并在音视频证据中嵌入 GPS 坐标。"
           }
         },
         "zh-Hant": {
@@ -690,151 +690,151 @@
         "bg": {
           "stringUnit": {
             "state": "translated",
-            "value": "Местоположението се използва за вграждане на координати на GPS във видеоклип с доказателства."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "ca": {
           "stringUnit": {
             "state": "translated",
-            "value": "La ubicació s'utilitza per incrustar les coordenades GPS al vídeo de proves."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Poloha se používá k vložení souřadnic GPS do důkazního videa."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "da": {
           "stringUnit": {
             "state": "translated",
-            "value": "Placering bruges til at indlejre GPS koordinater i bevisvideo."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Der Standort wird zum Einbetten von GPS-Koordinaten in Beweisvideos verwendet."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "el": {
           "stringUnit": {
             "state": "translated",
-            "value": "Η τοποθεσία χρησιμοποιείται για την ενσωμάτωση συντεταγμένων GPS σε αποδεικτικό βίντεο."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sijaintia käytetään upottamaan GPS koordinaatit todistevideoon."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "he": {
           "stringUnit": {
             "state": "translated",
-            "value": "המיקום משמש להטמעת קואורדינטות GPS בסרטון ראיות."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "hr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lokacija se koristi za ugrađivanje koordinata GPS u video dokaz."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "hu": {
           "stringUnit": {
             "state": "translated",
-            "value": "A hely a GPS koordináták bizonyítékvideóba ágyazására szolgál."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "id": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lokasi digunakan untuk menyematkan koordinat GPS dalam video bukti."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "La posizione viene utilizzata per incorporare le coordinate GPS nel video delle prove."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "位置情報は、GPS 座標を証拠ビデオに埋め込むために使用されます。"
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "위치는 증거 영상에 GPS 좌표를 삽입하는 데 사용됩니다."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lokasi digunakan untuk membenamkan koordinat GPS dalam video bukti."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Plassering brukes til å bygge inn GPS-koordinater i bevisvideo."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Locatie wordt gebruikt om GPS coördinaten in bewijsvideo in te sluiten."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lokalizacja służy do umieszczania współrzędnych GPS w materiale wideo dowodowym."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "ro": {
           "stringUnit": {
             "state": "translated",
-            "value": "Locația este folosită pentru a încorpora coordonatele GPS în videoclipul cu dovezi."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Poloha sa používa na vloženie súradníc GPS do dôkazového videa."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Plats används för att bädda in GPS-koordinater i bevisvideo."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "th": {
           "stringUnit": {
             "state": "translated",
-            "value": "ตำแหน่งใช้เพื่อฝังพิกัด GPS ในวิดีโอหลักฐาน"
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Konum, GPS koordinatlarını kanıt videosuna yerleştirmek için kullanılır."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Розташування використовується для вбудовування координат GPS у відео доказів."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vị trí được sử dụng để nhúng tọa độ GPS vào video bằng chứng."
+            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
           }
         }
       }

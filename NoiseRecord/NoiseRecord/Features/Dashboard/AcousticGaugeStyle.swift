@@ -13,6 +13,7 @@ enum AcousticGaugeStyle {
     static let displayMinDecibel: Float = 20
     static let displayMaxDecibel: Float = 140
     static let displaySpan: Float = displayMaxDecibel - displayMinDecibel
+    static let displayTickStep: Float = 10
 
     /// 马蹄形弧：SwiftUI 标准角（0° = 3 点钟，顺时针），240° 扫掠。
     static let arcStartDegrees: Double = 150

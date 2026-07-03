@@ -21,6 +21,9 @@ struct DashboardView: View {
     @State private var showsFullscreenLEDGuide = false
     @State private var fullscreenButtonFrame: CGRect = .zero
     @State private var environment = AmbientEnvironmentProvider()
+    @State private var showLocationWeatherPermissionDenied = false
+    @State private var showLocationAccessGuide = false
+    @State private var hasScheduledLocationPermissionPrompt = false
     @State private var waveformReferenceLimitDB = NoiseReferenceLimits.residentialNightDB
 
     private var measurementMode: AcousticMeasurementMode {
@@ -49,12 +52,22 @@ struct DashboardView: View {
             environment.startUpdating()
             refreshFullscreenLEDGuideVisibility()
             waveformReferenceLimitDB = NoiseReferenceLimits.residentialNightDB
+            scheduleLocationPermissionPromptIfNeeded()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .launchAutoStartMonitoring)) { _ in
+            scheduleLocationPermissionPromptIfNeeded()
         }
         .onReceive(NotificationCenter.default.publisher(for: NoiseReferenceLimits.didChangeNotification)) { _ in
             waveformReferenceLimitDB = NoiseReferenceLimits.residentialNightDB
         }
-        .onChange(of: isTabActive) { _, _ in
+        .onChange(of: isTabActive) { _, isActive in
             refreshFullscreenLEDGuideVisibility()
+            if isActive {
+                Task { @MainActor in
+                    await waitForLaunchPresentationToFinish()
+                    presentLocationPermissionPromptIfNeeded()
+                }
+            }
         }
         .onDisappear {
             environment.stopUpdating()
@@ -116,13 +129,22 @@ struct DashboardView: View {
             title: L10n.permissionMicrophoneDeniedTitle,
             message: L10n.permissionMicrophoneDeniedMessage
         )
-        .alert(L10n.errorTitle, isPresented: Binding(
-            get: { csvExportErrorMessage != nil },
-            set: { if !$0 { csvExportErrorMessage = nil } }
-        )) {
-            Button(L10n.ok, role: .cancel) { csvExportErrorMessage = nil }
+        .alert(L10n.permissionLocationWeatherDeniedTitle, isPresented: $showLocationWeatherPermissionDenied) {
+            Button(L10n.permissionOpenSettings) {
+                #if targetEnvironment(simulator)
+                showLocationAccessGuide = true
+                #else
+                PermissionSettings.openAppSettings()
+                #endif
+            }
+            Button(L10n.cancel, role: .cancel) {
+                LocationWeatherPermissionPromptStore.markPromptDismissed()
+            }
         } message: {
-            Text(csvExportErrorMessage ?? "")
+            Text(L10n.permissionLocationWeatherDeniedMessage)
+        }
+        .sheet(isPresented: $showLocationAccessGuide) {
+            LocationAccessGuideSheet()
         }
         .alert(L10n.errorTitle, isPresented: Binding(
             get: { csvExportErrorMessage != nil },
@@ -326,6 +348,47 @@ struct DashboardView: View {
             return
         }
         audioStateManager.stopMonitoringManually()
+    }
+
+    private func scheduleLocationPermissionPromptIfNeeded() {
+        guard isTabActive else { return }
+        guard !hasScheduledLocationPermissionPrompt else { return }
+        hasScheduledLocationPermissionPrompt = true
+
+        Task { @MainActor in
+            await waitForLaunchPresentationToFinish()
+            presentLocationPermissionPromptIfNeeded()
+        }
+    }
+
+    @MainActor
+    private func waitForLaunchPresentationToFinish() async {
+        for _ in 0..<40 {
+            if !PaywallPresenter.shared.isPresented {
+                break
+            }
+            try? await Task.sleep(for: .milliseconds(150))
+        }
+        try? await Task.sleep(for: .milliseconds(400))
+    }
+
+    private func presentLocationPermissionPromptIfNeeded() {
+        guard isTabActive else { return }
+        guard !PaywallPresenter.shared.isPresented else { return }
+        guard !LocationWeatherPermissionPromptStore.userDismissedPrompt else { return }
+
+        switch environment.permissionPromptAction() {
+        case .none:
+            break
+        case .requestSystemAuthorization:
+            environment.requestSystemLocationAuthorization()
+        case .showSettingsPrompt:
+            showLocationWeatherPermissionDenied = true
+        }
+    }
+
+    private func handleEnvironmentPermissionIfNeeded() {
+        presentLocationPermissionPromptIfNeeded()
     }
 
     private func refreshFullscreenLEDGuideVisibility() {

@@ -217,6 +217,17 @@ nonisolated enum L10n {
     static var settingsAutoStartMonitoringTitle: String { localized("settings.autoStartMonitoring.title") }
     static var settingsAutoStartMonitoringSubtitle: String { localized("settings.autoStartMonitoring.subtitle") }
     static var settingsAutoStartMonitoringFooter: String { localized("settings.autoStartMonitoring.footer") }
+    static var settingsLocationAccess: String { localized("settings.locationAccess") }
+    static var settingsLocationAccessFooter: String { localized("settings.locationAccess.footer") }
+    static var settingsLocationAccessStatusAllowed: String { localized("settings.locationAccess.status.allowed") }
+    static var settingsLocationAccessStatusDenied: String { localized("settings.locationAccess.status.denied") }
+    static var settingsLocationAccessStatusNotSet: String { localized("settings.locationAccess.status.notSet") }
+    static var settingsLocationAccessGuideTitle: String { localized("settings.locationAccess.guide.title") }
+    static var settingsLocationAccessGuideHeader: String { localized("settings.locationAccess.guide.header") }
+    static var settingsLocationAccessGuideStep1: String { localized("settings.locationAccess.guide.step1") }
+    static var settingsLocationAccessGuideStep2: String { localized("settings.locationAccess.guide.step2") }
+    static var settingsLocationAccessGuideStep3: String { localized("settings.locationAccess.guide.step3") }
+    static var settingsLocationAccessGuideFooter: String { localized("settings.locationAccess.guide.footer") }
     static var settingsWeightingHeader: String { localized("settings.weighting.header") }
     static var settingsWeightingFooter: String { localized("settings.weighting.footer") }
     static var settingsWeightingPicker: String { localized("settings.weighting.picker.label") }
@@ -346,6 +357,8 @@ nonisolated enum L10n {
     static var permissionCameraDeniedMessage: String { localized("permission.camera.denied.message") }
     static var permissionLocationDeniedTitle: String { localized("permission.location.denied.title") }
     static var permissionLocationDeniedMessage: String { localized("permission.location.denied.message") }
+    static var permissionLocationWeatherDeniedTitle: String { localized("permission.location.weather.denied.title") }
+    static var permissionLocationWeatherDeniedMessage: String { localized("permission.location.weather.denied.message") }
     static var permissionPhotosDeniedTitle: String { localized("permission.photos.denied.title") }
     static var permissionPhotosDeniedMessage: String { localized("permission.photos.denied.message") }
     static var playerSaveToPhotos: String { localized("player.saveToPhotos") }
