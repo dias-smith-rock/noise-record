@@ -21,6 +21,45 @@ enum InterfaceOrientationLocker {
         requestOrientationUpdate(preferred: .portrait)
     }
 
+    /// Runs `action` after the app has returned to a portrait layout (post–fullscreen LED exit).
+    static func scheduleAfterPortraitRestored(_ action: @escaping @MainActor () -> Void) {
+        Task { @MainActor in
+            let retryDelaysMs: [UInt64] = [0, 80, 160, 280, 450, 700, 1_000]
+            for delayMs in retryDelaysMs {
+                if delayMs > 0 {
+                    try? await Task.sleep(for: .milliseconds(delayMs))
+                }
+                if isPortraitLayoutActive {
+                    action()
+                    return
+                }
+            }
+            action()
+        }
+    }
+
+    private static var isPortraitLayoutActive: Bool {
+        guard let scene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: {
+                $0.activationState == .foregroundActive || $0.activationState == .foregroundInactive
+            })
+        else {
+            return true
+        }
+
+        if scene.interfaceOrientation.isPortrait {
+            return true
+        }
+
+        if let window = scene.windows.first(where: \.isKeyWindow) {
+            let bounds = window.bounds
+            return bounds.height >= bounds.width
+        }
+
+        return false
+    }
+
     private static func scheduleLandscapeActivation() {
         for delayMs in landscapeRetryDelaysMs {
             Task { @MainActor in

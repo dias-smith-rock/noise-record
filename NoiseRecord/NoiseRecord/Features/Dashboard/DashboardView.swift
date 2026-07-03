@@ -142,8 +142,8 @@ struct DashboardView: View {
             )
         }
         .onChange(of: isFullScreenPresented) { _, isPresented in
-            AppReviewStore.isFullscreenLEDBusy = isPresented
             if isPresented {
+                AppReviewStore.isFullscreenLEDBusy = true
                 AppTelemetry.logProductEvent(
                     "fullscreen_led_open",
                     parameters: ["mode": measurementMode.rawValue]
@@ -154,10 +154,13 @@ struct DashboardView: View {
             } else {
                 AppTelemetry.logProductEvent("fullscreen_led_close")
                 InterfaceOrientationLocker.exitLandscapeFullscreen()
-                NotificationCenter.default.post(
-                    name: AppReviewStore.shouldReevaluatePromptNotification,
-                    object: nil
-                )
+                InterfaceOrientationLocker.scheduleAfterPortraitRestored {
+                    AppReviewStore.isFullscreenLEDBusy = false
+                    NotificationCenter.default.post(
+                        name: AppReviewStore.shouldReevaluatePromptNotification,
+                        object: nil
+                    )
+                }
             }
         }
         .onPreferenceChange(FullscreenGuideButtonFrameKey.self) { frame in
