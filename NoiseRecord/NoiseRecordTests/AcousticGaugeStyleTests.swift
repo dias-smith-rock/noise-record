@@ -1,3 +1,4 @@
+import SwiftUI
 import XCTest
 @testable import NoiseRecord
 
@@ -34,6 +35,22 @@ final class AcousticGaugeStyleTests: XCTestCase {
         let quiet = AcousticGaugeStyle.color(forDecibel: 40)
         let loud = AcousticGaugeStyle.color(forDecibel: 90)
         XCTAssertNotEqual(quiet, loud)
+    }
+
+    func testGreenYellowSplitNear55Decibels() {
+        let belowSplit = AcousticGaugeStyle.color(forDecibel: 48)
+        let atSplit = AcousticGaugeStyle.color(forDecibel: 55)
+        let yellow = Color(hex: "#FBBF24")
+        XCTAssertEqual(atSplit, yellow)
+        XCTAssertNotEqual(belowSplit, atSplit)
+    }
+
+    func testYellowRedSplitNear90Decibels() {
+        let belowSplit = AcousticGaugeStyle.color(forDecibel: 80)
+        let atSplit = AcousticGaugeStyle.color(forDecibel: 90)
+        let orangeBridge = Color(hex: "#F97316")
+        XCTAssertEqual(atSplit, orangeBridge)
+        XCTAssertNotEqual(belowSplit, atSplit)
     }
 
     func testSegmentMidpointColorMatchesMeanDecibel() {

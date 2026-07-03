@@ -247,11 +247,11 @@ final class AppAppearanceSettings {
     }
 
     private init() {
-        let schemeRaw = UserDefaults.standard.string(forKey: Self.colorSchemeKey) ?? AppColorSchemePreference.system.rawValue
+        let schemeRaw = UserDefaults.standard.string(forKey: Self.colorSchemeKey) ?? AppColorSchemePreference.dark.rawValue
         let languageRaw = UserDefaults.standard.string(forKey: AppLocalization.languageKey) ?? AppLanguage.system.rawValue
 
         preferredLanguage = AppLanguage(rawValue: languageRaw) ?? .system
-        colorSchemePreference = AppColorSchemePreference(rawValue: schemeRaw) ?? .system
+        colorSchemePreference = AppColorSchemePreference(rawValue: schemeRaw) ?? .dark
 
         if let temperatureRaw = UserDefaults.standard.string(forKey: Self.temperatureUnitKey),
            let savedUnit = TemperatureUnitPreference(rawValue: temperatureRaw) {

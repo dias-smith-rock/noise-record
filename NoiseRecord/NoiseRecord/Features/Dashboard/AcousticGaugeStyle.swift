@@ -19,22 +19,36 @@ enum AcousticGaugeStyle {
     static let arcEndDegrees: Double = 390
     static let arcSweepDegrees: Double = arcEndDegrees - arcStartDegrees
 
+    /// 表盘弧颜色渐变分界（0–140 dB 线性映射）。
+    static let greenYellowSplitDecibel: Float = 55
+    static let yellowRedSplitDecibel: Float = 90
+
     static let trackColor = Color.white.opacity(0.10)
     static let tickMajorColor = Color.white.opacity(0.42)
     static let tickMinorColor = Color.white.opacity(0.18)
 
-    private static let gradientStopSpecs: [(placement: Double, hex: String)] = [
-        (0.00, "#10B981"), // 0 dB — Total Silence
-        (0.21, "#10B981"), // 30 dB — Quiet Library
-        (0.36, "#FBBF24"), // 50 dB — Normal Conversation
-        (0.46, "#F97316"), // 65 dB — City Traffic
-        (0.57, "#EF4444"), // 80 dB — Lawn Mower
-        (0.71, "#DC2626"), // 100 dB — Police Siren
-        (1.00, "#7F1D1D"), // 140 dB — Threshold of Pain
-    ]
+    /// 绿→黄、黄→红过渡宽度（归一化弧长，约 ±2 dB）。
+    private static let gradientTransitionWidth = 0.015
+
+    private static func gradientStopSpecs() -> [(placement: Double, hex: String)] {
+        let greenYellow = Double(greenYellowSplitDecibel / span)
+        let yellowRed = Double(yellowRedSplitDecibel / span)
+        let transition = gradientTransitionWidth
+
+        return [
+            (0.00, "#10B981"), // 0 dB — green
+            (greenYellow - transition * 2, "#10B981"), // ~51 dB — hold green
+            (greenYellow, "#FBBF24"), // 55 dB — green / yellow split
+            (yellowRed - transition * 2, "#FBBF24"), // ~86 dB — hold yellow
+            (yellowRed, "#F97316"), // 90 dB — yellow / red split (orange bridge)
+            (yellowRed + transition * 2, "#EF4444"), // ~94 dB — red ramp
+            (0.85, "#DC2626"), // ~119 dB
+            (1.00, "#7F1D1D"), // 140 dB
+        ]
+    }
 
     static var gradientStops: [Gradient.Stop] {
-        gradientStopSpecs.map { spec in
+        gradientStopSpecs().map { spec in
             .init(color: industrialColor(hex: spec.hex), location: spec.placement)
         }
     }
@@ -97,17 +111,18 @@ enum AcousticGaugeStyle {
     }
 
     private static func interpolatedColor(at position: Double) -> Color {
+        let specs = gradientStopSpecs()
         let t = min(max(position, 0), 1)
-        guard let upperIndex = gradientStopSpecs.firstIndex(where: { $0.placement >= t }) else {
-            return industrialColor(hex: gradientStopSpecs.last?.hex ?? "#10B981")
+        guard let upperIndex = specs.firstIndex(where: { $0.placement >= t }) else {
+            return industrialColor(hex: specs.last?.hex ?? "#10B981")
         }
         let lowerIndex = max(upperIndex - 1, 0)
         if lowerIndex == upperIndex {
-            return industrialColor(hex: gradientStopSpecs[upperIndex].hex)
+            return industrialColor(hex: specs[upperIndex].hex)
         }
 
-        let lower = gradientStopSpecs[lowerIndex]
-        let upper = gradientStopSpecs[upperIndex]
+        let lower = specs[lowerIndex]
+        let upper = specs[upperIndex]
         let range = upper.placement - lower.placement
         let localT = range > 0 ? (t - lower.placement) / range : 0
         return industrialColor(hex: lower.hex).interpolated(
