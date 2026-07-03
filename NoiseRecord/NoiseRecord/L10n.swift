@@ -644,6 +644,7 @@ nonisolated enum L10n {
     static var sleepReportAnomaliesTitle: String { localized("sleep.report.anomaliesTitle") }
     static var sleepReportViewHistory: String { localized("sleep.report.viewHistory") }
     static var sleepReportExport: String { localized("sleep.report.export") }
+    static var sleepReportExportPDF: String { localized("sleep.report.exportPDF") }
     static var sleepReportImpactDeepSleep: String { localized("sleep.report.impactDeepSleep") }
     static var sleepReportImpactLightSleep: String { localized("sleep.report.impactLightSleep") }
     static var sleepHistoryTitle: String { localized("sleep.history.title") }

@@ -1,3 +1,4 @@
+import PDFKit
 import SwiftData
 import SwiftUI
 import UIKit
@@ -13,6 +14,7 @@ struct SleepReportView: View {
     @State private var showHistory = false
     @State private var csvShareURL: URL?
     @State private var showCSVShare = false
+    @State private var pdfPreviewItem: PreviewPDFItem?
 
     private var measurementMode: AcousticMeasurementMode {
         if let session, session.isHighSensitivitySession {
@@ -62,9 +64,17 @@ struct SleepReportView: View {
                     ShareSheet(items: [csvShareURL])
                 }
             }
+            .fullScreenCover(item: $pdfPreviewItem) { item in
+                ForensicPDFPreviewView(
+                    url: item.url,
+                    theme: theme,
+                    onDismiss: { pdfPreviewItem = nil }
+                )
+            }
         }
         .tint(theme.accent)
         .observesAppLanguage()
+        .paywallPresenter()
         .task(id: sessionID) {
             loadSession()
         }
@@ -160,6 +170,13 @@ struct SleepReportView: View {
             ) {
                 exportCSV(session)
             }
+
+            themedActionButton(
+                title: L10n.sleepReportExportPDF,
+                systemImage: "doc.richtext"
+            ) {
+                exportPDF(session)
+            }
         }
     }
 
@@ -210,7 +227,7 @@ struct SleepReportView: View {
     }
 
     private func exportCSV(_ session: SleepNoiseSession) {
-        guard SubscriptionManager.shared.isPremiumUser else {
+        guard SubscriptionManager.shared.canAccessSleepExport else {
             PaywallPresenter.shared.present(context: .sleepExport)
             return
         }
@@ -235,6 +252,142 @@ struct SleepReportView: View {
             rows: rows
         )
         showCSVShare = csvShareURL != nil
+    }
+
+    private func exportPDF(_ session: SleepNoiseSession) {
+        guard SubscriptionManager.shared.canAccessSleepExport else {
+            PaywallPresenter.shared.present(context: .sleepExport)
+            return
+        }
+        let samples = SleepMeasurementPersistence.samples(
+            for: session.id,
+            in: modelContext
+        )
+        let sleepID = session.id
+        let recordingDescriptor = FetchDescriptor<RecordingSession>(
+            predicate: #Predicate { $0.sleepSessionID == sleepID }
+        )
+        let recordings = (try? modelContext.fetch(recordingDescriptor)) ?? []
+        let payload = SleepForensicPDFExporter.makePayload(
+            session: session,
+            samples: samples,
+            recordings: recordings
+        )
+        guard let url = SleepForensicPDFExporter.export(payload: payload) else { return }
+        pdfPreviewItem = PreviewPDFItem(url: url)
+    }
+}
+
+private struct PreviewPDFItem: Identifiable {
+    let id = UUID()
+    let url: URL
+}
+
+private struct ForensicPDFPreviewView: View {
+    let url: URL
+    let theme: ModeVisualTheme
+    let onDismiss: () -> Void
+
+    @State private var showShareSheet = false
+    @State private var loadFailed = false
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if loadFailed {
+                    ContentUnavailableView(
+                        L10n.sleepReportExportPDF,
+                        systemImage: "doc.richtext",
+                        description: Text(L10n.errorTitle)
+                    )
+                } else {
+                    PDFKitPreviewView(url: url, loadFailed: $loadFailed)
+                }
+            }
+            .background(Color(.systemBackground))
+            .navigationTitle(L10n.sleepReportExportPDF)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(L10n.close, action: onDismiss)
+                        .foregroundStyle(theme.accent)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showShareSheet = true
+                    } label: {
+                        Label(L10n.share, systemImage: "square.and.arrow.up")
+                    }
+                    .foregroundStyle(theme.accent)
+                    .disabled(loadFailed)
+                }
+            }
+            .sheet(isPresented: $showShareSheet) {
+                ShareSheet(items: [url])
+            }
+        }
+        .tint(theme.accent)
+    }
+}
+
+private struct PDFKitPreviewView: UIViewRepresentable {
+    let url: URL
+    @Binding var loadFailed: Bool
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    func makeUIView(context: Context) -> PDFView {
+        let pdfView = PDFView()
+        pdfView.autoScales = true
+        pdfView.displayMode = .singlePageContinuous
+        pdfView.displayDirection = .vertical
+        pdfView.backgroundColor = .systemBackground
+        loadDocument(into: pdfView)
+        return pdfView
+    }
+
+    func updateUIView(_ pdfView: PDFView, context: Context) {
+        guard context.coordinator.loadedURL != url else { return }
+        context.coordinator.loadedURL = url
+        loadDocument(into: pdfView)
+    }
+
+    private func loadDocument(into pdfView: PDFView) {
+        if let data = try? Data(contentsOf: url),
+           let document = PDFDocument(data: data),
+           document.pageCount > 0 {
+            applyDocument(document, to: pdfView)
+            return
+        }
+
+        if let document = PDFDocument(url: url), document.pageCount > 0 {
+            applyDocument(document, to: pdfView)
+            return
+        }
+
+        markLoadFailed()
+    }
+
+    private func applyDocument(_ document: PDFDocument, to pdfView: PDFView) {
+        pdfView.document = document
+        pdfView.minScaleFactor = pdfView.scaleFactorForSizeToFit
+        pdfView.maxScaleFactor = 4.0
+        pdfView.scaleFactor = pdfView.scaleFactorForSizeToFit
+        DispatchQueue.main.async {
+            loadFailed = false
+        }
+    }
+
+    private func markLoadFailed() {
+        DispatchQueue.main.async {
+            loadFailed = true
+        }
+    }
+
+    final class Coordinator {
+        var loadedURL: URL?
     }
 }
 

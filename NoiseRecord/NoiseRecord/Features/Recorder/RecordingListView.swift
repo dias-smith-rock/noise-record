@@ -74,6 +74,7 @@ struct RecordingListView: View {
     @Bindable var engine: NoiseMonitorEngine
     @Bindable var audioStateManager: AudioStateManager
     let isTabActive: Bool
+    @Binding var pendingOpenRecordingID: UUID?
     @Query(sort: \RecordingSession.startedAt, order: .reverse) private var sessions: [RecordingSession]
     @Query(sort: \VideoEvidenceSession.startedAt, order: .reverse) private var videoSessions: [VideoEvidenceSession]
     @Environment(\.modelContext) private var modelContext
@@ -198,8 +199,12 @@ struct RecordingListView: View {
         }
         .onChange(of: isTabActive) { _, active in
             guard active else { return }
+            openPendingRecordingIfNeeded()
             refreshAudioSummary()
             refreshVideoSummary()
+        }
+        .onChange(of: pendingOpenRecordingID) { _, _ in
+            openPendingRecordingIfNeeded()
         }
         .alert(L10n.filesRenameTitle, isPresented: Binding(
             get: { renameTarget != nil },
@@ -453,6 +458,14 @@ struct RecordingListView: View {
                 ProMetricCard(title: L10n.filesSummaryPeak, value: summary.peakLabel, theme: theme)
             }
         }
+    }
+
+    private func openPendingRecordingIfNeeded() {
+        guard isTabActive, let recordingID = pendingOpenRecordingID else { return }
+        guard sessions.contains(where: { $0.id == recordingID }) else { return }
+        selectedTab = .audio
+        detailRoute = .audio(recordingID)
+        pendingOpenRecordingID = nil
     }
 
     private func refreshAudioSummary() {

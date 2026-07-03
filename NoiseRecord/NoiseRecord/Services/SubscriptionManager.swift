@@ -108,6 +108,15 @@ final class SubscriptionManager {
         #endif
     }
 
+    /// 睡眠数据导出（CSV / 司法级 PDF）；DEBUG 构建跳过 Premium 限制便于 UI 验证。
+    var canAccessSleepExport: Bool {
+        #if DEBUG
+        true
+        #else
+        isPremiumUser
+        #endif
+    }
+
     private var cachedProducts: [String: Product] = [:]
     private var introductoryOfferEligibility: [String: Bool] = [:]
     private(set) var isRefreshingIntroductoryEligibility = false

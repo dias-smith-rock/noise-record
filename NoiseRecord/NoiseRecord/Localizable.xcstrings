@@ -97780,6 +97780,29 @@
         }
       }
     },
+    "sleep.report.exportPDF" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export Forensic PDF"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导出司法级 PDF"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "匯出司法級 PDF"
+          }
+        }
+      }
+    },
     "sleep.report.export" : {
       "extractionState" : "manual",
       "localizations" : {

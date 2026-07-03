@@ -22,11 +22,16 @@ enum LiveActivityDeepLink {
     static let scheme = "decibelpro"
     static let monitorHost = "monitor"
     static let sleepReportHost = "sleep-report"
+    static let evidenceHost = "evidence"
     static let sessionIDKey = "sleepSessionID"
     static var monitorURL: URL { URL(string: "\(scheme)://\(monitorHost)")! }
 
     static func sleepReportURL(sessionID: UUID) -> URL {
         URL(string: "\(scheme)://\(sleepReportHost)/\(sessionID.uuidString)")!
+    }
+
+    static func evidenceURL(recordingSessionID: UUID) -> URL {
+        URL(string: "\(scheme)://\(evidenceHost)/\(recordingSessionID.uuidString)")!
     }
 }
 

@@ -20,6 +20,7 @@ struct ContentView: View {
     @State private var showAppReviewPrompt = false
     @State private var showSessionStopPrompt = false
     @State private var suppressNextTabSelectionAd = false
+    @State private var pendingEvidenceRecordingID: UUID?
     @Bindable private var appearance = AppAppearanceSettings.shared
     @Bindable private var paywallPresenter = PaywallPresenter.shared
     @Environment(\.modelContext) private var modelContext
@@ -89,6 +90,14 @@ struct ContentView: View {
         }
         .onOpenURL { url in
             guard url.scheme == LiveActivityDeepLink.scheme else { return }
+            if url.host == LiveActivityDeepLink.evidenceHost,
+               let recordingID = UUID(uuidString: url.lastPathComponent) {
+                pendingEvidenceRecordingID = recordingID
+                suppressNextTabSelectionAd = true
+                mountedTabs.insert(.files)
+                selectedTab = .files
+                return
+            }
             if url.host == LiveActivityDeepLink.sleepReportHost,
                let sessionID = UUID(uuidString: url.lastPathComponent) {
                 sleepCoordinator.presentReport(sessionID: sessionID)
@@ -287,7 +296,8 @@ struct ContentView: View {
             RecordingListView(
                 engine: engine,
                 audioStateManager: audioStateManager,
-                isTabActive: selectedTab == .files
+                isTabActive: selectedTab == .files,
+                pendingOpenRecordingID: $pendingEvidenceRecordingID
             )
         }
         .badge(hasUnreadFiles ? "" : nil)
