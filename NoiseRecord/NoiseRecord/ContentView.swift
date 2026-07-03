@@ -151,6 +151,11 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: AppReviewStore.shouldReevaluatePromptNotification)) { _ in
             evaluateAppReviewPromptIfNeeded()
         }
+        .onChange(of: showAppReviewPrompt) { _, isPresented in
+            if isPresented {
+                AppReviewStore.markReviewPromptPresented()
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .launchAutoStartMonitoring)) { _ in
             Task {
                 guard MonitorSettingsStore.autoStartMonitoringOnLaunch else { return }
@@ -171,7 +176,10 @@ struct ContentView: View {
             }
         }
         .onChange(of: sleepCoordinator.showReportSheet) { _, isPresented in
-            if !isPresented {
+            if isPresented {
+                showAppReviewPrompt = false
+                AppReviewStore.cancelPendingReviewPrompt()
+            } else {
                 evaluateAppReviewPromptIfNeeded()
             }
         }
@@ -398,6 +406,7 @@ struct ContentView: View {
             || PaywallPresenter.shared.isPresented
             || videoCoordinator.isRecording
             || AppReviewStore.isFullscreenLEDBusy
+            || sleepCoordinator.isSleepReportFlowActive
             || sleepCoordinator.showReportSheet
     }
 }

@@ -18,6 +18,7 @@ nonisolated enum AppReviewStore {
     private static let hasUsedCoreFeatureKey = "appReview.hasUsedCoreFeature"
     private static let cumulativeMonitoringSecondsKey = "appReview.cumulativeMonitoringSeconds"
     private static let coreFeaturePrefix = "appReview.coreFeature."
+    private static var isPromptPresentationPending = false
 
     private static let lock = NSLock()
     private static var defaults: UserDefaults = .standard
@@ -78,6 +79,7 @@ nonisolated enum AppReviewStore {
         ] + CoreFeatureKind.allCases.map({ coreFeaturePrefix + $0.rawValue }) {
             defaults.removeObject(forKey: key)
         }
+        isPromptPresentationPending = false
     }
 
     static func recordMonitoringElapsed(_ seconds: TimeInterval) {
@@ -117,19 +119,28 @@ nonisolated enum AppReviewStore {
 
     static func evaluatePromptIfEligible(isBusy: Bool) {
         guard hasUsedCoreFeature, !isBusy else { return }
+        guard !hasShownReviewPrompt, !isPromptPresentationPending else { return }
 #if DEBUG
         if allowsRepeatedPromptInDebug {
             guard lock.withLock({ debugPromptArmed }) else { return }
             lock.withLock { debugPromptArmed = false }
-        } else {
-            guard !hasShownReviewPrompt else { return }
-            hasShownReviewPrompt = true
         }
 #else
-        guard !hasShownReviewPrompt else { return }
-        hasShownReviewPrompt = true
+        // Release 仅在 Alert 真正展示后再标记已弹出。
 #endif
+        isPromptPresentationPending = true
         NotificationCenter.default.post(name: shouldPresentPromptNotification, object: nil)
+    }
+
+    /// Alert 已展示后调用，避免 Sheet 抢焦点导致“闪一下”仍被记为已弹出。
+    static func markReviewPromptPresented() {
+        isPromptPresentationPending = false
+        hasShownReviewPrompt = true
+    }
+
+    /// Sheet 或其他 UI 抢占了 Alert 时撤销 pending，便于稍后重新评估。
+    static func cancelPendingReviewPrompt() {
+        isPromptPresentationPending = false
     }
 
     private static func hasCoreFeatureRecorded(_ kind: CoreFeatureKind) -> Bool {

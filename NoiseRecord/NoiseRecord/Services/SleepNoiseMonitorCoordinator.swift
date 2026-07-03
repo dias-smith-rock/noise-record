@@ -7,6 +7,7 @@ final class SleepNoiseMonitorCoordinator {
     private(set) var activeSession: SleepNoiseSession?
     private(set) var latestReportSessionID: UUID?
     private(set) var showReportSheet = false
+    private(set) var isSleepReportFlowActive = false
     private(set) var liveAnomalyCount = 0
     private(set) var liveNoiseFloor: Float?
     private(set) var liveCurrentDB: Float = 0
@@ -103,6 +104,7 @@ final class SleepNoiseMonitorCoordinator {
 
     func endSession() async {
         guard let engine, let modelContext, let session = activeSession else { return }
+        isSleepReportFlowActive = true
 
         let finalSnapshot = finalEngineSnapshot(from: engine)
         if finalSnapshot.leq > 0 {
@@ -245,6 +247,7 @@ final class SleepNoiseMonitorCoordinator {
 
     func presentReport(sessionID: UUID) {
         latestReportSessionID = sessionID
+        isSleepReportFlowActive = true
         showReportSheet = true
     }
 
@@ -255,6 +258,7 @@ final class SleepNoiseMonitorCoordinator {
 
     func dismissReportSheet() {
         showReportSheet = false
+        isSleepReportFlowActive = false
     }
 
     private func restorePendingReportIfNeeded() {

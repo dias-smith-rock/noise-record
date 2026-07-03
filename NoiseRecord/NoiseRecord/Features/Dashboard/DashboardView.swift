@@ -39,7 +39,12 @@ struct DashboardView: View {
 
         VStack(spacing: 0) {
             ProTabHeader(title: L10n.dashboardTitle, theme: theme) {
-                SleepMonitorHeaderControl(coordinator: sleepCoordinator, theme: theme)
+                SleepMonitorHeaderControl(
+                    coordinator: sleepCoordinator,
+                    engine: engine,
+                    audioStateManager: audioStateManager,
+                    theme: theme
+                )
             }
 
             ScrollView {
@@ -79,7 +84,7 @@ struct DashboardView: View {
                 title: monitorActionTitle,
                 systemImage: monitorActionSymbol,
                 theme: theme,
-                isDestructive: audioStateManager.appAudioState == .monitoring
+                isDestructive: isMonitorFABShowingStop
             ) {
                 guard audioStateManager.appAudioState != .playing else { return }
                 AdSceneLifecycle.recordFirstInteraction(source: "monitor_toggle")
@@ -315,6 +320,10 @@ struct DashboardView: View {
         .padding()
     }
 
+    private var isMonitorFABShowingStop: Bool {
+        sleepCoordinator.isSleepMonitoring || audioStateManager.appAudioState == .monitoring
+    }
+
     private var monitorActionTitle: String {
         if sleepCoordinator.isSleepMonitoring {
             return L10n.sleepEndSession
@@ -327,16 +336,22 @@ struct DashboardView: View {
     }
 
     private var monitorActionSymbol: String {
+        if isMonitorFABShowingStop {
+            return "stop.circle.fill"
+        }
         switch audioStateManager.appAudioState {
-        case .monitoring: "stop.circle.fill"
-        case .idle: "play.circle.fill"
-        case .playing: "speaker.wave.2.fill"
+        case .monitoring: return "stop.circle.fill"
+        case .idle: return "play.circle.fill"
+        case .playing: return "speaker.wave.2.fill"
         }
     }
 
     private func handleStopMonitoringTapped() {
         if sleepCoordinator.isSleepMonitoring {
-            Task { await sleepCoordinator.endSession() }
+            Task {
+                await sleepCoordinator.endSession()
+                audioStateManager.noteMonitoringStopped()
+            }
             return
         }
         audioStateManager.stopMonitoringManually()

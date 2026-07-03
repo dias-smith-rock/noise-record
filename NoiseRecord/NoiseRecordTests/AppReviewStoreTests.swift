@@ -40,6 +40,7 @@ final class AppReviewStoreTests: XCTestCase {
         AppReviewStore.evaluatePromptIfEligible(isBusy: false)
 
         wait(for: [promptExpectation], timeout: 1)
+        AppReviewStore.markReviewPromptPresented()
         XCTAssertTrue(AppReviewStore.hasShownReviewPrompt)
     }
 
@@ -99,6 +100,7 @@ final class AppReviewStoreTests: XCTestCase {
 
         AppReviewStore.evaluatePromptIfEligible(isBusy: false)
         wait(for: [firstExpectation], timeout: 1)
+        AppReviewStore.markReviewPromptPresented()
 
         let secondExpectation = expectation(description: "no second prompt")
         secondExpectation.isInverted = true

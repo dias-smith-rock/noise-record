@@ -87,6 +87,12 @@ final class AudioStateManager {
         appAudioState = .monitoring
     }
 
+    /// 监测引擎已停止后同步状态（例如结束夜间监测）。
+    func noteMonitoringStopped() {
+        guard appAudioState != .playing else { return }
+        appAudioState = .idle
+    }
+
     /// 外部功能（如视频预览）在**仍处于监测意图**下恢复采集管道时调用。
     func restoreMonitoringPipelineIfNeeded() {
         guard appAudioState == .monitoring, engine.isMonitoring else { return }

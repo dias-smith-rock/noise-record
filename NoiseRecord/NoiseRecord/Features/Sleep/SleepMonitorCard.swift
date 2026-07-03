@@ -2,6 +2,8 @@ import SwiftUI
 
 struct SleepMonitorHeaderControl: View {
     @Bindable var coordinator: SleepNoiseMonitorCoordinator
+    @Bindable var engine: NoiseMonitorEngine
+    @Bindable var audioStateManager: AudioStateManager
     var theme: ModeVisualTheme
     @State private var isStarting = false
 
@@ -11,20 +13,12 @@ struct SleepMonitorHeaderControl: View {
                 sleepCapsule(title: elapsedText, systemImage: "moon.stars.fill", prominent: true)
             }
         } else {
-            Menu {
-                Button {
-                    Task { await startSleepMonitoring(isHighSensitivity: true) }
-                } label: {
-                    Text(AcousticMeasurementMode.highSensitivity.userFacingTitle)
-                }
-                Button {
-                    Task { await startSleepMonitoring(isHighSensitivity: false) }
-                } label: {
-                    Text(AcousticMeasurementMode.standard.userFacingTitle)
-                }
+            Button {
+                Task { await startSleepMonitoring() }
             } label: {
                 sleepCapsule(title: L10n.sleepMonitorHeaderButton, systemImage: "moon.zzz.fill", prominent: false)
             }
+            .buttonStyle(.plain)
             .disabled(isStarting)
             .opacity(isStarting ? 0.45 : 1)
         }
@@ -49,9 +43,12 @@ struct SleepMonitorHeaderControl: View {
         .clipShape(Capsule())
     }
 
-    private func startSleepMonitoring(isHighSensitivity: Bool) async {
+    private func startSleepMonitoring() async {
         isStarting = true
         defer { isStarting = false }
-        _ = await coordinator.startSession(isHighSensitivity: isHighSensitivity)
+        let started = await coordinator.startSession(isHighSensitivity: engine.isHighSensitivityMode)
+        if started {
+            audioStateManager.noteMonitoringStarted()
+        }
     }
 }
