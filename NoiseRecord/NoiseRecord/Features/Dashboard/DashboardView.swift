@@ -38,7 +38,9 @@ struct DashboardView: View {
         let _ = appearance.temperatureUnitPreference
 
         VStack(spacing: 0) {
-            ProTabHeader(title: L10n.dashboardTitle, theme: theme)
+            ProTabHeader(title: L10n.dashboardTitle, theme: theme) {
+                SleepMonitorHeaderControl(coordinator: sleepCoordinator, theme: theme)
+            }
 
             ScrollView {
                 if isTabActive {
@@ -208,16 +210,6 @@ struct DashboardView: View {
 
     private var dashboardContent: some View {
         VStack(spacing: 20) {
-            if sleepCoordinator.isSleepMonitoring {
-                SleepActiveBanner(coordinator: sleepCoordinator, theme: theme)
-            } else {
-                SleepMonitorCard(
-                    coordinator: sleepCoordinator,
-                    engine: engine,
-                    theme: theme
-                )
-            }
-
             VStack(alignment: .leading, spacing: 8) {
                 Text(L10n.dashboardSpectrum)
                     .font(.headline)
