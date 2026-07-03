@@ -20,4 +20,19 @@ enum DurationFormatting {
     static func fileSize(from bytes: Int64) -> String {
         ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
     }
+
+    /// Compact duration for sleep history rows, e.g. `7h 12m`.
+    static func compactHoursMinutes(from total: TimeInterval) -> String {
+        let totalSeconds = max(0, Int(total.rounded()))
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
+
+        if hours > 0, minutes > 0 {
+            return "\(hours)h \(minutes)m"
+        }
+        if hours > 0 {
+            return "\(hours)h"
+        }
+        return "\(minutes)m"
+    }
 }

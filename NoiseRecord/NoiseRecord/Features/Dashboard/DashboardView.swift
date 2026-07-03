@@ -167,15 +167,17 @@ struct DashboardView: View {
         }
         .sheet(isPresented: $showsSleepHistory) {
             NavigationStack {
-                SleepHistoryView()
+                SleepHistoryView(measurementMode: measurementMode)
                     .toolbar {
                         ToolbarItem(placement: .topBarTrailing) {
                             Button(L10n.close) {
                                 showsSleepHistory = false
                             }
+                            .foregroundStyle(theme.accent)
                         }
                     }
             }
+            .tint(theme.accent)
         }
         .alert(L10n.errorTitle, isPresented: Binding(
             get: { csvExportErrorMessage != nil },
@@ -394,7 +396,7 @@ struct DashboardView: View {
     }
 
     private func openSleepHistory() {
-        if SubscriptionManager.shared.isPremiumUser {
+        if SubscriptionManager.shared.canAccessSleepHistory {
             showsSleepHistory = true
         } else {
             PaywallPresenter.shared.present(context: .sleepHistory)

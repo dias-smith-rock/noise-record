@@ -9,6 +9,11 @@ struct SleepMonitorHeaderMenu: View {
     var onViewLatestReport: () -> Void
     var onViewHistory: () -> Void
     @State private var isStarting = false
+    @State private var showsMonitoringBlockedAlert = false
+
+    private var isGeneralMonitoringActive: Bool {
+        engine.isMonitoring && !coordinator.isSleepMonitoring
+    }
 
     var body: some View {
         HStack(spacing: 8) {
@@ -18,33 +23,54 @@ struct SleepMonitorHeaderMenu: View {
                 }
             }
 
-            ProTabHeaderIconButton(systemImage: "moon.zzz.fill", theme: theme) {
-                if !coordinator.isSleepMonitoring {
-                    Button {
-                        Task { await startSleepMonitoring() }
-                    } label: {
-                        Label(L10n.sleepMenuStart, systemImage: "bed.double.fill")
-                    }
-                    .disabled(isStarting)
+            if isGeneralMonitoringActive {
+                Button {
+                    showsMonitoringBlockedAlert = true
+                } label: {
+                    moonIconLabel
                 }
+                .buttonStyle(.plain)
+                .alert(L10n.sleepMenuMonitoringBlocked, isPresented: $showsMonitoringBlockedAlert) {
+                    Button(L10n.ok, role: .cancel) {}
+                }
+            } else {
+                ProTabHeaderIconButton(systemImage: "moon.zzz.fill", theme: theme) {
+                    if !coordinator.isSleepMonitoring {
+                        Button {
+                            Task { await startSleepMonitoring() }
+                        } label: {
+                            Label(L10n.sleepMenuStart, systemImage: "bed.double.fill")
+                        }
+                        .disabled(isStarting)
+                    }
 
-                if latestCompletedSessionID == nil {
-                    Button {} label: {
-                        Label(L10n.sleepMenuNoReport, systemImage: "doc.text.fill")
+                    if latestCompletedSessionID == nil {
+                        Button {} label: {
+                            Label(L10n.sleepMenuNoReport, systemImage: "doc.text.fill")
+                        }
+                        .disabled(true)
+                    } else {
+                        Button(action: onViewLatestReport) {
+                            Label(L10n.sleepMenuLatestReport, systemImage: "doc.text.fill")
+                        }
                     }
-                    .disabled(true)
-                } else {
-                    Button(action: onViewLatestReport) {
-                        Label(L10n.sleepMenuLatestReport, systemImage: "doc.text.fill")
-                    }
-                }
 
-                Button(action: onViewHistory) {
-                    Label(L10n.sleepMenuHistory, systemImage: "chart.line.uptrend.xyaxis")
+                    Button(action: onViewHistory) {
+                        Label(L10n.sleepMenuHistory, systemImage: "chart.line.uptrend.xyaxis")
+                    }
                 }
+                .disabled(isStarting && !coordinator.isSleepMonitoring)
             }
-            .disabled(isStarting && !coordinator.isSleepMonitoring)
         }
+    }
+
+    private var moonIconLabel: some View {
+        Image(systemName: "moon.zzz.fill")
+            .font(.body.weight(.semibold))
+            .foregroundStyle(theme.accent)
+            .frame(width: 36, height: 36)
+            .background(theme.badgeBackground)
+            .clipShape(Circle())
     }
 
     private var elapsedText: String {

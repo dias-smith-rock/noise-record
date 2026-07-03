@@ -4,19 +4,30 @@ import UIKit
 
 struct SleepReportView: View {
     let sessionID: UUID
+    var showsHistoryButton: Bool = true
     var onDismiss: () -> Void
 
     @Environment(\.modelContext) private var modelContext
+    @Bindable private var appearance = AppAppearanceSettings.shared
     @State private var session: SleepNoiseSession?
     @State private var showHistory = false
     @State private var csvShareURL: URL?
     @State private var showCSVShare = false
 
+    private var measurementMode: AcousticMeasurementMode {
+        if let session, session.isHighSensitivitySession {
+            return .highSensitivity
+        }
+        return .standard
+    }
+
     private var theme: ModeVisualTheme {
-        .theme(for: .standard)
+        .theme(for: measurementMode)
     }
 
     var body: some View {
+        let _ = appearance.accentRefreshID
+
         NavigationStack {
             ScrollView {
                 if let session {
@@ -30,18 +41,21 @@ struct SleepReportView: View {
                     .padding()
                 } else {
                     ProgressView()
+                        .tint(theme.accent)
                         .frame(maxWidth: .infinity, minHeight: 200)
                 }
             }
+            .background(Color(.systemGroupedBackground))
             .navigationTitle(L10n.sleepReportTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(L10n.close, action: onDismiss)
+                        .foregroundStyle(theme.accent)
                 }
             }
             .navigationDestination(isPresented: $showHistory) {
-                SleepHistoryView()
+                SleepHistoryView(measurementMode: measurementMode)
             }
             .sheet(isPresented: $showCSVShare) {
                 if let csvShareURL {
@@ -49,6 +63,8 @@ struct SleepReportView: View {
                 }
             }
         }
+        .tint(theme.accent)
+        .observesAppLanguage()
         .task(id: sessionID) {
             loadSession()
         }
@@ -56,25 +72,24 @@ struct SleepReportView: View {
 
     @ViewBuilder
     private func gradeHeader(_ session: SleepNoiseSession) -> some View {
-        HStack(spacing: 16) {
-            Text(session.silenceGrade.rawValue)
-                .font(.system(size: 48, weight: .bold, design: .rounded))
-                .foregroundStyle(theme.accent)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(session.silenceGrade.title)
-                    .font(.title3.bold())
-                Text(L10n.sleepReportOverallLevel(String(format: "%.0f", session.overallLeq)))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                Text(L10n.sleepReportFloorLevel(String(format: "%.0f", session.noiseFloorDB)))
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
+        ProCard(theme: theme) {
+            HStack(spacing: 16) {
+                Text(session.silenceGrade.rawValue)
+                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                    .foregroundStyle(theme.accent)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(session.silenceGrade.title)
+                        .font(.title3.bold())
+                    Text(L10n.sleepReportOverallLevel(String(format: "%.0f", session.overallLeq)))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Text(L10n.sleepReportFloorLevel(String(format: "%.0f", session.noiseFloorDB)))
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+                Spacer()
             }
-            Spacer()
         }
-        .padding()
-        .background(theme.cardTint)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
     @ViewBuilder
@@ -100,22 +115,21 @@ struct SleepReportView: View {
     }
 
     private func anomalyRow(_ anomaly: SleepAnomalyEvent) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(formattedTime(anomaly.timestamp))
-                    .font(.subheadline.weight(.semibold))
-                Text(impactText(for: anomaly))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+        ProCard(theme: theme) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(formattedTime(anomaly.timestamp))
+                        .font(.subheadline.weight(.semibold))
+                    Text(impactText(for: anomaly))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Text(String(format: "%.0f dB", anomaly.peakDB))
+                    .font(.subheadline.monospacedDigit())
+                    .foregroundStyle(theme.accent)
             }
-            Spacer()
-            Text(String(format: "%.0f dB", anomaly.peakDB))
-                .font(.subheadline.monospacedDigit())
-                .foregroundStyle(theme.accent)
         }
-        .padding(12)
-        .background(theme.cardTint)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     private var disclaimer: some View {
@@ -127,26 +141,47 @@ struct SleepReportView: View {
     @ViewBuilder
     private func actionButtons(_ session: SleepNoiseSession) -> some View {
         VStack(spacing: 12) {
-            Button {
-                if SubscriptionManager.shared.isPremiumUser {
-                    showHistory = true
-                } else {
-                    PaywallPresenter.shared.present(context: .sleepHistory)
+            if showsHistoryButton {
+                themedActionButton(
+                    title: L10n.sleepReportViewHistory,
+                    systemImage: "chart.line.uptrend.xyaxis"
+                ) {
+                    if SubscriptionManager.shared.canAccessSleepHistory {
+                        showHistory = true
+                    } else {
+                        PaywallPresenter.shared.present(context: .sleepHistory)
+                    }
                 }
-            } label: {
-                Label(L10n.sleepReportViewHistory, systemImage: "chart.line.uptrend.xyaxis")
-                    .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
 
-            Button {
+            themedActionButton(
+                title: L10n.sleepReportExport,
+                systemImage: "square.and.arrow.up"
+            ) {
                 exportCSV(session)
-            } label: {
-                Label(L10n.sleepReportExport, systemImage: "square.and.arrow.up")
-                    .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
         }
+    }
+
+    private func themedActionButton(
+        title: String,
+        systemImage: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: systemImage)
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .foregroundStyle(theme.accent)
+                .background(theme.cardTint)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(theme.surfaceBorder, lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
     }
 
     private func loadSession() {

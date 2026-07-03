@@ -99,6 +99,15 @@ final class SubscriptionManager {
     /// Legacy alias — maps to `hasRemovedAds`.
     var isAdsRemoved: Bool { hasRemovedAds }
 
+    /// 7 日睡眠历史；DEBUG 构建跳过 Premium 限制便于 UI 验证。
+    var canAccessSleepHistory: Bool {
+        #if DEBUG
+        true
+        #else
+        isPremiumUser
+        #endif
+    }
+
     private var cachedProducts: [String: Product] = [:]
     private var introductoryOfferEligibility: [String: Bool] = [:]
     private(set) var isRefreshingIntroductoryEligibility = false

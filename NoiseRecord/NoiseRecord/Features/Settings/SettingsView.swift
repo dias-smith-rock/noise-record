@@ -178,8 +178,8 @@ struct SettingsView: View {
                 ))
 
                 NavigationLink {
-                    if SubscriptionManager.shared.isPremiumUser {
-                        SleepHistoryView()
+                    if SubscriptionManager.shared.canAccessSleepHistory {
+                        SleepHistoryView(measurementMode: measurementMode)
                     } else {
                         SleepHistoryPaywallGateView()
                     }
@@ -291,6 +291,21 @@ struct SettingsView: View {
             } header: {
                 Text(L10n.settingsDataHeader)
             }
+
+            #if DEBUG
+            Section {
+                Button("插入 Mock 睡眠数据（7 晚）") {
+                    _ = SleepDebugMockData.seedMockSessions(in: modelContext)
+                }
+                Button("清除睡眠数据", role: .destructive) {
+                    SleepDebugMockData.clearAllSleepSessions(in: modelContext)
+                }
+            } header: {
+                Text("Debug")
+            } footer: {
+                Text("模拟器首次启动且无睡眠记录时会自动注入。真机 Debug 可加 Launch Argument：-SeedSleepMockData")
+            }
+            #endif
 
             Section {
                 Button {

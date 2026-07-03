@@ -633,6 +633,7 @@ nonisolated enum L10n {
     static var sleepMenuLatestReport: String { localized("sleep.menu.latestReport") }
     static var sleepMenuHistory: String { localized("sleep.menu.history") }
     static var sleepMenuNoReport: String { localized("sleep.menu.noReport") }
+    static var sleepMenuMonitoringBlocked: String { localized("sleep.menu.monitoringBlocked") }
     static var sleepActiveTitle: String { localized("sleep.active.title") }
     static var sleepActiveCurrent: String { localized("sleep.active.current") }
     static var sleepActiveNoiseFloor: String { localized("sleep.active.noiseFloor") }
@@ -646,8 +647,11 @@ nonisolated enum L10n {
     static var sleepReportImpactDeepSleep: String { localized("sleep.report.impactDeepSleep") }
     static var sleepReportImpactLightSleep: String { localized("sleep.report.impactLightSleep") }
     static var sleepHistoryTitle: String { localized("sleep.history.title") }
+    static var sleepHistorySubtitle: String { localized("sleep.history.subtitle") }
     static var sleepHistoryEmpty: String { localized("sleep.history.empty") }
     static var sleepHistoryTrendTitle: String { localized("sleep.history.trendTitle") }
+    static var sleepHistoryQuietNight: String { localized("sleep.history.quietNight") }
+    static var sleepHistoryChartFloorLegend: String { localized("sleep.history.chart.floorLegend") }
     static var sleepSettingsHeader: String { localized("sleep.settings.header") }
     static var sleepSettingsWakeTime: String { localized("sleep.settings.wakeTime") }
     static var sleepSettingsNotifications: String { localized("sleep.settings.notifications") }
@@ -680,6 +684,34 @@ nonisolated enum L10n {
 
     static func sleepHistoryRowSummary(leq: String, floor: String, anomalies: Int) -> String {
         String(format: localized("sleep.history.rowSummary"), leq, floor, anomalies)
+    }
+
+    static func sleepHistoryRowMetrics(overall: String, floor: String) -> String {
+        String(format: localized("sleep.history.rowMetrics"), overall, floor)
+    }
+
+    static func sleepHistoryMonitoringDuration(_ duration: String) -> String {
+        String(format: localized("sleep.history.monitoringDuration"), duration)
+    }
+
+    static func sleepHistoryAnomaliesCount(_ count: Int) -> String {
+        String(format: localized("sleep.history.anomaliesCount"), count)
+    }
+
+    static func sleepHistorySummaryAvgLeq(_ level: String) -> String {
+        String(format: localized("sleep.history.summary.avgLeq"), level)
+    }
+
+    static func sleepHistorySummaryBestNight(_ date: String, _ grade: String) -> String {
+        String(format: localized("sleep.history.summary.bestNight"), date, grade)
+    }
+
+    static func sleepHistorySummaryWorstNight(_ date: String, _ grade: String) -> String {
+        String(format: localized("sleep.history.summary.worstNight"), date, grade)
+    }
+
+    static func sleepHistorySummaryTotalAnomalies(_ count: Int) -> String {
+        String(format: localized("sleep.history.summary.totalAnomalies"), count)
     }
 
     // MARK: - AI labels

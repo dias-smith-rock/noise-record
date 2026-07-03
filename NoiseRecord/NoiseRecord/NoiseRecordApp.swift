@@ -37,6 +37,11 @@ struct NoiseRecordApp: App {
                     ContentView()
                         .modelContainer(modelContainer)
                         .environment(\.locale, AppLocalization.resolvedLocale(for: appearance.preferredLanguage))
+                        #if DEBUG
+                        .onAppear {
+                            SleepDebugMockData.seedIfNeeded(in: modelContainer.mainContext)
+                        }
+                        #endif
                 } else if let storageError {
                     StorageInitErrorView(error: storageError) {
                         retryStorage()
