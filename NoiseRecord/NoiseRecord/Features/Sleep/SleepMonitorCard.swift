@@ -1,26 +1,49 @@
 import SwiftUI
 
-struct SleepMonitorHeaderControl: View {
+struct SleepMonitorHeaderMenu: View {
     @Bindable var coordinator: SleepNoiseMonitorCoordinator
     @Bindable var engine: NoiseMonitorEngine
     @Bindable var audioStateManager: AudioStateManager
     var theme: ModeVisualTheme
+    var latestCompletedSessionID: UUID?
+    var onViewLatestReport: () -> Void
+    var onViewHistory: () -> Void
     @State private var isStarting = false
 
     var body: some View {
-        if coordinator.isSleepMonitoring {
-            TimelineView(.periodic(from: .now, by: 1)) { _ in
-                sleepCapsule(title: elapsedText, systemImage: "moon.stars.fill", prominent: true)
+        HStack(spacing: 8) {
+            if coordinator.isSleepMonitoring {
+                TimelineView(.periodic(from: .now, by: 1)) { _ in
+                    sleepCapsule(title: elapsedText, systemImage: "moon.stars.fill", prominent: true)
+                }
             }
-        } else {
-            Button {
-                Task { await startSleepMonitoring() }
-            } label: {
-                sleepCapsule(title: L10n.sleepMonitorHeaderButton, systemImage: "moon.zzz.fill", prominent: false)
+
+            ProTabHeaderIconButton(systemImage: "moon.zzz.fill", theme: theme) {
+                if !coordinator.isSleepMonitoring {
+                    Button {
+                        Task { await startSleepMonitoring() }
+                    } label: {
+                        Label(L10n.sleepMenuStart, systemImage: "bed.double.fill")
+                    }
+                    .disabled(isStarting)
+                }
+
+                if latestCompletedSessionID == nil {
+                    Button {} label: {
+                        Label(L10n.sleepMenuNoReport, systemImage: "doc.text.fill")
+                    }
+                    .disabled(true)
+                } else {
+                    Button(action: onViewLatestReport) {
+                        Label(L10n.sleepMenuLatestReport, systemImage: "doc.text.fill")
+                    }
+                }
+
+                Button(action: onViewHistory) {
+                    Label(L10n.sleepMenuHistory, systemImage: "chart.line.uptrend.xyaxis")
+                }
             }
-            .buttonStyle(.plain)
-            .disabled(isStarting)
-            .opacity(isStarting ? 0.45 : 1)
+            .disabled(isStarting && !coordinator.isSleepMonitoring)
         }
     }
 

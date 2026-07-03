@@ -25,6 +25,8 @@ struct DashboardView: View {
     @State private var showLocationAccessGuide = false
     @State private var hasScheduledLocationPermissionPrompt = false
     @State private var waveformReferenceLimitDB = NoiseReferenceLimits.residentialNightDB
+    @State private var latestCompletedSessionID: UUID?
+    @State private var showsSleepHistory = false
 
     private var measurementMode: AcousticMeasurementMode {
         AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
@@ -39,11 +41,14 @@ struct DashboardView: View {
 
         VStack(spacing: 0) {
             ProTabHeader(title: L10n.dashboardTitle, theme: theme) {
-                SleepMonitorHeaderControl(
+                SleepMonitorHeaderMenu(
                     coordinator: sleepCoordinator,
                     engine: engine,
                     audioStateManager: audioStateManager,
-                    theme: theme
+                    theme: theme,
+                    latestCompletedSessionID: latestCompletedSessionID,
+                    onViewLatestReport: openLatestMorningReport,
+                    onViewHistory: openSleepHistory
                 )
             }
 
@@ -59,6 +64,7 @@ struct DashboardView: View {
             environment.startUpdating()
             refreshFullscreenLEDGuideVisibility()
             waveformReferenceLimitDB = NoiseReferenceLimits.residentialNightDB
+            refreshLatestSleepSession()
             scheduleLocationPermissionPromptIfNeeded()
         }
         .onReceive(NotificationCenter.default.publisher(for: .launchAutoStartMonitoring)) { _ in
@@ -70,10 +76,16 @@ struct DashboardView: View {
         .onChange(of: isTabActive) { _, isActive in
             refreshFullscreenLEDGuideVisibility()
             if isActive {
+                refreshLatestSleepSession()
                 Task { @MainActor in
                     await waitForLaunchPresentationToFinish()
                     presentLocationPermissionPromptIfNeeded()
                 }
+            }
+        }
+        .onChange(of: sleepCoordinator.showReportSheet) { _, isPresented in
+            if !isPresented {
+                refreshLatestSleepSession()
             }
         }
         .onDisappear {
@@ -152,6 +164,18 @@ struct DashboardView: View {
         }
         .sheet(isPresented: $showLocationAccessGuide) {
             LocationAccessGuideSheet()
+        }
+        .sheet(isPresented: $showsSleepHistory) {
+            NavigationStack {
+                SleepHistoryView()
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button(L10n.close) {
+                                showsSleepHistory = false
+                            }
+                        }
+                    }
+            }
         }
         .alert(L10n.errorTitle, isPresented: Binding(
             get: { csvExportErrorMessage != nil },
@@ -351,10 +375,30 @@ struct DashboardView: View {
             Task {
                 await sleepCoordinator.endSession()
                 audioStateManager.noteMonitoringStopped()
+                refreshLatestSleepSession()
             }
             return
         }
         audioStateManager.stopMonitoringManually()
+    }
+
+    private func refreshLatestSleepSession() {
+        latestCompletedSessionID = SleepMeasurementPersistence
+            .latestCompletedSession(in: modelContext)?
+            .id
+    }
+
+    private func openLatestMorningReport() {
+        guard let sessionID = latestCompletedSessionID else { return }
+        sleepCoordinator.presentReport(sessionID: sessionID)
+    }
+
+    private func openSleepHistory() {
+        if SubscriptionManager.shared.isPremiumUser {
+            showsSleepHistory = true
+        } else {
+            PaywallPresenter.shared.present(context: .sleepHistory)
+        }
     }
 
     private func scheduleLocationPermissionPromptIfNeeded() {

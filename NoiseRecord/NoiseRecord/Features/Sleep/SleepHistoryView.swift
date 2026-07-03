@@ -18,7 +18,11 @@ struct SleepHistoryView: View {
             } else {
                 chartSection
                 ForEach(sessions, id: \.id) { session in
-                    historyRow(session)
+                    NavigationLink {
+                        SleepReportDetailView(sessionID: session.id)
+                    } label: {
+                        historyRow(session)
+                    }
                 }
             }
         }
@@ -74,5 +78,14 @@ struct SleepHistoryView: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         return formatter.string(from: date)
+    }
+}
+
+private struct SleepReportDetailView: View {
+    let sessionID: UUID
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        SleepReportView(sessionID: sessionID, onDismiss: { dismiss() })
     }
 }

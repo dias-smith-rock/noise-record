@@ -54,6 +54,11 @@ enum SleepMeasurementPersistence {
     }
 
     @MainActor
+    static func latestCompletedSession(in context: ModelContext) -> SleepNoiseSession? {
+        recentSessions(limit: 1, in: context).first
+    }
+
+    @MainActor
     static func sessions(
         since date: Date,
         in context: ModelContext
