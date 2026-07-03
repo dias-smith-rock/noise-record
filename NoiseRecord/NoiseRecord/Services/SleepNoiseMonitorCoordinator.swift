@@ -169,6 +169,8 @@ final class SleepNoiseMonitorCoordinator {
         session.reportSummary = summary
         session.isReportRead = false
 
+        AppReviewStore.noteCoreFeatureUsed(.sleepReport)
+
         linkRecordingsToAnomalies(session: session)
 
         try? modelContext.save()

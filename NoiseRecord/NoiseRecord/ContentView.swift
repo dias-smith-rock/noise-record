@@ -21,6 +21,7 @@ struct ContentView: View {
     @State private var showSessionStopPrompt = false
     @State private var suppressNextTabSelectionAd = false
     @Bindable private var appearance = AppAppearanceSettings.shared
+    @Bindable private var paywallPresenter = PaywallPresenter.shared
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
 
@@ -116,20 +117,39 @@ struct ContentView: View {
                 return
             }
 
-            while !Task.isCancelled, engine.isMonitoring {
-                TabBarMonitorIconUpdater.apply(
-                    frame: MonitorTabBarWaveformRenderer.render(
-                        at: Date().timeIntervalSinceReferenceDate
-                    ),
-                    isAnimating: true
-                )
-                try? await Task.sleep(for: .milliseconds(66))
+            await withTaskGroup(of: Void.self) { group in
+                group.addTask {
+                    while !Task.isCancelled {
+                        await MainActor.run {
+                            TabBarMonitorIconUpdater.apply(
+                                frame: MonitorTabBarWaveformRenderer.render(
+                                    at: Date().timeIntervalSinceReferenceDate
+                                ),
+                                isAnimating: true
+                            )
+                        }
+                        try? await Task.sleep(for: .milliseconds(66))
+                    }
+                }
+                group.addTask {
+                    let interval: TimeInterval = 5
+                    while !Task.isCancelled {
+                        try? await Task.sleep(for: .seconds(interval))
+                        AppReviewStore.recordMonitoringElapsed(interval)
+                        await MainActor.run {
+                            evaluateAppReviewPromptIfNeeded()
+                        }
+                    }
+                }
             }
 
             TabBarMonitorIconUpdater.apply(frame: nil, isAnimating: false)
         }
         .onReceive(NotificationCenter.default.publisher(for: AppReviewStore.shouldPresentPromptNotification)) { _ in
             showAppReviewPrompt = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: AppReviewStore.shouldReevaluatePromptNotification)) { _ in
+            evaluateAppReviewPromptIfNeeded()
         }
         .onReceive(NotificationCenter.default.publisher(for: .launchAutoStartMonitoring)) { _ in
             Task {
@@ -144,6 +164,21 @@ struct ContentView: View {
         .appReviewPrompt(isPresented: $showAppReviewPrompt)
         .onChange(of: engine.sessionStopPromptID) { _, promptID in
             showSessionStopPrompt = promptID != nil
+        }
+        .onChange(of: showSessionStopPrompt) { _, isPresented in
+            if !isPresented {
+                evaluateAppReviewPromptIfNeeded()
+            }
+        }
+        .onChange(of: sleepCoordinator.showReportSheet) { _, isPresented in
+            if !isPresented {
+                evaluateAppReviewPromptIfNeeded()
+            }
+        }
+        .onChange(of: paywallPresenter.isPresented) { _, isPresented in
+            if !isPresented {
+                evaluateAppReviewPromptIfNeeded()
+            }
         }
         .onChange(of: engine.sessionAutoSaveGateID) { _, gateID in
             guard gateID != nil else { return }
@@ -188,6 +223,7 @@ struct ContentView: View {
                 engine.handleDidBecomeActive()
                 sleepCoordinator.presentPendingReportIfNeeded()
                 refreshUnreadBadge()
+                evaluateAppReviewPromptIfNeeded()
             @unknown default:
                 break
             }
@@ -349,7 +385,20 @@ struct ContentView: View {
         try? modelContext.save()
         sleepCoordinator.noteRecordingSaved(session)
         refreshUnreadBadge()
-        AppReviewStore.noteEvidenceFileSaved()
+        AppReviewStore.noteCoreFeatureUsed(.evidenceSaved)
+        evaluateAppReviewPromptIfNeeded()
+    }
+
+    private func evaluateAppReviewPromptIfNeeded() {
+        AppReviewStore.evaluatePromptIfEligible(isBusy: isAppReviewPromptBusy)
+    }
+
+    private var isAppReviewPromptBusy: Bool {
+        showSessionStopPrompt
+            || PaywallPresenter.shared.isPresented
+            || videoCoordinator.isRecording
+            || AppReviewStore.isFullscreenLEDBusy
+            || sleepCoordinator.showReportSheet
     }
 }
 

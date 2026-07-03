@@ -5,7 +5,6 @@ struct RemoveAdsSettingsPromo: View {
     let theme: ModeVisualTheme
 
     @Bindable private var subscriptions = SubscriptionManager.shared
-    @State private var showPaywall = false
 
     var body: some View {
         Group {
@@ -13,12 +12,9 @@ struct RemoveAdsSettingsPromo: View {
                 ProVIPStatusBanner(theme: theme)
             } else {
                 ProUpgradeBanner(theme: theme) {
-                    showPaywall = true
+                    PaywallPresenter.shared.present(context: .settings)
                 }
             }
-        }
-        .sheet(isPresented: $showPaywall) {
-            PaywallView(context: .settings)
         }
     }
 }

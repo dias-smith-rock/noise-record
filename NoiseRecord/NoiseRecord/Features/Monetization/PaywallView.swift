@@ -5,6 +5,7 @@ import UIKit
 struct PaywallView: View {
     let context: PaywallContext
 
+    @Environment(\.dismiss) private var dismiss
     @Bindable private var subscriptions = SubscriptionManager.shared
     @Bindable private var paywallPresenter = PaywallPresenter.shared
 
@@ -55,7 +56,7 @@ struct PaywallView: View {
             )
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button(L10n.close) { paywallPresenter.resolve(purchased: false) }
+                    Button(L10n.close) { closePaywall(purchased: false) }
                         .foregroundStyle(.white.opacity(0.85))
                 }
                 ToolbarItem(placement: .topBarTrailing) {
@@ -74,7 +75,7 @@ struct PaywallView: View {
             await subscriptions.refreshIntroductoryOfferEligibility()
         }
         .alert(L10n.paywallPurchasedTitle, isPresented: $showPurchasedAlert) {
-            Button(L10n.ok) { paywallPresenter.resolve(purchased: true) }
+            Button(L10n.ok) { closePaywall(purchased: true) }
         } message: {
             Text(L10n.paywallPurchasedMessage)
         }
@@ -84,7 +85,7 @@ struct PaywallView: View {
             Text(L10n.settingsRemoveAdsPendingMessage)
         }
         .alert(L10n.settingsRemoveAdsRestoredTitle, isPresented: $showRestoredAlert) {
-            Button(L10n.ok) { paywallPresenter.resolve(purchased: subscriptions.isPremiumUser) }
+            Button(L10n.ok) { closePaywall(purchased: subscriptions.isPremiumUser) }
         } message: {
             Text(L10n.settingsRemoveAdsRestoredMessage)
         }
@@ -338,6 +339,11 @@ struct PaywallView: View {
             UIApplication.shared.open(url)
         }
         .foregroundStyle(.white.opacity(0.6))
+    }
+
+    private func closePaywall(purchased: Bool) {
+        paywallPresenter.resolve(purchased: purchased)
+        dismiss()
     }
 
     private func purchaseSelectedTier() async {

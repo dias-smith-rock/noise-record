@@ -3,7 +3,6 @@ import SwiftUI
 private struct LaunchPaywallPromoModifier: ViewModifier {
     @Bindable private var subscriptions = SubscriptionManager.shared
     @Environment(\.scenePhase) private var scenePhase
-    @State private var showPaywall = false
 
     func body(content: Content) -> some View {
         content
@@ -17,22 +16,15 @@ private struct LaunchPaywallPromoModifier: ViewModifier {
                 guard phase == .active else { return }
                 presentPaywallIfNeeded()
             }
-            .sheet(isPresented: $showPaywall, onDismiss: handleDismiss) {
-                PaywallView(context: .launch)
-            }
     }
 
     private func presentPaywallIfNeeded() {
         guard !subscriptions.isPremiumUser else { return }
         guard AdSceneLifecycle.consumeLaunchRemoveAdsPromoPresentation() else { return }
-        showPaywall = true
-    }
-
-    private func handleDismiss() {
-        AdSceneLifecycle.handleLaunchRemoveAdsPromoDismissed(
-            purchased: subscriptions.isPremiumUser || subscriptions.hasRemovedAds
-        )
-        AdSceneLifecycle.scheduleLaunchAutoStartMonitoring()
+        PaywallPresenter.shared.present(context: .launch) { purchased in
+            AdSceneLifecycle.handleLaunchRemoveAdsPromoDismissed(purchased: purchased)
+            AdSceneLifecycle.scheduleLaunchAutoStartMonitoring()
+        }
     }
 }
 

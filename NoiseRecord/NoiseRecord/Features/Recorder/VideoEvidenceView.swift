@@ -601,7 +601,7 @@ struct VideoEvidenceView: View {
                 if purchased {
                     commitPendingVideoSegments()
                     savedVideoURL = fileURL
-                    AppReviewStore.noteEvidenceFileSaved()
+                    noteVideoEvidenceSavedForReview()
                 } else {
                     discardPendingVideoSegments()
                 }
@@ -611,10 +611,17 @@ struct VideoEvidenceView: View {
         } else {
             commitPendingVideoSegments()
             savedVideoURL = fileURL
-            AppReviewStore.noteEvidenceFileSaved()
+            noteVideoEvidenceSavedForReview()
             pendingVideoSegments = []
             coordinator.recordingStartedAt = nil
         }
+    }
+
+    private func noteVideoEvidenceSavedForReview() {
+        AppReviewStore.noteCoreFeatureUsed(.evidenceSaved)
+        AppReviewStore.evaluatePromptIfEligible(
+            isBusy: PaywallPresenter.shared.isPresented || coordinator.isRecording
+        )
     }
 
     private func videoRecordingDuration() -> TimeInterval {

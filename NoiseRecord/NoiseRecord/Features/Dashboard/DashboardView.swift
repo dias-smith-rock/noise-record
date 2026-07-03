@@ -142,16 +142,22 @@ struct DashboardView: View {
             )
         }
         .onChange(of: isFullScreenPresented) { _, isPresented in
+            AppReviewStore.isFullscreenLEDBusy = isPresented
             if isPresented {
                 AppTelemetry.logProductEvent(
                     "fullscreen_led_open",
                     parameters: ["mode": measurementMode.rawValue]
                 )
+                AppReviewStore.noteCoreFeatureUsed(.fullscreenLED)
                 InterfaceOrientationLocker.enterLandscapeFullscreen()
                 AdSceneLifecycle.showInterstitialOnFullscreenEnter()
             } else {
                 AppTelemetry.logProductEvent("fullscreen_led_close")
                 InterfaceOrientationLocker.exitLandscapeFullscreen()
+                NotificationCenter.default.post(
+                    name: AppReviewStore.shouldReevaluatePromptNotification,
+                    object: nil
+                )
             }
         }
         .onPreferenceChange(FullscreenGuideButtonFrameKey.self) { frame in
