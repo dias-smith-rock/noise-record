@@ -14,7 +14,14 @@ struct SleepReportView: View {
     @State private var showHistory = false
     @State private var csvShareURL: URL?
     @State private var showCSVShare = false
-    @State private var pdfPreviewItem: PreviewPDFItem?
+    @State private var showPDFFormatPicker = false
+    @State private var pendingPDFSession: SleepNoiseSession?
+    @State private var embeddedPDFURL: URL?
+    @State private var embeddedPDFLoadFailed = false
+    @State private var embeddedPDFCurrentPage = 1
+    @State private var embeddedPDFTotalPages = 0
+    @State private var embeddedPDFFormat: SleepForensicReportFormat = .nighttimeEnvironmental
+    @State private var showPDFShareSheet = false
 
     private var measurementMode: AcousticMeasurementMode {
         if let session, session.isHighSensitivitySession {
@@ -39,6 +46,7 @@ struct SleepReportView: View {
                         anomaliesSection(session)
                         disclaimer
                         actionButtons(session)
+                        embeddedPDFPreviewSection
                     }
                     .padding()
                 } else {
@@ -64,12 +72,29 @@ struct SleepReportView: View {
                     ShareSheet(items: [csvShareURL])
                 }
             }
-            .fullScreenCover(item: $pdfPreviewItem) { item in
-                ForensicPDFPreviewView(
-                    url: item.url,
-                    theme: theme,
-                    onDismiss: { pdfPreviewItem = nil }
-                )
+            .sheet(isPresented: $showPDFShareSheet) {
+                if let embeddedPDFURL {
+                    ShareSheet(items: [embeddedPDFURL])
+                }
+            }
+            .confirmationDialog(
+                L10n.sleepReportExportPDF,
+                isPresented: $showPDFFormatPicker,
+                titleVisibility: .visible
+            ) {
+                Button(SleepForensicReportFormat.legacyOvernight.title) {
+                    if let pendingPDFSession {
+                        exportPDF(pendingPDFSession, format: .legacyOvernight)
+                    }
+                }
+                Button(SleepForensicReportFormat.nighttimeEnvironmental.title) {
+                    if let pendingPDFSession {
+                        exportPDF(pendingPDFSession, format: .nighttimeEnvironmental)
+                    }
+                }
+                Button(L10n.cancel, role: .cancel) {
+                    pendingPDFSession = nil
+                }
             }
         }
         .tint(theme.accent)
@@ -77,6 +102,10 @@ struct SleepReportView: View {
         .paywallPresenter()
         .task(id: sessionID) {
             loadSession()
+        }
+        .task(id: session?.id) {
+            guard let session else { return }
+            refreshEmbeddedPDF(session, format: embeddedPDFFormat)
         }
     }
 
@@ -175,7 +204,73 @@ struct SleepReportView: View {
                 title: L10n.sleepReportExportPDF,
                 systemImage: "doc.richtext"
             ) {
-                exportPDF(session)
+                guard SubscriptionManager.shared.canAccessSleepExport else {
+                    PaywallPresenter.shared.present(context: .sleepExport)
+                    return
+                }
+                pendingPDFSession = session
+                showPDFFormatPicker = true
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var embeddedPDFPreviewSection: some View {
+        if SubscriptionManager.shared.canAccessSleepExport {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text(embeddedPDFFormat.title)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                    Spacer()
+                    if embeddedPDFURL != nil, !embeddedPDFLoadFailed {
+                        Button {
+                            showPDFShareSheet = true
+                        } label: {
+                            Label(L10n.share, systemImage: "square.and.arrow.up")
+                                .font(.subheadline.weight(.semibold))
+                        }
+                        .foregroundStyle(theme.accent)
+                    }
+                }
+
+                Group {
+                    if embeddedPDFLoadFailed {
+                        ContentUnavailableView(
+                            L10n.sleepReportExportPDF,
+                            systemImage: "doc.richtext",
+                            description: Text(L10n.errorTitle)
+                        )
+                    } else if let embeddedPDFURL {
+                        PDFKitPreviewView(
+                            url: embeddedPDFURL,
+                            loadFailed: $embeddedPDFLoadFailed,
+                            currentPage: $embeddedPDFCurrentPage,
+                            totalPages: $embeddedPDFTotalPages
+                        )
+                    } else {
+                        ProgressView()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .tint(theme.accent)
+                    }
+                }
+                .frame(height: 420)
+                .frame(maxWidth: .infinity)
+                .background(Color(.systemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(theme.surfaceBorder, lineWidth: 1)
+                )
+
+                if !embeddedPDFLoadFailed, embeddedPDFTotalPages > 0 {
+                    Text("\(embeddedPDFCurrentPage) / \(embeddedPDFTotalPages)")
+                        .font(.caption.weight(.medium))
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
+                }
             }
         }
     }
@@ -254,11 +349,19 @@ struct SleepReportView: View {
         showCSVShare = csvShareURL != nil
     }
 
-    private func exportPDF(_ session: SleepNoiseSession) {
+    private func refreshEmbeddedPDF(_ session: SleepNoiseSession, format: SleepForensicReportFormat) {
         guard SubscriptionManager.shared.canAccessSleepExport else {
-            PaywallPresenter.shared.present(context: .sleepExport)
+            embeddedPDFURL = nil
+            embeddedPDFLoadFailed = false
+            embeddedPDFTotalPages = 0
             return
         }
+
+        embeddedPDFFormat = format
+        embeddedPDFLoadFailed = false
+        embeddedPDFCurrentPage = 1
+        embeddedPDFTotalPages = 0
+
         let samples = SleepMeasurementPersistence.samples(
             for: session.id,
             in: modelContext
@@ -273,108 +376,87 @@ struct SleepReportView: View {
             samples: samples,
             recordings: recordings
         )
-        guard let url = SleepForensicPDFExporter.export(payload: payload) else { return }
-        pdfPreviewItem = PreviewPDFItem(url: url)
-    }
-}
 
-private struct PreviewPDFItem: Identifiable {
-    let id = UUID()
-    let url: URL
-}
-
-private struct ForensicPDFPreviewView: View {
-    let url: URL
-    let theme: ModeVisualTheme
-    let onDismiss: () -> Void
-
-    @State private var showShareSheet = false
-    @State private var loadFailed = false
-
-    var body: some View {
-        NavigationStack {
-            Group {
-                if loadFailed {
-                    ContentUnavailableView(
-                        L10n.sleepReportExportPDF,
-                        systemImage: "doc.richtext",
-                        description: Text(L10n.errorTitle)
-                    )
-                } else {
-                    PDFKitPreviewView(url: url, loadFailed: $loadFailed)
-                }
-            }
-            .background(Color(.systemBackground))
-            .navigationTitle(L10n.sleepReportExportPDF)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button(L10n.close, action: onDismiss)
-                        .foregroundStyle(theme.accent)
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showShareSheet = true
-                    } label: {
-                        Label(L10n.share, systemImage: "square.and.arrow.up")
-                    }
-                    .foregroundStyle(theme.accent)
-                    .disabled(loadFailed)
-                }
-            }
-            .sheet(isPresented: $showShareSheet) {
-                ShareSheet(items: [url])
-            }
+        let url: URL?
+        switch format {
+        case .legacyOvernight:
+            url = SleepForensicPDFExporter.export(payload: payload)
+        case .nighttimeEnvironmental:
+            url = SleepNEMRPDFExporter.export(payload: payload)
         }
-        .tint(theme.accent)
+
+        embeddedPDFURL = url
+        embeddedPDFLoadFailed = url == nil
+    }
+
+    private func exportPDF(_ session: SleepNoiseSession, format: SleepForensicReportFormat) {
+        guard SubscriptionManager.shared.canAccessSleepExport else {
+            PaywallPresenter.shared.present(context: .sleepExport)
+            return
+        }
+        pendingPDFSession = nil
+        refreshEmbeddedPDF(session, format: format)
     }
 }
 
 private struct PDFKitPreviewView: UIViewRepresentable {
     let url: URL
     @Binding var loadFailed: Bool
+    @Binding var currentPage: Int
+    @Binding var totalPages: Int
 
     func makeCoordinator() -> Coordinator {
-        Coordinator()
+        Coordinator(
+            currentPage: $currentPage,
+            totalPages: $totalPages
+        )
     }
 
-    func makeUIView(context: Context) -> PDFView {
-        let pdfView = PDFView()
+    func makeUIView(context: Context) -> FitWidthPDFView {
+        let pdfView = FitWidthPDFView()
         pdfView.autoScales = true
         pdfView.displayMode = .singlePageContinuous
         pdfView.displayDirection = .vertical
         pdfView.backgroundColor = .systemBackground
-        loadDocument(into: pdfView)
+        context.coordinator.attach(to: pdfView)
+        loadDocument(into: pdfView, coordinator: context.coordinator)
         return pdfView
     }
 
-    func updateUIView(_ pdfView: PDFView, context: Context) {
+    func updateUIView(_ pdfView: FitWidthPDFView, context: Context) {
         guard context.coordinator.loadedURL != url else { return }
         context.coordinator.loadedURL = url
-        loadDocument(into: pdfView)
+        loadDocument(into: pdfView, coordinator: context.coordinator)
     }
 
-    private func loadDocument(into pdfView: PDFView) {
+    static func dismantleUIView(_ pdfView: FitWidthPDFView, coordinator: Coordinator) {
+        coordinator.detach(from: pdfView)
+    }
+
+    private func loadDocument(into pdfView: FitWidthPDFView, coordinator: Coordinator) {
         if let data = try? Data(contentsOf: url),
            let document = PDFDocument(data: data),
            document.pageCount > 0 {
-            applyDocument(document, to: pdfView)
+            applyDocument(document, to: pdfView, coordinator: coordinator)
             return
         }
 
         if let document = PDFDocument(url: url), document.pageCount > 0 {
-            applyDocument(document, to: pdfView)
+            applyDocument(document, to: pdfView, coordinator: coordinator)
             return
         }
 
         markLoadFailed()
     }
 
-    private func applyDocument(_ document: PDFDocument, to pdfView: PDFView) {
+    private func applyDocument(
+        _ document: PDFDocument,
+        to pdfView: FitWidthPDFView,
+        coordinator: Coordinator
+    ) {
         pdfView.document = document
-        pdfView.minScaleFactor = pdfView.scaleFactorForSizeToFit
-        pdfView.maxScaleFactor = 4.0
-        pdfView.scaleFactor = pdfView.scaleFactorForSizeToFit
+        pdfView.fitToScreenWidth()
+        coordinator.updatePageInfo(from: pdfView)
         DispatchQueue.main.async {
             loadFailed = false
         }
@@ -383,11 +465,96 @@ private struct PDFKitPreviewView: UIViewRepresentable {
     private func markLoadFailed() {
         DispatchQueue.main.async {
             loadFailed = true
+            totalPages = 0
         }
     }
 
     final class Coordinator {
         var loadedURL: URL?
+        private var pageObserver: NSObjectProtocol?
+        @Binding private var currentPage: Int
+        @Binding private var totalPages: Int
+
+        init(currentPage: Binding<Int>, totalPages: Binding<Int>) {
+            _currentPage = currentPage
+            _totalPages = totalPages
+        }
+
+        func attach(to pdfView: PDFView) {
+            pageObserver = NotificationCenter.default.addObserver(
+                forName: .PDFViewPageChanged,
+                object: pdfView,
+                queue: .main
+            ) { [weak self, weak pdfView] _ in
+                guard let pdfView else { return }
+                self?.updatePageInfo(from: pdfView)
+            }
+        }
+
+        func detach(from pdfView: PDFView) {
+            if let pageObserver {
+                NotificationCenter.default.removeObserver(pageObserver)
+                self.pageObserver = nil
+            }
+        }
+
+        func updatePageInfo(from pdfView: PDFView) {
+            guard let document = pdfView.document else {
+                totalPages = 0
+                return
+            }
+
+            totalPages = document.pageCount
+            if let page = pdfView.currentPage {
+                currentPage = document.index(for: page) + 1
+            } else {
+                currentPage = min(currentPage, max(totalPages, 1))
+            }
+        }
+    }
+}
+
+private final class FitWidthPDFView: PDFView {
+    private var lastFitWidth: CGFloat = 0
+
+    override var document: PDFDocument? {
+        didSet {
+            lastFitWidth = 0
+        }
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        fitToScreenWidth()
+    }
+
+    func fitToScreenWidth() {
+        guard bounds.width > 0, document != nil else { return }
+
+        let fitScale = scaleFactorForSizeToFit
+        guard fitScale > 0 else { return }
+
+        minScaleFactor = fitScale
+        maxScaleFactor = max(fitScale * 4, fitScale)
+
+        let widthChanged = abs(bounds.width - lastFitWidth) > 0.5
+        if widthChanged || scaleFactor > fitScale * 1.01 {
+            scaleFactor = fitScale
+            lastFitWidth = bounds.width
+        }
+
+        configureScrollViews(in: self)
+    }
+
+    private func configureScrollViews(in view: UIView) {
+        if let scrollView = view as? UIScrollView {
+            scrollView.alwaysBounceHorizontal = false
+            scrollView.showsHorizontalScrollIndicator = false
+            scrollView.isDirectionalLockEnabled = true
+        }
+        for subview in view.subviews {
+            configureScrollViews(in: subview)
+        }
     }
 }
 

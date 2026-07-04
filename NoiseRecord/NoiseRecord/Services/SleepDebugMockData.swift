@@ -177,12 +177,71 @@ enum SleepDebugMockData {
                 calendar: calendar
             )
 
+            insertMockMeasurementSamples(
+                for: session,
+                bedtime: bedtime,
+                endedAt: endedAt,
+                profile: profile,
+                in: context
+            )
+
             context.insert(session)
             inserted += 1
         }
 
         try? context.save()
         return inserted
+    }
+
+    @MainActor
+    private static func insertMockMeasurementSamples(
+        for session: SleepNoiseSession,
+        bedtime: Date,
+        endedAt: Date,
+        profile: NightProfile,
+        in context: ModelContext
+    ) {
+        let duration = endedAt.timeIntervalSince(bedtime)
+        guard duration > 0 else { return }
+
+        let interval = SleepMeasurementPersistence.sampleInterval
+        var time = bedtime
+        var index = 0
+
+        while time <= endedAt {
+            let progress = time.timeIntervalSince(bedtime) / duration
+            var db = profile.noiseFloorDB + (profile.overallLeq - profile.noiseFloorDB) * Float(0.12 + 0.08 * sin(progress * .pi * 6))
+
+            for spec in profile.anomalySpecs {
+                let anomalyTime = bedtime.addingTimeInterval(spec.hoursAfterStart * 3600)
+                let delta = abs(time.timeIntervalSince(anomalyTime))
+                let window = max(Double(spec.durationSeconds), 30)
+                if delta < window {
+                    let influence = Float(1 - delta / window)
+                    db = max(db, profile.noiseFloorDB + (spec.peakDB - profile.noiseFloorDB) * influence)
+                }
+            }
+
+            db = min(max(db, profile.noiseFloorDB - 2), profile.peakDB)
+            let weighting = profile.isHighSensitivity ? "highSensitivity" : WeightingType.a.rawValue
+
+            context.insert(
+                MeasurementSample(
+                    timestamp: time,
+                    dbCurrent: db,
+                    dbMax: min(db + 1.5, profile.peakDB),
+                    dbMin: max(db - 1.5, profile.noiseFloorDB),
+                    dbAvg: db,
+                    leq: db,
+                    weighting: weighting,
+                    sleepSessionID: session.id
+                )
+            )
+
+            time = time.addingTimeInterval(interval)
+            index += 1
+            if index > 500 { break }
+        }
     }
 
     @MainActor

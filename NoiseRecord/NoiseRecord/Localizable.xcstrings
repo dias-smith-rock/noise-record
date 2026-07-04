@@ -218,6 +218,16 @@
     "%lld" : {
 
     },
+    "%lld / %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld / %2$lld"
+          }
+        }
+      }
+    },
     "%lld %@" : {
       "localizations" : {
         "ar" : {
@@ -97350,6 +97360,29 @@
         }
       }
     },
+    "sleep.menu.monitoringBlocked" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monitoring in progress. Stop monitoring first to view reports."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在监测中，如想查看报告请先停止监测"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在監測中，如想查看報告請先停止監測"
+          }
+        }
+      }
+    },
     "sleep.menu.noReport" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -97405,29 +97438,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "尚無晨報"
-          }
-        }
-      }
-    },
-    "sleep.menu.monitoringBlocked" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Monitoring in progress. Stop monitoring first to view reports."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "正在监测中，如想查看报告请先停止监测"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "正在監測中，如想查看報告請先停止監測"
           }
         }
       }
@@ -97780,29 +97790,6 @@
         }
       }
     },
-    "sleep.report.exportPDF" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Export Forensic PDF"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "导出司法级 PDF"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "匯出司法級 PDF"
-          }
-        }
-      }
-    },
     "sleep.report.export" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -97822,6 +97809,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "匯出 CSV"
+          }
+        }
+      }
+    },
+    "sleep.report.exportPDF" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export Forensic PDF"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导出司法级 PDF"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "匯出司法級 PDF"
           }
         }
       }
