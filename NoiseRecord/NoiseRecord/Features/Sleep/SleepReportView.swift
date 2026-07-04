@@ -13,8 +13,7 @@ struct SleepReportView: View {
     @Bindable private var appearance = AppAppearanceSettings.shared
     @State private var session: SleepNoiseSession?
     @State private var showHistory = false
-    @State private var csvShareURL: URL?
-    @State private var showCSVShare = false
+    @State private var csvExportErrorMessage: String?
     @State private var showPDFFormatPicker = false
     @State private var pendingPDFSession: SleepNoiseSession?
     @State private var embeddedPDFURL: URL?
@@ -68,11 +67,6 @@ struct SleepReportView: View {
             .navigationDestination(isPresented: $showHistory) {
                 SleepHistoryView(measurementMode: measurementMode)
             }
-            .sheet(isPresented: $showCSVShare) {
-                if let csvShareURL {
-                    ShareSheet(items: [csvShareURL])
-                }
-            }
             .sheet(isPresented: $showPDFShareSheet) {
                 if let embeddedPDFURL {
                     ShareSheet(items: [embeddedPDFURL])
@@ -103,6 +97,14 @@ struct SleepReportView: View {
         .tint(theme.accent)
         .observesAppLanguage()
         .paywallPresenter()
+        .alert(L10n.errorTitle, isPresented: Binding(
+            get: { csvExportErrorMessage != nil },
+            set: { if !$0 { csvExportErrorMessage = nil } }
+        )) {
+            Button(L10n.ok, role: .cancel) { csvExportErrorMessage = nil }
+        } message: {
+            Text(csvExportErrorMessage ?? "")
+        }
         .task(id: sessionID) {
             loadSession()
         }
@@ -356,11 +358,14 @@ struct SleepReportView: View {
                 noiseType: $0.noiseType
             )
         }
-        csvShareURL = CSVExporter.exportSleepSessionLog(
+        guard let url = CSVExporter.exportSleepSessionLog(
             session: session,
             rows: rows
-        )
-        showCSVShare = csvShareURL != nil
+        ) else {
+            csvExportErrorMessage = L10n.dashboardExportCSVFailed
+            return
+        }
+        SharePresenter.present(items: [url])
     }
 
     private func refreshEmbeddedPDF(_ session: SleepNoiseSession, format: SleepForensicReportFormat) {
