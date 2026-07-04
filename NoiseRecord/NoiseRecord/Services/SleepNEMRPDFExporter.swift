@@ -107,6 +107,7 @@ enum SleepNEMRPDFExporter {
                     "Appendix B / 附录B: Raw 1-second-level data available via in-app CSV export.",
                 ]
             )
+            y = ForensicPDFLayout.ensureSpace(context: context, y: y, required: 240)
             y = ForensicPDFLayout.drawText("Overnight Level Trend / 整夜声级趋势", y: y, font: .boldSystemFont(ofSize: 10))
             y += 8
             y = ForensicPDFLayout.drawTrendChart(
@@ -120,7 +121,7 @@ enum SleepNEMRPDFExporter {
             y = ForensicPDFLayout.ensureSpace(context: context, y: y, required: 80)
             y = ForensicPDFLayout.drawText("Anomaly Evidence Log / 异常事件证据", y: y, font: .boldSystemFont(ofSize: 10))
             y += 4
-            _ = ForensicPDFLayout.drawIncidentLog(context: context, y: y, incidents: payload.incidents)
+            y = ForensicPDFLayout.drawIncidentLog(context: context, y: y, incidents: payload.incidents)
 
             y = ForensicPDFLayout.ensureSpace(context: context, y: y, required: 160)
             y = ForensicPDFLayout.drawSectionTitle("8. 声明与局限性 (Disclaimer & Limitations)", y: y)
@@ -129,10 +130,14 @@ enum SleepNEMRPDFExporter {
                 paragraphs: disclaimerParagraphs(firm: metadata.monitoringFirm)
             )
             y += 8
-            _ = ForensicPDFLayout.drawText("Prepared by / 编制人: __________________", y: y, font: .systemFont(ofSize: 10))
-            _ = ForensicPDFLayout.drawText("Title / 职称/签名: Acoustic Engineer / Authorized Signatory", y: y + 20, font: .systemFont(ofSize: 10))
-            _ = ForensicPDFLayout.drawText("Reviewed by / 审核人: __________________", y: y + 40, font: .systemFont(ofSize: 10))
-            _ = ForensicPDFLayout.drawText("Issuing Authority / 签发机构: \(SleepNEMRReportMetadata.firmPlaceholder)", y: y + 60, font: .systemFont(ofSize: 10))
+            y = ForensicPDFLayout.drawText("Prepared by / 编制人: __________________", y: y, font: .systemFont(ofSize: 10))
+            y = ForensicPDFLayout.drawText("Title / 职称/签名: Acoustic Engineer / Authorized Signatory", y: y, font: .systemFont(ofSize: 10))
+            y = ForensicPDFLayout.drawText("Reviewed by / 审核人: __________________", y: y, font: .systemFont(ofSize: 10))
+            _ = ForensicPDFLayout.drawText(
+                "Issuing Authority / 签发机构: \(SleepNEMRReportMetadata.firmPlaceholder)",
+                y: y,
+                font: .systemFont(ofSize: 10)
+            )
         }
 
         do {

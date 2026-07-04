@@ -349,13 +349,13 @@ enum ForensicPDFLayout {
         }
 
         cursor += 4
-        _ = drawText(
+        cursor = drawText(
             "Scan QR codes with the capturing iPhone to open locally stored video/audio evidence (GPS + timestamp burned in).",
             y: cursor,
             font: .systemFont(ofSize: 8),
             color: Colors.secondaryText
         )
-        return cursor + 18
+        return cursor + 4
     }
 
     static func qrCodeImage(for url: URL, size: CGFloat) -> UIImage? {

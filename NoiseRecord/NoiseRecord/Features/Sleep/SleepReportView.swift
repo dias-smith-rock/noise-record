@@ -242,8 +242,9 @@ struct SleepReportView: View {
                             systemImage: "doc.richtext",
                             description: Text(L10n.errorTitle)
                         )
+                        .frame(height: 160)
                     } else if let embeddedPDFURL {
-                        PDFKitPreviewView(
+                        PDFPagesStackView(
                             url: embeddedPDFURL,
                             loadFailed: $embeddedPDFLoadFailed,
                             currentPage: $embeddedPDFCurrentPage,
@@ -251,11 +252,11 @@ struct SleepReportView: View {
                         )
                     } else {
                         ProgressView()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 120)
                             .tint(theme.accent)
                     }
                 }
-                .frame(height: 420)
                 .frame(maxWidth: .infinity)
                 .background(Color(.systemBackground))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -399,162 +400,143 @@ struct SleepReportView: View {
     }
 }
 
-private struct PDFKitPreviewView: UIViewRepresentable {
+private struct PageVisibilityEntry: Equatable {
+    let pageIndex: Int
+    let visibleArea: CGFloat
+}
+
+private struct PageVisibilityPreference: PreferenceKey {
+    static var defaultValue: [PageVisibilityEntry] = []
+
+    static func reduce(value: inout [PageVisibilityEntry], nextValue: () -> [PageVisibilityEntry]) {
+        value.append(contentsOf: nextValue())
+    }
+}
+
+private enum PDFPageImageRenderer {
+    static func render(page: PDFPage, targetWidth: CGFloat) -> UIImage? {
+        let bounds = page.bounds(for: .mediaBox)
+        guard bounds.width > 0, bounds.height > 0, targetWidth > 0 else { return nil }
+
+        let scale = targetWidth / bounds.width
+        let targetHeight = bounds.height * scale
+        let size = CGSize(width: targetWidth, height: targetHeight)
+        let renderer = UIGraphicsImageRenderer(size: size)
+
+        return renderer.image { context in
+            UIColor.white.setFill()
+            context.fill(CGRect(origin: .zero, size: size))
+            context.cgContext.translateBy(x: 0, y: targetHeight)
+            context.cgContext.scaleBy(x: scale, y: -scale)
+            page.draw(with: .mediaBox, to: context.cgContext)
+        }
+    }
+}
+
+private struct PDFPagesStackView: View {
     let url: URL
     @Binding var loadFailed: Bool
     @Binding var currentPage: Int
     @Binding var totalPages: Int
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator(
-            currentPage: $currentPage,
-            totalPages: $totalPages
-        )
-    }
+    @State private var pageImages: [UIImage] = []
+    @State private var renderWidth: CGFloat = 0
 
-    func makeUIView(context: Context) -> FitWidthPDFView {
-        let pdfView = FitWidthPDFView()
-        pdfView.autoScales = true
-        pdfView.displayMode = .singlePageContinuous
-        pdfView.displayDirection = .vertical
-        pdfView.backgroundColor = .systemBackground
-        context.coordinator.attach(to: pdfView)
-        loadDocument(into: pdfView, coordinator: context.coordinator)
-        return pdfView
-    }
-
-    func updateUIView(_ pdfView: FitWidthPDFView, context: Context) {
-        guard context.coordinator.loadedURL != url else { return }
-        context.coordinator.loadedURL = url
-        loadDocument(into: pdfView, coordinator: context.coordinator)
-    }
-
-    static func dismantleUIView(_ pdfView: FitWidthPDFView, coordinator: Coordinator) {
-        coordinator.detach(from: pdfView)
-    }
-
-    private func loadDocument(into pdfView: FitWidthPDFView, coordinator: Coordinator) {
-        if let data = try? Data(contentsOf: url),
-           let document = PDFDocument(data: data),
-           document.pageCount > 0 {
-            applyDocument(document, to: pdfView, coordinator: coordinator)
-            return
-        }
-
-        if let document = PDFDocument(url: url), document.pageCount > 0 {
-            applyDocument(document, to: pdfView, coordinator: coordinator)
-            return
-        }
-
-        markLoadFailed()
-    }
-
-    private func applyDocument(
-        _ document: PDFDocument,
-        to pdfView: FitWidthPDFView,
-        coordinator: Coordinator
-    ) {
-        pdfView.document = document
-        pdfView.fitToScreenWidth()
-        coordinator.updatePageInfo(from: pdfView)
-        DispatchQueue.main.async {
-            loadFailed = false
-        }
-    }
-
-    private func markLoadFailed() {
-        DispatchQueue.main.async {
-            loadFailed = true
-            totalPages = 0
-        }
-    }
-
-    final class Coordinator {
-        var loadedURL: URL?
-        private var pageObserver: NSObjectProtocol?
-        @Binding private var currentPage: Int
-        @Binding private var totalPages: Int
-
-        init(currentPage: Binding<Int>, totalPages: Binding<Int>) {
-            _currentPage = currentPage
-            _totalPages = totalPages
-        }
-
-        func attach(to pdfView: PDFView) {
-            pageObserver = NotificationCenter.default.addObserver(
-                forName: .PDFViewPageChanged,
-                object: pdfView,
-                queue: .main
-            ) { [weak self, weak pdfView] _ in
-                guard let pdfView else { return }
-                self?.updatePageInfo(from: pdfView)
-            }
-        }
-
-        func detach(from pdfView: PDFView) {
-            if let pageObserver {
-                NotificationCenter.default.removeObserver(pageObserver)
-                self.pageObserver = nil
-            }
-        }
-
-        func updatePageInfo(from pdfView: PDFView) {
-            guard let document = pdfView.document else {
-                totalPages = 0
-                return
-            }
-
-            totalPages = document.pageCount
-            if let page = pdfView.currentPage {
-                currentPage = document.index(for: page) + 1
+    var body: some View {
+        VStack(spacing: 8) {
+            if pageImages.isEmpty {
+                ProgressView()
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 120)
             } else {
-                currentPage = min(currentPage, max(totalPages, 1))
+                ForEach(Array(pageImages.enumerated()), id: \.offset) { index, image in
+                    Image(uiImage: image)
+                        .resizable()
+                        .interpolation(.high)
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity)
+                        .background(Color.white)
+                        .background {
+                            GeometryReader { geometry in
+                                let frame = geometry.frame(in: .global)
+                                let visible = frame.intersection(UIScreen.main.bounds)
+                                let area = max(0, visible.width) * max(0, visible.height)
+                                Color.clear.preference(
+                                    key: PageVisibilityPreference.self,
+                                    value: [PageVisibilityEntry(pageIndex: index, visibleArea: area)]
+                                )
+                            }
+                        }
+                }
             }
         }
-    }
-}
-
-private final class FitWidthPDFView: PDFView {
-    private var lastFitWidth: CGFloat = 0
-
-    override var document: PDFDocument? {
-        didSet {
-            lastFitWidth = 0
+        .frame(maxWidth: .infinity)
+        .background {
+            GeometryReader { geometry in
+                Color.clear
+                    .onAppear {
+                        updateRenderWidth(geometry.size.width)
+                    }
+                    .onChange(of: geometry.size.width) { _, newWidth in
+                        updateRenderWidth(newWidth)
+                    }
+            }
+        }
+        .onPreferenceChange(PageVisibilityPreference.self) { entries in
+            guard let best = entries.max(by: { $0.visibleArea < $1.visibleArea }),
+                  best.visibleArea > 1 else { return }
+            currentPage = best.pageIndex + 1
+        }
+        .task(id: "\(url.absoluteString)-\(renderWidth)") {
+            await loadPages()
         }
     }
 
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        fitToScreenWidth()
+    private func updateRenderWidth(_ width: CGFloat) {
+        guard width > 0, abs(width - renderWidth) > 0.5 else { return }
+        renderWidth = width
     }
 
-    func fitToScreenWidth() {
-        guard bounds.width > 0, document != nil else { return }
+    @MainActor
+    private func loadPages() async {
+        guard renderWidth > 0 else { return }
 
-        let fitScale = scaleFactorForSizeToFit
-        guard fitScale > 0 else { return }
-
-        minScaleFactor = fitScale
-        maxScaleFactor = max(fitScale * 4, fitScale)
-
-        let widthChanged = abs(bounds.width - lastFitWidth) > 0.5
-        if widthChanged || scaleFactor > fitScale * 1.01 {
-            scaleFactor = fitScale
-            lastFitWidth = bounds.width
+        let document: PDFDocument?
+        if let data = try? Data(contentsOf: url) {
+            document = PDFDocument(data: data)
+        } else {
+            document = PDFDocument(url: url)
         }
 
-        configureScrollViews(in: self)
-    }
+        guard let document, document.pageCount > 0 else {
+            loadFailed = true
+            pageImages = []
+            totalPages = 0
+            return
+        }
 
-    private func configureScrollViews(in view: UIView) {
-        if let scrollView = view as? UIScrollView {
-            scrollView.alwaysBounceHorizontal = false
-            scrollView.showsHorizontalScrollIndicator = false
-            scrollView.isDirectionalLockEnabled = true
+        var images: [UIImage] = []
+        images.reserveCapacity(document.pageCount)
+
+        for index in 0..<document.pageCount {
+            guard let page = document.page(at: index),
+                  let image = PDFPageImageRenderer.render(page: page, targetWidth: renderWidth) else {
+                continue
+            }
+            images.append(image)
         }
-        for subview in view.subviews {
-            configureScrollViews(in: subview)
+
+        guard !images.isEmpty else {
+            loadFailed = true
+            pageImages = []
+            totalPages = 0
+            return
         }
+
+        pageImages = images
+        totalPages = images.count
+        currentPage = 1
+        loadFailed = false
     }
 }
 
