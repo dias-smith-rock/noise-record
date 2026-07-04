@@ -179,7 +179,7 @@ struct SleepReportView: View {
 
     @ViewBuilder
     private func actionButtons(_ session: SleepNoiseSession) -> some View {
-        VStack(spacing: 12) {
+        HStack(spacing: 8) {
             if showsHistoryButton {
                 themedActionButton(
                     title: L10n.sleepReportViewHistory,
@@ -282,17 +282,25 @@ struct SleepReportView: View {
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            Label(title, systemImage: systemImage)
-                .font(.headline)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .foregroundStyle(theme.accent)
-                .background(theme.cardTint)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .strokeBorder(theme.surfaceBorder, lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+            VStack(spacing: 6) {
+                Image(systemName: systemImage)
+                    .font(.body.weight(.semibold))
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .padding(.horizontal, 4)
+            .foregroundStyle(theme.accent)
+            .background(theme.cardTint)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(theme.surfaceBorder, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
     }
