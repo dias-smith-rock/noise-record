@@ -342,8 +342,10 @@ struct PaywallView: View {
     }
 
     private func closePaywall(purchased: Bool) {
-        paywallPresenter.resolve(purchased: purchased)
         dismiss()
+        Task { @MainActor in
+            paywallPresenter.resolve(purchased: purchased)
+        }
     }
 
     private func purchaseSelectedTier() async {

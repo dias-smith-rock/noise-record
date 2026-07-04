@@ -99,8 +99,62 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
     private let timelineSampleInterval: TimeInterval = 0.1
     private let timelineLock = NSLock()
     private let fileQueue = DispatchQueue(label: "com.noiseapp.recording.file")
+    private let appStateLock = NSLock()
+    private var isAppInBackground = false
+    private var lifecycleObservers: [NSObjectProtocol] = []
 
     var onRecordingFinished: ((RecordingFinishedEvent) -> Void)?
+
+    init() {
+        refreshCachedAppBackgroundState()
+        let center = NotificationCenter.default
+        lifecycleObservers = [
+            center.addObserver(
+                forName: UIApplication.didEnterBackgroundNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.setCachedAppInBackground(true)
+            },
+            center.addObserver(
+                forName: UIApplication.willEnterForegroundNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.setCachedAppInBackground(false)
+            },
+        ]
+    }
+
+    deinit {
+        for observer in lifecycleObservers {
+            NotificationCenter.default.removeObserver(observer)
+        }
+    }
+
+    private func setCachedAppInBackground(_ value: Bool) {
+        appStateLock.lock()
+        isAppInBackground = value
+        appStateLock.unlock()
+    }
+
+    private func cachedIsAppInBackground() -> Bool {
+        appStateLock.lock()
+        defer { appStateLock.unlock() }
+        return isAppInBackground
+    }
+
+    private func refreshCachedAppBackgroundState() {
+        let inBackground: Bool
+        if Thread.isMainThread {
+            inBackground = UIApplication.shared.applicationState == .background
+        } else {
+            inBackground = DispatchQueue.main.sync {
+                UIApplication.shared.applicationState == .background
+            }
+        }
+        setCachedAppInBackground(inBackground)
+    }
 
     func configure(sampleRate: Double) {
         let capacity = Int(sampleRate * preBufferDuration)
@@ -246,10 +300,11 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
         sessionFormat = format
 
         var shouldWrite = false
+        let logBackgroundRecordingStart = cachedIsAppInBackground()
         fileQueue.sync {
             guard isSessionActive, !isWritingPaused else { return }
             if sessionAudioFile == nil {
-                if UIApplication.shared.applicationState == .background {
+                if logBackgroundRecordingStart {
                     AppTelemetry.logBackgroundRecordingStart(peakDB: dbSPL)
                 }
                 try? openSessionFileLocked(format: format)
@@ -335,7 +390,7 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
 
     private func startVADRecording(format: AVAudioFormat, currentDB: Float) {
         guard let ringBuffer else { return }
-        if UIApplication.shared.applicationState == .background {
+        if cachedIsAppInBackground() {
             AppTelemetry.logBackgroundRecordingStart(peakDB: currentDB)
         }
 

@@ -49,6 +49,7 @@ struct ContentView: View {
         .preferredColorScheme(appearance.colorSchemePreference.colorScheme)
         .onAppear {
             LaunchPerformance.mark(.launchContentViewAppear)
+            LaunchPerformance.mark(.launchFirstInteractive)
             sleepCoordinator.configure(engine: engine, modelContext: modelContext)
             refreshUnreadBadge()
             engine.onRecordingFinished = { event in

@@ -23,7 +23,7 @@ private struct LaunchPaywallPromoModifier: ViewModifier {
         guard AdSceneLifecycle.consumeLaunchRemoveAdsPromoPresentation() else { return }
         PaywallPresenter.shared.present(context: .launch) { purchased in
             AdSceneLifecycle.handleLaunchRemoveAdsPromoDismissed(purchased: purchased)
-            AdSceneLifecycle.scheduleLaunchAutoStartMonitoring()
+            AdSceneLifecycle.scheduleLaunchAutoStartMonitoringAfterPaywallDismiss()
         }
     }
 }

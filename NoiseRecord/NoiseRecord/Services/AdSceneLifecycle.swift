@@ -127,6 +127,14 @@ enum AdSceneLifecycle {
         }
     }
 
+    /// Paywall Sheet 关闭动画结束后再自动开监测，避免与 dismiss 争抢主线程。
+    static func scheduleLaunchAutoStartMonitoringAfterPaywallDismiss() {
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(450))
+            requestLaunchAutoStartMonitoring()
+        }
+    }
+
     /// 免广告购买 Sheet 关闭后：已购买则结束；未购买则立即尝试展示冷启动开屏广告。
     static func handleLaunchRemoveAdsPromoDismissed(purchased: Bool) {
         AppTelemetry.logAdLifecycle(
