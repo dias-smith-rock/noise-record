@@ -26,7 +26,6 @@ struct DashboardView: View {
     @State private var hasScheduledLocationPermissionPrompt = false
     @State private var waveformReferenceLimitDB = NoiseReferenceLimits.residentialNightDB
     @State private var latestCompletedSessionID: UUID?
-    @State private var showsSleepHistory = false
 
     private var measurementMode: AcousticMeasurementMode {
         AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
@@ -42,14 +41,16 @@ struct DashboardView: View {
         VStack(spacing: 0) {
             ProTabHeader(title: L10n.dashboardTitle, theme: theme) {
                 SleepMonitorHeaderMenu(
-                    coordinator: sleepCoordinator,
-                    engine: engine,
-                    audioStateManager: audioStateManager,
-                    theme: theme,
+                    isSleepMonitoring: sleepCoordinator.isSleepMonitoring,
+                    isGeneralMonitoringActive: engine.isMonitoring && !sleepCoordinator.isSleepMonitoring,
+                    sleepMonitoringStartedAt: sleepCoordinator.activeSession?.startedAt,
                     latestCompletedSessionID: latestCompletedSessionID,
+                    measurementMode: measurementMode,
                     onViewLatestReport: openLatestMorningReport,
-                    onViewHistory: openSleepHistory
+                    onViewHistory: openSleepHistory,
+                    onStartSleepMonitoring: startSleepMonitoringFromHeader
                 )
+                .equatable()
             }
 
             ScrollView {
@@ -164,20 +165,6 @@ struct DashboardView: View {
         }
         .sheet(isPresented: $showLocationAccessGuide) {
             LocationAccessGuideSheet()
-        }
-        .sheet(isPresented: $showsSleepHistory) {
-            NavigationStack {
-                SleepHistoryView(measurementMode: measurementMode)
-                    .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            Button(L10n.close) {
-                                showsSleepHistory = false
-                            }
-                            .foregroundStyle(theme.accent)
-                        }
-                    }
-            }
-            .tint(theme.accent)
         }
         .alert(L10n.errorTitle, isPresented: Binding(
             get: { csvExportErrorMessage != nil },
@@ -397,9 +384,16 @@ struct DashboardView: View {
 
     private func openSleepHistory() {
         if SubscriptionManager.shared.canAccessSleepHistory {
-            showsSleepHistory = true
+            sleepCoordinator.presentHistory()
         } else {
             PaywallPresenter.shared.present(context: .sleepHistory)
+        }
+    }
+
+    private func startSleepMonitoringFromHeader() async {
+        let started = await sleepCoordinator.startSession(isHighSensitivity: engine.isHighSensitivityMode)
+        if started {
+            audioStateManager.noteMonitoringStarted()
         }
     }
 

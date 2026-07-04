@@ -7,6 +7,7 @@ final class SleepNoiseMonitorCoordinator {
     private(set) var activeSession: SleepNoiseSession?
     private(set) var latestReportSessionID: UUID?
     private(set) var showReportSheet = false
+    private(set) var showHistorySheet = false
     private(set) var isSleepReportFlowActive = false
     private(set) var liveAnomalyCount = 0
     private(set) var liveNoiseFloor: Float?
@@ -251,6 +252,10 @@ final class SleepNoiseMonitorCoordinator {
         showReportSheet = true
     }
 
+    func presentHistory() {
+        showHistorySheet = true
+    }
+
     func presentPendingReportIfNeeded() {
         guard let pending = SleepMonitorSettingsStore.pendingReportSessionID else { return }
         presentReport(sessionID: pending)
@@ -259,6 +264,10 @@ final class SleepNoiseMonitorCoordinator {
     func dismissReportSheet() {
         showReportSheet = false
         isSleepReportFlowActive = false
+    }
+
+    func dismissHistorySheet() {
+        showHistorySheet = false
     }
 
     private func restorePendingReportIfNeeded() {

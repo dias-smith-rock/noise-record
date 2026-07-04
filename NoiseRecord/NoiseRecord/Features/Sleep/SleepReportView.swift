@@ -6,6 +6,7 @@ import UIKit
 struct SleepReportView: View {
     let sessionID: UUID
     var showsHistoryButton: Bool = true
+    var themeMeasurementMode: AcousticMeasurementMode? = nil
     var onDismiss: () -> Void
 
     @Environment(\.modelContext) private var modelContext
@@ -31,7 +32,7 @@ struct SleepReportView: View {
     }
 
     private var theme: ModeVisualTheme {
-        .theme(for: measurementMode)
+        .theme(for: themeMeasurementMode ?? measurementMode)
     }
 
     var body: some View {
@@ -55,7 +56,7 @@ struct SleepReportView: View {
                         .frame(maxWidth: .infinity, minHeight: 200)
                 }
             }
-            .background(Color(.systemGroupedBackground))
+            .scrollContentBackground(.hidden)
             .navigationTitle(L10n.sleepReportTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -97,6 +98,8 @@ struct SleepReportView: View {
                 }
             }
         }
+        .proTabBackground(theme: theme)
+        .preferredColorScheme(appearance.colorSchemePreference.colorScheme)
         .tint(theme.accent)
         .observesAppLanguage()
         .paywallPresenter()
@@ -144,8 +147,10 @@ struct SleepReportView: View {
     private func anomaliesSection(_ session: SleepNoiseSession) -> some View {
         if !session.anomalies.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
-                Text(L10n.sleepReportAnomaliesTitle)
-                    .font(.headline)
+                ProSectionHeader(
+                    title: L10n.sleepReportAnomaliesTitle,
+                    theme: theme
+                )
                 ForEach(session.anomalies.sorted(by: { $0.timestamp < $1.timestamp }), id: \.id) { anomaly in
                     anomalyRow(anomaly)
                 }
@@ -221,7 +226,7 @@ struct SleepReportView: View {
                 HStack {
                     Text(embeddedPDFFormat.title)
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(theme.accent.opacity(0.85))
                         .lineLimit(2)
                     Spacer()
                     if embeddedPDFURL != nil, !embeddedPDFLoadFailed {
@@ -258,7 +263,7 @@ struct SleepReportView: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
-                .background(Color(.systemBackground))
+                .background(theme.cardTint)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)

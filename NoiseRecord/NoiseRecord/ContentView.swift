@@ -115,11 +115,22 @@ struct ContentView: View {
             set: { if !$0 { sleepCoordinator.dismissReportSheet() } }
         )) {
             if let sessionID = sleepCoordinator.latestReportSessionID {
-                SleepReportView(sessionID: sessionID) {
+                SleepReportView(
+                    sessionID: sessionID,
+                    themeMeasurementMode: AcousticMeasurementMode(
+                        isHighSensitivity: engine.isHighSensitivityMode
+                    )
+                ) {
                     sleepCoordinator.markReportRead(for: sessionID)
                     sleepCoordinator.dismissReportSheet()
                 }
             }
+        }
+        .sheet(isPresented: Binding(
+            get: { sleepCoordinator.showHistorySheet },
+            set: { if !$0 { sleepCoordinator.dismissHistorySheet() } }
+        )) {
+            sleepHistorySheet
         }
         .task(id: engine.isMonitoring) {
             guard engine.isMonitoring else {
@@ -410,6 +421,23 @@ struct ContentView: View {
 
     private func evaluateAppReviewPromptIfNeeded() {
         AppReviewStore.evaluatePromptIfEligible(isBusy: isAppReviewPromptBusy)
+    }
+
+    private var sleepHistorySheet: some View {
+        let mode = AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
+        let theme = ModeVisualTheme.theme(for: mode)
+        return NavigationStack {
+            SleepHistoryView(measurementMode: mode)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button(L10n.close) {
+                            sleepCoordinator.dismissHistorySheet()
+                        }
+                        .foregroundStyle(theme.accent)
+                    }
+                }
+        }
+        .tint(theme.accent)
     }
 
     private var isAppReviewPromptBusy: Bool {

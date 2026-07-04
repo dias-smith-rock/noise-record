@@ -1,66 +1,112 @@
 import SwiftUI
 
-struct SleepMonitorHeaderMenu: View {
-    @Bindable var coordinator: SleepNoiseMonitorCoordinator
-    @Bindable var engine: NoiseMonitorEngine
-    @Bindable var audioStateManager: AudioStateManager
-    var theme: ModeVisualTheme
-    var latestCompletedSessionID: UUID?
-    var onViewLatestReport: () -> Void
-    var onViewHistory: () -> Void
-    @State private var isStarting = false
-    @State private var showsMonitoringBlockedAlert = false
+struct SleepMonitorHeaderMenu: View, Equatable {
+    let isSleepMonitoring: Bool
+    let isGeneralMonitoringActive: Bool
+    let sleepMonitoringStartedAt: Date?
+    let latestCompletedSessionID: UUID?
+    let measurementMode: AcousticMeasurementMode
+    let onViewLatestReport: () -> Void
+    let onViewHistory: () -> Void
+    let onStartSleepMonitoring: () async -> Void
 
-    private var isGeneralMonitoringActive: Bool {
-        engine.isMonitoring && !coordinator.isSleepMonitoring
+    @State private var isStarting = false
+    @State private var pendingNavigation: PendingNavigation?
+
+    private enum PendingNavigation: Equatable {
+        case latestReport
+        case history
+    }
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.isSleepMonitoring == rhs.isSleepMonitoring
+            && lhs.isGeneralMonitoringActive == rhs.isGeneralMonitoringActive
+            && lhs.sleepMonitoringStartedAt == rhs.sleepMonitoringStartedAt
+            && lhs.latestCompletedSessionID == rhs.latestCompletedSessionID
+            && lhs.measurementMode == rhs.measurementMode
+    }
+
+    private var theme: ModeVisualTheme {
+        .theme(for: measurementMode)
     }
 
     var body: some View {
         HStack(spacing: 8) {
-            if coordinator.isSleepMonitoring {
-                TimelineView(.periodic(from: .now, by: 1)) { _ in
-                    sleepCapsule(title: elapsedText, systemImage: "moon.stars.fill", prominent: true)
+            if isSleepMonitoring {
+                Menu {
+                    sleepHistoryAndReportMenuItems(includeStart: false)
+                } label: {
+                    TimelineView(.periodic(from: .now, by: 1)) { _ in
+                        sleepCapsule(title: elapsedText, systemImage: "moon.stars.fill", prominent: true)
+                    }
                 }
-            }
-
-            if isGeneralMonitoringActive {
-                Button {
-                    showsMonitoringBlockedAlert = true
+            } else if isGeneralMonitoringActive {
+                Menu {
+                    sleepHistoryAndReportMenuItems(includeStart: false)
                 } label: {
                     moonIconLabel
                 }
-                .buttonStyle(.plain)
-                .alert(L10n.sleepMenuMonitoringBlocked, isPresented: $showsMonitoringBlockedAlert) {
-                    Button(L10n.ok, role: .cancel) {}
-                }
             } else {
                 ProTabHeaderIconButton(systemImage: "moon.zzz.fill", theme: theme) {
-                    if !coordinator.isSleepMonitoring {
-                        Button {
-                            Task { await startSleepMonitoring() }
-                        } label: {
-                            Label(L10n.sleepMenuStart, systemImage: "bed.double.fill")
-                        }
-                        .disabled(isStarting)
-                    }
-
-                    if latestCompletedSessionID == nil {
-                        Button {} label: {
-                            Label(L10n.sleepMenuNoReport, systemImage: "doc.text.fill")
-                        }
-                        .disabled(true)
-                    } else {
-                        Button(action: onViewLatestReport) {
-                            Label(L10n.sleepMenuLatestReport, systemImage: "doc.text.fill")
-                        }
-                    }
-
-                    Button(action: onViewHistory) {
-                        Label(L10n.sleepMenuHistory, systemImage: "chart.line.uptrend.xyaxis")
-                    }
+                    sleepHistoryAndReportMenuItems(includeStart: true)
                 }
-                .disabled(isStarting && !coordinator.isSleepMonitoring)
+                .disabled(isStarting)
             }
+        }
+        .onChange(of: pendingNavigation) { _, action in
+            guard let action else { return }
+            pendingNavigation = nil
+            Task { @MainActor in
+                switch action {
+                case .latestReport:
+                    onViewLatestReport()
+                case .history:
+                    onViewHistory()
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func sleepHistoryAndReportMenuItems(includeStart: Bool) -> some View {
+        if includeStart {
+            Button {
+                Task { await startSleepMonitoring() }
+            } label: {
+                sleepMenuLabel(L10n.sleepMenuStart, systemImage: "bed.double.fill")
+            }
+            .disabled(isStarting)
+        }
+
+        if latestCompletedSessionID == nil {
+            Button {} label: {
+                sleepMenuLabel(L10n.sleepMenuNoReport, systemImage: "doc.text.fill")
+            }
+            .disabled(true)
+        } else {
+            Button {
+                pendingNavigation = .latestReport
+            } label: {
+                sleepMenuLabel(L10n.sleepMenuLatestReport, systemImage: "doc.text.fill")
+            }
+        }
+
+        Button {
+            pendingNavigation = .history
+        } label: {
+            sleepMenuLabel(L10n.sleepMenuHistory, systemImage: "chart.line.uptrend.xyaxis")
+        }
+    }
+
+    private func sleepMenuLabel(_ title: String, systemImage: String) -> some View {
+        Label {
+            Text(title)
+                .font(.caption)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+        } icon: {
+            Image(systemName: systemImage)
+                .font(.caption.weight(.semibold))
         }
     }
 
@@ -71,11 +117,12 @@ struct SleepMonitorHeaderMenu: View {
             .frame(width: 36, height: 36)
             .background(theme.badgeBackground)
             .clipShape(Circle())
+            .contentShape(Circle())
     }
 
     private var elapsedText: String {
-        guard let started = coordinator.activeSession?.startedAt else { return "—" }
-        return DurationFormatting.hms(from: Date().timeIntervalSince(started))
+        guard let sleepMonitoringStartedAt else { return "—" }
+        return DurationFormatting.hms(from: Date().timeIntervalSince(sleepMonitoringStartedAt))
     }
 
     private func sleepCapsule(title: String, systemImage: String, prominent: Bool) -> some View {
@@ -95,9 +142,6 @@ struct SleepMonitorHeaderMenu: View {
     private func startSleepMonitoring() async {
         isStarting = true
         defer { isStarting = false }
-        let started = await coordinator.startSession(isHighSensitivity: engine.isHighSensitivityMode)
-        if started {
-            audioStateManager.noteMonitoringStarted()
-        }
+        await onStartSleepMonitoring()
     }
 }

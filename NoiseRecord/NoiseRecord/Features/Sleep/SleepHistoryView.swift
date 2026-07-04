@@ -147,7 +147,7 @@ struct SleepHistoryView: View {
         LazyVStack(spacing: 12) {
             ForEach(sessions, id: \.id) { session in
                 NavigationLink {
-                    SleepReportDetailView(sessionID: session.id)
+                    SleepReportDetailView(sessionID: session.id, measurementMode: measurementMode)
                 } label: {
                     historyCard(session)
                 }
@@ -289,12 +289,14 @@ private struct HistorySummary {
 
 private struct SleepReportDetailView: View {
     let sessionID: UUID
+    let measurementMode: AcousticMeasurementMode
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         SleepReportView(
             sessionID: sessionID,
             showsHistoryButton: false,
+            themeMeasurementMode: measurementMode,
             onDismiss: { dismiss() }
         )
     }
