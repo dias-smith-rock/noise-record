@@ -390,15 +390,15 @@ struct SpectrumChartView: View, Equatable {
 
     private static func formatGridFrequency(_ hz: Double) -> String {
         switch hz {
-        case 1_000...: return String(format: "%.0fK", hz / 1000)
-        default: return String(format: "%.0f Hz", hz)
+        case 1_000...: return String(format: "%.0fk Hz", hz / 1000)
+        default: return String(format: "%.0fHz", hz)
         }
     }
 
     private static func formatPeakFrequency(_ hz: Double) -> String {
         guard hz.isFinite, hz >= SpectrumDSPGuards.minimumPlotFrequency else { return "" }
-        if hz >= 10_000 { return String(format: "%.0f Hz", hz) }
-        if hz >= 1_000 { return String(format: "%.1f kHz", hz / 1000) }
-        return String(format: "%.0f Hz", hz)
+        if hz >= 10_000 { return String(format: "%.0fk Hz", hz / 1000) }
+        if hz >= 1_000 { return String(format: "%.1fk Hz", hz / 1000) }
+        return String(format: "%.0fHz", hz)
     }
 }
