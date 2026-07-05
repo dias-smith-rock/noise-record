@@ -20,7 +20,7 @@ struct SleepReportView: View {
     @State private var embeddedPDFLoadFailed = false
     @State private var embeddedPDFCurrentPage = 1
     @State private var embeddedPDFTotalPages = 0
-    @State private var embeddedPDFFormat: SleepForensicReportFormat = .nighttimeEnvironmental
+    @State private var embeddedPDFFormat: SleepForensicReportFormat = .legacyOvernight
     @State private var showPDFShareSheet = false
 
     private var measurementMode: AcousticMeasurementMode {

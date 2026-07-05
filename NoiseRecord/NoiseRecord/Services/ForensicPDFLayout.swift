@@ -3,6 +3,11 @@ import Foundation
 import UIKit
 
 enum ForensicPDFLayout {
+    enum FooterStyle {
+        case standardDisclaimer
+        case overnightReport(documentRef: String)
+    }
+
     enum Constants {
         static let pageSize = CGSize(width: 612, height: 792)
         static let margin: CGFloat = 48
@@ -15,7 +20,7 @@ enum ForensicPDFLayout {
         static let secondaryText = UIColor.darkGray
         static let tertiaryText = UIColor.gray
         static let cardFill = UIColor(white: 0.94, alpha: 1)
-        static let border = UIColor(white: 0.78, alpha: 1)
+        static let border = UIColor.black
         static let chartLine = UIColor(red: 0.16, green: 0.52, blue: 0.68, alpha: 1)
         static let limitLine = UIColor.red
     }
@@ -24,9 +29,11 @@ enum ForensicPDFLayout {
         "Decibel Meter uses your iPhone microphone and is not a certified sound level meter. Readings are estimates for personal reference and evidence documentation only."
 
     private static var pageNumber = 0
+    private static var footerStyle: FooterStyle = .standardDisclaimer
 
-    static func resetPageNumber() {
+    static func resetPageNumber(footerStyle: FooterStyle = .standardDisclaimer) {
         pageNumber = 0
+        self.footerStyle = footerStyle
     }
 
     static func beginPage(_ context: UIGraphicsPDFRendererContext) -> CGFloat {
@@ -50,28 +57,6 @@ enum ForensicPDFLayout {
 
     static func drawFooter(context: UIGraphicsPDFRendererContext) {
         let footerY = Constants.pageSize.height - Constants.footerHeight
-        let attrs: [NSAttributedString.Key: Any] = [
-            .font: UIFont.systemFont(ofSize: 7),
-            .foregroundColor: Colors.secondaryText,
-        ]
-        let pageAttrs: [NSAttributedString.Key: Any] = [
-            .font: UIFont.systemFont(ofSize: 8, weight: .medium),
-            .foregroundColor: Colors.secondaryText,
-        ]
-
-        footerDisclaimer.draw(
-            in: CGRect(
-                x: Constants.margin,
-                y: footerY + 4,
-                width: Constants.contentWidth - 60,
-                height: Constants.footerHeight - 8
-            ),
-            withAttributes: attrs
-        )
-        "Page \(pageNumber)".draw(
-            in: CGRect(x: Constants.pageSize.width - Constants.margin - 40, y: footerY + 16, width: 40, height: 14),
-            withAttributes: pageAttrs
-        )
 
         Colors.border.setStroke()
         let line = UIBezierPath()
@@ -79,6 +64,48 @@ enum ForensicPDFLayout {
         line.addLine(to: CGPoint(x: Constants.pageSize.width - Constants.margin, y: footerY))
         line.lineWidth = 0.5
         line.stroke()
+
+        switch footerStyle {
+        case .standardDisclaimer:
+            let attrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 7),
+                .foregroundColor: Colors.secondaryText,
+            ]
+            let pageAttrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 8, weight: .medium),
+                .foregroundColor: Colors.secondaryText,
+            ]
+
+            footerDisclaimer.draw(
+                in: CGRect(
+                    x: Constants.margin,
+                    y: footerY + 4,
+                    width: Constants.contentWidth - 60,
+                    height: Constants.footerHeight - 8
+                ),
+                withAttributes: attrs
+            )
+            "Page \(pageNumber)".draw(
+                in: CGRect(x: Constants.pageSize.width - Constants.margin - 40, y: footerY + 16, width: 40, height: 14),
+                withAttributes: pageAttrs
+            )
+
+        case let .overnightReport(documentRef):
+            let footerText = "OVERNIGHT ACOUSTIC MONITORING REPORT - \(documentRef)"
+            let attrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 8, weight: .medium),
+                .foregroundColor: Colors.text,
+            ]
+            footerText.draw(
+                in: CGRect(
+                    x: Constants.margin,
+                    y: footerY + 18,
+                    width: Constants.contentWidth,
+                    height: Constants.footerHeight - 8
+                ),
+                withAttributes: attrs
+            )
+        }
     }
 
     static func drawSectionTitle(_ title: String, y: CGFloat) -> CGFloat {
@@ -193,6 +220,154 @@ enum ForensicPDFLayout {
             withAttributes: attrs
         )
         return y + height + 4
+    }
+
+    static func drawCenteredText(
+        _ text: String,
+        y: CGFloat,
+        font: UIFont,
+        color: UIColor = Colors.text
+    ) -> CGFloat {
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = .center
+        let attrs: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: color,
+            .paragraphStyle: paragraphStyle,
+        ]
+        let height = measuredHeight(text: text, width: Constants.contentWidth, attributes: attrs)
+        text.draw(
+            in: CGRect(x: Constants.margin, y: y, width: Constants.contentWidth, height: height + 2),
+            withAttributes: attrs
+        )
+        return y + height + 4
+    }
+
+    static func drawBulletedList(y: CGFloat, items: [String], fontSize: CGFloat = 9) -> CGFloat {
+        var cursor = y
+        let attrs: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: fontSize),
+            .foregroundColor: Colors.text,
+        ]
+        for item in items {
+            let bulletText = "• \(item)"
+            let height = measuredHeight(text: bulletText, width: Constants.contentWidth, attributes: attrs)
+            bulletText.draw(
+                in: CGRect(x: Constants.margin, y: cursor, width: Constants.contentWidth, height: height + 2),
+                withAttributes: attrs
+            )
+            cursor += height + 6
+        }
+        return cursor + 4
+    }
+
+    static func drawBorderedTable(
+        context: UIGraphicsPDFRendererContext,
+        y: CGFloat,
+        headers: [String],
+        rows: [[String]],
+        columnWidths: [CGFloat],
+        fontSize: CGFloat = 8,
+        padding: CGFloat = 4
+    ) -> CGFloat {
+        let headerAttrs: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: fontSize, weight: .bold),
+            .foregroundColor: Colors.text,
+        ]
+        let cellAttrs: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: fontSize),
+            .foregroundColor: Colors.text,
+        ]
+
+        func rowHeight(for values: [String], attributes: [NSAttributedString.Key: Any]) -> CGFloat {
+            var maxHeight: CGFloat = 0
+            for (index, value) in values.enumerated() {
+                let width = max(columnWidths[index] - padding * 2, 1)
+                let height = measuredHeight(text: value, width: width, attributes: attributes)
+                maxHeight = max(maxHeight, height)
+            }
+            return max(maxHeight + padding * 2, 16)
+        }
+
+        func drawRow(at rowY: CGFloat, values: [String], attributes: [NSAttributedString.Key: Any], height: CGFloat) {
+            var x = Constants.margin
+            for (index, value) in values.enumerated() {
+                let cellRect = CGRect(x: x, y: rowY, width: columnWidths[index], height: height)
+                strokeRect(cellRect)
+                value.draw(
+                    in: cellRect.insetBy(dx: padding, dy: padding),
+                    withAttributes: attributes
+                )
+                x += columnWidths[index]
+            }
+        }
+
+        var cursor = y
+        let headerHeight = rowHeight(for: headers, attributes: headerAttrs)
+        cursor = ensureSpace(context: context, y: cursor, required: headerHeight)
+        drawRow(at: cursor, values: headers, attributes: headerAttrs, height: headerHeight)
+        cursor += headerHeight
+
+        for row in rows {
+            let height = rowHeight(for: row, attributes: cellAttrs)
+            cursor = ensureSpace(context: context, y: cursor, required: height)
+            drawRow(at: cursor, values: row, attributes: cellAttrs, height: height)
+            cursor += height
+        }
+
+        return cursor + 8
+    }
+
+    static func drawOvernightIncidentLog(
+        context: UIGraphicsPDFRendererContext,
+        y: CGFloat,
+        incidents: [SleepForensicPDFExporter.IncidentRow]
+    ) -> CGFloat {
+        var cursor = drawBodyParagraphs(
+            y: y,
+            paragraphs: [
+                """
+                The following incidents were captured and processed via AI sound classification during the monitoring window.
+                """,
+            ],
+            fontSize: 9
+        )
+
+        guard !incidents.isEmpty else {
+            return drawText(
+                "No discrete acoustic events were logged during this session.",
+                y: cursor,
+                font: .systemFont(ofSize: 9),
+                color: Colors.secondaryText
+            ) + 8
+        }
+
+        let headers = ["Timestamp (Local)", "Peak Value (dB)", "Duration", "AI Classification & Acoustic Profile"]
+        let columnWidths: [CGFloat] = [84, 68, 44, Constants.contentWidth - 196]
+        let rows = incidents.map { incident in
+            [
+                formattedTime(incident.timestamp),
+                String(format: "%.1f dB", incident.peakDB),
+                String(format: "%.0fs", incident.durationSeconds),
+                incident.classification,
+            ]
+        }
+
+        return drawBorderedTable(
+            context: context,
+            y: cursor,
+            headers: headers,
+            rows: rows,
+            columnWidths: columnWidths,
+            fontSize: 7.5
+        )
+    }
+
+    private static func strokeRect(_ rect: CGRect) {
+        Colors.border.setStroke()
+        let path = UIBezierPath(rect: rect)
+        path.lineWidth = 0.5
+        path.stroke()
     }
 
     static func drawTrendChart(

@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import UIKit
 
@@ -72,18 +73,18 @@ enum SleepForensicPDFExporter {
             points: payload.chartPoints,
             limit: ForensicLimits.whoNighttimeLimitDB
         )
-        let whoExceedPercent = payload.session.overallLeq > 0
-            ? ((payload.session.overallLeq - ForensicLimits.whoIndoorRecommendationDB)
-                / ForensicLimits.whoIndoorRecommendationDB) * 100
-            : 0
 
         let data = renderer.pdfData { context in
-            ForensicPDFLayout.resetPageNumber()
+            let documentRef = documentRefID(for: payload.session)
+            ForensicPDFLayout.resetPageNumber(
+                footerStyle: .overnightReport(documentRef: documentRef)
+            )
             var cursorY = ForensicPDFLayout.beginPage(context)
 
-            cursorY = drawTitleBlock(y: cursorY, session: payload.session)
-            cursorY = ForensicPDFLayout.drawSectionTitle("1. METADATA & ENVIRONMENT PROFILE", y: cursorY)
+            cursorY = drawTitleBlock(y: cursorY, session: payload.session, payload: payload)
+            cursorY = ForensicPDFLayout.drawSectionTitle("1. FORENSIC METADATA & ENVIRONMENT PROFILE", y: cursorY)
             cursorY = drawMetadataTable(
+                context: context,
                 y: cursorY,
                 session: payload.session,
                 endedAt: endedAt,
@@ -93,55 +94,52 @@ enum SleepForensicPDFExporter {
 
             cursorY = ForensicPDFLayout.ensureSpace(context: context, y: cursorY, required: 180)
             cursorY = ForensicPDFLayout.drawSectionTitle("2. EXECUTIVE SUMMARY", y: cursorY)
-            cursorY = ForensicPDFLayout.drawBodyParagraphs(
+            cursorY = drawExecutiveSummary(
                 y: cursorY,
-                paragraphs: executiveSummaryParagraphs(
-                    session: payload.session,
-                    duration: duration,
-                    minDB: minDB,
-                    nuisanceDuration: nuisanceDuration,
-                    whoExceedPercent: whoExceedPercent
-                )
-            )
-
-            cursorY = ForensicPDFLayout.ensureSpace(context: context, y: cursorY, required: 320)
-            cursorY = ForensicPDFLayout.drawText(
-                "Overnight Level Trend",
-                y: cursorY,
-                font: .boldSystemFont(ofSize: 11)
-            )
-            cursorY += 8
-            cursorY = ForensicPDFLayout.drawTrendChart(
-                y: cursorY,
-                points: payload.chartPoints,
-                sessionStart: payload.session.startedAt,
-                sessionEnd: endedAt
+                session: payload.session,
+                duration: duration,
+                minDB: minDB,
+                incidentCount: payload.incidents.count
             )
 
             cursorY = ForensicPDFLayout.ensureSpace(context: context, y: cursorY, required: 120)
             cursorY = ForensicPDFLayout.drawSectionTitle("3. CHRONOLOGICAL INCIDENT LOG", y: cursorY)
-            cursorY = ForensicPDFLayout.drawIncidentLog(context: context, y: cursorY, incidents: payload.incidents)
+            cursorY = ForensicPDFLayout.drawOvernightIncidentLog(
+                context: context,
+                y: cursorY,
+                incidents: payload.incidents
+            )
 
             cursorY = ForensicPDFLayout.ensureSpace(context: context, y: cursorY, required: 140)
             cursorY = ForensicPDFLayout.drawSectionTitle("4. SPECTROGRAM FREQUENCY EVIDENCE", y: cursorY)
             cursorY = ForensicPDFLayout.drawBodyParagraphs(
                 y: cursorY,
-                paragraphs: [spectrogramNote(isHighSensitivity: payload.session.isHighSensitivitySession)]
+                paragraphs: [spectrogramNote(isHighSensitivity: payload.session.isHighSensitivitySession)],
+                fontSize: 9
             )
 
             cursorY = ForensicPDFLayout.ensureSpace(context: context, y: cursorY, required: 160)
-            cursorY = ForensicPDFLayout.drawSectionTitle("5. REGULATORY HEALTH ALIGNMENT", y: cursorY)
-            cursorY = ForensicPDFLayout.drawBodyParagraphs(
+            cursorY = ForensicPDFLayout.drawSectionTitle(
+                "5. REGULATORY HEALTH ASSESSMENT & COMPLIANCE STATEMENTS",
+                y: cursorY
+            )
+            cursorY = drawRegulatorySection(
                 y: cursorY,
-                paragraphs: regulatoryParagraphs(
-                    nuisanceDuration: nuisanceDuration,
-                    overallLeq: payload.session.overallLeq
-                )
+                nuisanceDuration: nuisanceDuration,
+                overallLeq: payload.session.overallLeq
             )
 
             cursorY = ForensicPDFLayout.ensureSpace(context: context, y: cursorY, required: 160)
             cursorY = ForensicPDFLayout.drawSectionTitle("6. PLAINTIFF ATTESTATION & DIGITAL SIGNATURE", y: cursorY)
-            _ = drawAttestationBlock(y: cursorY, endedAt: endedAt)
+            cursorY = drawAttestationBlock(y: cursorY, endedAt: endedAt)
+
+            cursorY = ForensicPDFLayout.ensureSpace(context: context, y: cursorY, required: 120)
+            cursorY = ForensicPDFLayout.drawSectionTitle("7. LEGAL DISCLAIMER", y: cursorY)
+            _ = ForensicPDFLayout.drawBodyParagraphs(
+                y: cursorY,
+                paragraphs: [legalDisclaimerParagraph],
+                fontSize: 8
+            )
         }
 
         do {
@@ -237,58 +235,124 @@ enum SleepForensicPDFExporter {
         return "\(day)-\(suffix)"
     }
 
-    // MARK: - Legacy content helpers
+    // MARK: - Layout helpers
 
     private static func drawTitleBlock(
         y: CGFloat,
-        session: SleepNoiseSessionSnapshot
+        session: SleepNoiseSessionSnapshot,
+        payload: ExportPayload
     ) -> CGFloat {
         var cursor = y
-        cursor = ForensicPDFLayout.drawText(
+        cursor = ForensicPDFLayout.drawCenteredText(
             "OVERNIGHT ACOUSTIC MONITORING REPORT",
             y: cursor,
-            font: .boldSystemFont(ofSize: 18)
+            font: .boldSystemFont(ofSize: 16)
         )
-        cursor += 8
+        cursor += 12
         cursor = ForensicPDFLayout.drawText(
-            "Document Ref ID: \(documentRefID(for: session))",
+            "Document Reference ID: \(documentRefID(for: session))",
             y: cursor,
-            font: .systemFont(ofSize: 10, weight: .semibold),
-            color: ForensicPDFLayout.Colors.secondaryText
-        )
-        cursor = ForensicPDFLayout.drawText(
-            "Generated Via: Decibel Meter Pro (Calibrated iOS Hardware Framework)",
-            y: cursor,
-            font: .systemFont(ofSize: 10),
-            color: ForensicPDFLayout.Colors.secondaryText
+            font: .systemFont(ofSize: 9, weight: .semibold)
         )
         cursor = ForensicPDFLayout.drawText(
-            "Data Integrity Status: Secured Local Storage (No Cloud Modification)",
+            "Data Collection Personnel: Automated Field Collection via Decibel Meter Pro, \(HardwareIdentifier.marketingName)",
             y: cursor,
-            font: .systemFont(ofSize: 10),
+            font: .systemFont(ofSize: 9)
+        )
+        cursor = ForensicPDFLayout.drawText(
+            "Data Integrity Hash: \(dataIntegrityHash(for: payload))",
+            y: cursor,
+            font: .systemFont(ofSize: 8),
             color: ForensicPDFLayout.Colors.secondaryText
         )
         return cursor + 16
     }
 
     private static func drawMetadataTable(
+        context: UIGraphicsPDFRendererContext,
         y: CGFloat,
         session: SleepNoiseSessionSnapshot,
         endedAt: Date,
         duration: TimeInterval,
         locationSummary: String?
     ) -> CGFloat {
-        let rows: [(String, String)] = [
-            (
-                "Monitoring Date & Window",
-                "\(ForensicPDFLayout.formattedDateTime(session.startedAt)) — \(ForensicPDFLayout.formattedDateTime(endedAt)) (\(ForensicPDFLayout.formattedDuration(duration)) Continuous)"
-            ),
-            ("Device Hardware", "\(HardwareIdentifier.marketingName) (Internal Omnidirectional Mic Array)"),
-            ("Acoustic Weighting Filter", weightingLabel(for: session)),
-            ("Geographic Location (GPS)", locationSummary ?? "Not captured during this session"),
-            ("Calibrated Noise Floor (Baseline)", String(format: "%.1f dB (Session-established baseline)", session.noiseFloorDB)),
+        let monitoringWindow = """
+        \(ForensicPDFLayout.formattedDateTime(session.startedAt)) — \(ForensicPDFLayout.formattedDateTime(endedAt)) (\(formattedHoursDuration(duration)) Continuous)
+        """
+        let rows = [
+            ["Monitoring Window", monitoringWindow],
+            ["Hardware Device", "\(HardwareIdentifier.marketingName), Internal Omni-Directional Microphone Array"],
+            ["Acoustic Weighting Filter", weightingLabel(for: session)],
+            ["Geographic Location / GPS", locationSummary ?? "Not captured during this session"],
+            ["Estimated Noise Floor", String(format: "%.1f dB (Ambient conditions)", session.noiseFloorDB)],
+            ["Weather", "Not recorded during this session"],
         ]
-        return ForensicPDFLayout.drawKeyValueTable(rows: rows, y: y)
+        return ForensicPDFLayout.drawBorderedTable(
+            context: context,
+            y: y,
+            headers: ["Metric / Parameter", "Report Forensic Data"],
+            rows: rows,
+            columnWidths: [168, ForensicPDFLayout.Constants.contentWidth - 168],
+            fontSize: 8
+        )
+    }
+
+    private static func drawExecutiveSummary(
+        y: CGFloat,
+        session: SleepNoiseSessionSnapshot,
+        duration: TimeInterval,
+        minDB: Float,
+        incidentCount: Int
+    ) -> CGFloat {
+        var cursor = ForensicPDFLayout.drawBodyParagraphs(
+            y: y,
+            paragraphs: [
+                """
+                During the \(ForensicPDFLayout.formattedDuration(duration)) designated quiet-hour monitoring window, the residential indoor environment was continuously evaluated against municipal nighttime noise standards and WHO community noise guidelines.
+                """,
+            ],
+            fontSize: 9
+        )
+        cursor = ForensicPDFLayout.drawBulletedList(
+            y: cursor,
+            items: [
+                "Average Noise Level (Leq): \(String(format: "%.1f", session.overallLeq)) dB (Target: <\(Int(ForensicLimits.whoNighttimeLimitDB)) dB Night)",
+                "Maximum Peak Level (Lpk): \(String(format: "%.1f", session.peakDB)) dB",
+                "Minimum Recorded Level (Lmin): \(String(format: "%.1f", minDB)) dB (Target: <35 dB)",
+                "Ambient Background Floor: \(String(format: "%.1f", session.noiseFloorDB)) dB",
+                "Total Acoustic Events: \(incidentCount) distinct incident\(incidentCount == 1 ? "" : "s") detected",
+            ],
+            fontSize: 9
+        )
+        return cursor
+    }
+
+    private static func drawRegulatorySection(
+        y: CGFloat,
+        nuisanceDuration: TimeInterval,
+        overallLeq: Float
+    ) -> CGFloat {
+        var cursor = ForensicPDFLayout.drawBodyParagraphs(
+            y: y,
+            paragraphs: [
+                """
+                The following assessment summarizes compliance with applicable local noise ordinances and WHO community noise health guidelines for residential nighttime environments.
+                """,
+            ],
+            fontSize: 9
+        )
+        let exceedsNightLimit = overallLeq > ForensicLimits.whoNighttimeLimitDB
+        let exceedsIndoor = overallLeq > ForensicLimits.whoIndoorRecommendationDB
+        cursor = ForensicPDFLayout.drawBulletedList(
+            y: cursor,
+            items: [
+                "a. Average equivalent sound level (Leq) of \(String(format: "%.1f", overallLeq)) dB \(exceedsNightLimit ? "exceeds" : "is within") the \(Int(ForensicLimits.whoNighttimeLimitDB)) dB nighttime residential limit for individual noise events.",
+                "b. Continuous bedroom background noise \(exceedsIndoor ? "exceeds" : "is within") the WHO recommended 30 dBA threshold for undisturbed sleep.",
+                "c. Cumulative nuisance duration above the \(Int(ForensicLimits.whoNighttimeLimitDB)) dB critical limit: \(ForensicPDFLayout.formattedDuration(nuisanceDuration)).",
+            ],
+            fontSize: 9
+        )
+        return cursor
     }
 
     private static func drawAttestationBlock(y: CGFloat, endedAt: Date) -> CGFloat {
@@ -298,66 +362,35 @@ enum SleepForensicPDFExporter {
                 """
                 I, the undersigned, hereby certify that the acoustic data, timestamps, and geographic coordinates enclosed in this report were recorded in real-time by the hardware device specified above. No external equalization, audio alteration, or file manipulation was performed.
                 """,
-            ]
+            ],
+            fontSize: 9
         )
         cursor += 12
-        cursor = ForensicPDFLayout.drawText("Signature: ___________________________", y: cursor, font: .systemFont(ofSize: 10))
+        cursor = ForensicPDFLayout.drawText("Signature: ___________________________", y: cursor, font: .systemFont(ofSize: 9))
         cursor = ForensicPDFLayout.drawText(
-            "Date: \(ForensicPDFLayout.formattedDate(endedAt))",
+            "Date of Signing: \(ForensicPDFLayout.formattedDate(endedAt))",
             y: cursor + 8,
-            font: .systemFont(ofSize: 10)
+            font: .systemFont(ofSize: 9)
         )
         return cursor + 12
     }
 
-    // MARK: - Content builders
+    private static let legalDisclaimerParagraph = """
+    This report is generated by Decibel Meter Pro using consumer iOS hardware and is not an ANSI Type 1 certified sound level measurement. Readings are estimates intended for personal reference, evidence documentation, and complaint support only. The publisher assumes no liability for legal, medical, or regulatory decisions made on the basis of this document. Partial reproduction without written authorization is prohibited.
+    """
 
-    private static func executiveSummaryParagraphs(
-        session: SleepNoiseSessionSnapshot,
-        duration: TimeInterval,
-        minDB: Float,
-        nuisanceDuration: TimeInterval,
-        whoExceedPercent: Float
-    ) -> [String] {
-        [
-            """
-            During the \(ForensicPDFLayout.formattedDuration(duration)) designated quiet hour window, the monitored residential indoor environment experienced persistent acoustic activity that was evaluated against standard municipal residential health codes.
-            """,
-            """
-            Average Sound Level (Leq): \(String(format: "%.1f", session.overallLeq)) dB (Exceeds WHO night-time indoor recommendation of \(Int(ForensicLimits.whoIndoorRecommendationDB)) dB by \(String(format: "%.1f", max(whoExceedPercent, 0)))%)
-            Maximum Recorded Spike (Lmax): \(String(format: "%.1f", session.peakDB)) dB
-            Minimum Background Floor (Lmin): \(String(format: "%.1f", minDB)) dB
-            Total Nuisance Duration: \(ForensicPDFLayout.formattedDuration(nuisanceDuration)) (Cumulative time spent above the \(Int(ForensicLimits.whoNighttimeLimitDB)) dB critical limit)
-            """,
-        ]
-    }
+    // MARK: - Content builders
 
     private static func spectrogramNote(isHighSensitivity: Bool) -> String {
         if isHighSensitivity {
             """
-            🔬 Acoustic Expert Note: While standard dBA meters deliberately suppress low frequencies, the dBZ High-Sensitivity scanner captured elevated energy in the sub-100 Hz band during major infractions in this session. This indicates structure-borne transmission through floors and walls, consistent with physiological sleep disruption.
+            Acoustic visual data from the High-Sensitivity (dBZ) scanner confirms elevated energy in the sub-100 Hz band during major infractions in this session. This pattern is consistent with structure-borne transmission through floors and walls, including HVAC compressor hum and low-frequency mechanical vibration.
             """
         } else {
             """
-            🔬 Acoustic Expert Note: Standard dBA weighting was used for this session. For structure-borne or low-frequency nuisance documentation, repeat monitoring in High Sensitivity (dBZ / dBC) mode to capture sub-100 Hz energy.
+            Standard dBA weighting was applied for this session. Acoustic frequency analysis indicates transient and sustained events across the audible spectrum. For structure-borne or low-frequency nuisance documentation, repeat monitoring in High Sensitivity mode to capture sub-100 Hz energy patterns.
             """
         }
-    }
-
-    private static func regulatoryParagraphs(
-        nuisanceDuration: TimeInterval,
-        overallLeq: Float
-    ) -> [String] {
-        [
-            """
-            According to the World Health Organization (WHO) Guidelines for Community Noise:
-            • To ensure undisturbed sleep, continuous background noise in a bedroom should not exceed 30 dBA.
-            • Individual noise events should not exceed 45 dBA.
-            """,
-            """
-            Result: This overnight acoustic log shows \(overallLeq > ForensicLimits.whoIndoorRecommendationDB ? "a" : "no") material deviation from these medical guidelines, with \(ForensicPDFLayout.formattedDuration(nuisanceDuration)) cumulatively above the \(Int(ForensicLimits.whoNighttimeLimitDB)) dB critical limit.
-            """,
-        ]
     }
 
     private static func incidentClassification(
@@ -365,30 +398,52 @@ enum SleepForensicPDFExporter {
         linkedRecording: RecordingEvidenceSnapshot?
     ) -> String {
         if let noiseType = linkedRecording?.noiseType, !noiseType.isEmpty {
-            return "\(noiseType) (linked local evidence clip)"
+            return "\(noiseType). Route: Air-borne / structure-borne acoustic transmission detected during monitoring window."
         }
         switch anomaly.impactHint {
         case .deepSleep:
-            return "Impact event during deep-sleep window"
+            return "Impact / Transient Sound Event. Pulse recorded during deep-sleep window; likely structure-borne transmission."
         case .lightSleep, .none:
-            return "Transient acoustic intrusion"
+            return "Transient Acoustic Intrusion. Sustained or impulsive event detected via AI sound classification."
         }
     }
 
     // MARK: - Utilities
 
     private static func documentRefID(for session: SleepNoiseSessionSnapshot) -> String {
-        "DECIBEL-LOG-\(documentRefSuffix(for: session))"
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MMdd"
+        let day = formatter.string(from: session.startedAt)
+        let suffix = session.id.uuidString.prefix(4).uppercased()
+        return "DECIBEL-\(day)-\(suffix)"
+    }
+
+    private static func dataIntegrityHash(for payload: ExportPayload) -> String {
+        let material = """
+        \(payload.session.id.uuidString)\
+        \(payload.session.startedAt.timeIntervalSince1970)\
+        \(payload.session.endedAt?.timeIntervalSince1970 ?? 0)\
+        \(payload.sampleSnapshots.count)\
+        \(payload.incidents.count)
+        """
+        let digest = SHA256.hash(data: Data(material.utf8))
+        return digest.map { String(format: "%02x", $0) }.joined()
+    }
+
+    private static func formattedHoursDuration(_ interval: TimeInterval) -> String {
+        let hours = max(1, Int((interval / 3600).rounded()))
+        return hours == 1 ? "1 hour" : "\(hours) hours"
     }
 
     private static func weightingLabel(for session: SleepNoiseSessionSnapshot) -> String {
         if session.isHighSensitivitySession {
-            return "dBZ (Zero-Weighted / Full-Band High Sensitivity Mode)"
+            return "dBZ (Zero-Weighted), Fast / High Sensitivity Mode"
         }
         if session.weightingMode == WeightingType.c.rawValue {
-            return "dBC (C-Weighted Standard Mode)"
+            return "dBC (C-Weighted), Fast / Standard Mode"
         }
-        return "dBA (A-Weighted Standard Mode)"
+        return "dBA (A-Weighted), Fast / Standard Mode"
     }
 
     private static func formattedLocation(from recordings: [RecordingSession]) -> String? {
