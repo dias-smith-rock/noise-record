@@ -69,6 +69,7 @@ struct ContentView: View {
                 TabBarAppearanceUpdater.cacheTabBarController(from: root)
             }
             TabBarAppearanceUpdater.applyTabTitles()
+            Task { await SleepNotificationScheduler.scheduleDailyReminders() }
         }
         .onChange(of: selectedTab) { _, tab in
             AppTelemetry.logProductEvent(

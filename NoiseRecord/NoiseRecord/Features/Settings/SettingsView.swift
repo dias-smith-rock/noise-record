@@ -173,7 +173,7 @@ struct SettingsView: View {
                     get: { SleepMonitorSettingsStore.notificationsEnabled },
                     set: { newValue in
                         SleepMonitorSettingsStore.notificationsEnabled = newValue
-                        Task { await SleepNotificationScheduler.scheduleDailyWakeReminder() }
+                        Task { await SleepNotificationScheduler.scheduleDailyReminders() }
                     }
                 ))
 
@@ -487,6 +487,6 @@ struct SettingsView: View {
         let components = Calendar.current.dateComponents([.hour, .minute], from: date)
         SleepMonitorSettingsStore.wakeHour = components.hour ?? 7
         SleepMonitorSettingsStore.wakeMinute = components.minute ?? 0
-        Task { await SleepNotificationScheduler.scheduleDailyWakeReminder() }
+        Task { await SleepNotificationScheduler.scheduleDailyReminders() }
     }
 }

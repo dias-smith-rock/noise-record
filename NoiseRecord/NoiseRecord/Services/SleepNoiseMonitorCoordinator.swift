@@ -61,7 +61,7 @@ final class SleepNoiseMonitorCoordinator {
         }
 
         _ = await SleepNotificationScheduler.requestAuthorizationIfNeeded()
-        await SleepNotificationScheduler.scheduleDailyWakeReminder()
+        await SleepNotificationScheduler.scheduleDailyReminders()
 
         savedHighSensitivity = engine.isHighSensitivityMode
         savedVoiceActivated = engine.voiceActivatedEnabled

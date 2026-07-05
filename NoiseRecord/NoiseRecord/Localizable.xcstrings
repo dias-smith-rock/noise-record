@@ -97675,6 +97675,52 @@
         }
       }
     },
+    "sleep.notification.bedtimeBody" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn on overnight noise monitoring to track your environment and restore high-quality sleep."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开启夜间噪音监测，记录睡眠环境，助您恢复高质量睡眠。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開啟夜間噪音監測，記錄睡眠環境，助您恢復高品質睡眠。"
+          }
+        }
+      }
+    },
+    "sleep.notification.bedtimeTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start overnight noise monitoring"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开启夜间噪音监测"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開啟夜間噪音監測"
+          }
+        }
+      }
+    },
     "sleep.notification.reportTitle" : {
       "extractionState" : "manual",
       "localizations" : {
