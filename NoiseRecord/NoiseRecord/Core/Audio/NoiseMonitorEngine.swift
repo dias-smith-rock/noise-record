@@ -117,15 +117,10 @@ final class NoiseMonitorEngine {
     private var historyBuffer = FloatTimeSeriesBuffer(capacity: 300)
     private var fftSampleRing = FFTSampleRing(capacity: FFTConfiguration.advanced.fftSize)
     private var fftScratch = [Float](repeating: 0, count: FFTConfiguration.advanced.fftSize)
-    /// 峰值保持持久化数组（引擎生命周期，不在 tap 回调中重建）。
-    private var peakAmounts = [Float](
-        repeating: SpectrumDSPGuards.analyzerDecibelFloor,
-        count: FFTConfiguration.advanced.binCount
+    /// 频谱峰值状态仅在 processingQueue 上更新；与 MainActor 配置路径通过锁隔离。
+    private let spectrumPeakTracker = SpectrumPeakTracker(
+        binCount: FFTConfiguration.advanced.binCount
     )
-    private var lastLiveSpectrumDecibels: [Float]?
-    private var lastSpectrumSampleRate: Double = 44_100
-    private var lastSpectrumFFTSize: Int = FFTConfiguration.standard.fftSize
-    private var activeFFTConfiguration: FFTConfiguration = .standard
     private var uiFrameCounter = 0
     private let voiceRecorder = VoiceActivatedRecorder()
     private let locationProvider = LocationEvidenceProvider()
@@ -612,7 +607,7 @@ final class NoiseMonitorEngine {
         sessionSumDB = 0
         fftSampleRing.reset()
         uiFrameCounter = 0
-        resetPeakAmounts()
+        spectrumPeakTracker.resetPeaks()
     }
 
     private func enforcePremiumFeatureAccessSilently() {
@@ -625,60 +620,18 @@ final class NoiseMonitorEngine {
         isLoadingPersistedSettings = false
     }
 
-    private func resetPeakAmounts() {
-        let floor = SpectrumDSPGuards.analyzerDecibelFloor
-        for index in peakAmounts.indices {
-            peakAmounts[index] = floor
-        }
-        lastLiveSpectrumDecibels = nil
-    }
-
     private var currentFFTConfiguration: FFTConfiguration {
         FFTConfiguration.forHighSensitivityMode(isHighSensitivityMode)
     }
 
     private func configureFFTDSPBuffers(for configuration: FFTConfiguration) {
-        activeFFTConfiguration = configuration
-        let requiredBins = configuration.binCount
-        if peakAmounts.count != requiredBins {
-            peakAmounts = [Float](
-                repeating: SpectrumDSPGuards.analyzerDecibelFloor,
-                count: requiredBins
-            )
-        } else {
-            resetPeakAmounts()
-        }
+        spectrumPeakTracker.configure(for: configuration)
         fftAnalyzer?.reconfigure(to: configuration)
     }
 
-    /// 指数衰减 + 峰值锁定：仅在 processingQueue 上调用。
-    private func advancePeakAmounts(with current: [Float]?) {
-        let floor = SpectrumDSPGuards.analyzerDecibelFloor
-        let decayFactor = Performance.peakDecayFactor
-
-        for index in peakAmounts.indices {
-            if index < SpectrumDSPGuards.pathDrawingMinBin {
-                peakAmounts[index] = floor
-                continue
-            }
-            let decayedPeak = peakAmounts[index] * decayFactor
-            let decayed = decayedPeak < floor ? floor : decayedPeak
-            if let current, index < current.count {
-                peakAmounts[index] = max(decayed, current[index])
-            } else {
-                peakAmounts[index] = decayed
-            }
-        }
-    }
-
-    private func makeSpectrumSnapshot(liveDecibels: [Float]) -> FFTSpectrum {
-        let peakSnapshot = Array(peakAmounts.prefix(liveDecibels.count))
-        return FFTSpectrum(
-            decibels: liveDecibels,
-            sampleRate: lastSpectrumSampleRate,
-            fftSize: lastSpectrumFFTSize,
-            peakDecibels: peakSnapshot
-        )
+    /// Waits for in-flight tap buffers to finish before reconfiguring DSP state.
+    private func drainProcessingQueue() {
+        processingQueue.sync {}
     }
 
     func updateWeighting(_ type: WeightingType) {
@@ -724,7 +677,8 @@ final class NoiseMonitorEngine {
         ModeSwitchPerformance.mark(.restartPipelineBegin)
 
         let removeTapSignpost = ModeSwitchPerformance.begin(.removeTap)
-        audioEngine.inputNode.removeTap(onBus: 0)
+        safeRemoveInputTap()
+        drainProcessingQueue()
         ModeSwitchPerformance.end(.removeTap, removeTapSignpost)
 
         setupAudioPipeline()
@@ -758,8 +712,14 @@ final class NoiseMonitorEngine {
 
     private func recoverMonitoringPipeline(showErrorOnFailure: Bool) {
         do {
+            safeRemoveInputTap()
+            drainProcessingQueue()
+            if audioEngine.isRunning {
+                audioEngine.stop()
+            }
+            audioEngine.reset()
+
             try reconfigureAudioSessionForCurrentState()
-            guard !audioEngine.isRunning else { return }
             setupAudioPipeline()
             audioEngine.prepare()
             try audioEngine.start()
@@ -825,8 +785,10 @@ final class NoiseMonitorEngine {
         }
 
         let inputNode = audioEngine.inputNode
-        let format = inputNode.outputFormat(forBus: 0)
-        let sampleRate = format.sampleRate
+        let sampleRate = measurementSampleRate(for: inputNode)
+        let tapFormat = resolvedInputTapFormat(for: inputNode)
+        let classifierFormat = tapFormat
+            ?? AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1)
         let weighting = effectiveWeighting
 
         weightingFilter = ModeSwitchPerformance.measure(.weightingFilter, when: trace) {
@@ -859,18 +821,20 @@ final class NoiseMonitorEngine {
                     self?.aiClassificationErrorMessage = L10n.errorAiClassificationFailed
                 }
             }
-            ModeSwitchPerformance.measure(.noiseClassifierSetup, when: trace) {
-                classifier.setup(format: format)
+            if let classifierFormat {
+                ModeSwitchPerformance.measure(.noiseClassifierSetup, when: trace) {
+                    classifier.setup(format: classifierFormat)
+                }
             }
             noiseClassifier = classifier
         }
 
-        inputNode.removeTap(onBus: 0)
+        safeRemoveInputTap()
         ModeSwitchPerformance.measure(.installTap, when: trace) {
             inputNode.installTap(
                 onBus: 0,
                 bufferSize: SPLCalculator.tapBufferSize,
-                format: format
+                format: tapFormat
             ) { [weak self] buffer, time in
                 self?.processingQueue.async {
                     self?.processBuffer(buffer, time: time)
@@ -879,13 +843,59 @@ final class NoiseMonitorEngine {
         }
     }
 
+    private func safeRemoveInputTap() {
+        audioEngine.inputNode.removeTap(onBus: 0)
+    }
+
+    private func measurementSampleRate(for inputNode: AVAudioInputNode) -> Double {
+        let sessionRate = AVAudioSession.sharedInstance().sampleRate
+        if sessionRate > 0 { return sessionRate }
+
+        let inputRate = inputNode.inputFormat(forBus: 0).sampleRate
+        if inputRate > 0 { return inputRate }
+
+        let outputRate = inputNode.outputFormat(forBus: 0).sampleRate
+        if outputRate > 0 { return outputRate }
+
+        return 44_100
+    }
+
+    /// Returns a tap format that matches the input node output bus, or `nil` to use the native bus format.
+    private func resolvedInputTapFormat(for inputNode: AVAudioInputNode) -> AVAudioFormat? {
+        let outputFormat = inputNode.outputFormat(forBus: 0)
+        guard outputFormat.sampleRate > 0, outputFormat.channelCount > 0 else {
+            AppTelemetry.log("audio_tap_format_fallback session_rate=\(AVAudioSession.sharedInstance().sampleRate)")
+            return nil
+        }
+
+        let sessionRate = AVAudioSession.sharedInstance().sampleRate
+        if sessionRate > 0, abs(outputFormat.sampleRate - sessionRate) > 1 {
+            // Stale graph formats (often 48 kHz) mismatch the active session after interruption/recovery.
+            AppTelemetry.log(
+                "audio_tap_format_mismatch bus_rate=\(outputFormat.sampleRate) session_rate=\(sessionRate)"
+            )
+            return nil
+        }
+
+        guard let exactFormat = AVAudioFormat(
+            commonFormat: outputFormat.commonFormat,
+            sampleRate: outputFormat.sampleRate,
+            channels: outputFormat.channelCount,
+            interleaved: outputFormat.isInterleaved
+        ) else {
+            return nil
+        }
+
+        return exactFormat
+    }
+
     private func processBuffer(_ buffer: AVAudioPCMBuffer, time: AVAudioTime) {
         let signpost = PerformanceSignpost.begin(.processBuffer)
         defer { PerformanceSignpost.end(.processBuffer, signpost) }
 
         guard let channelData = buffer.floatChannelData?[0] else { return }
         let frameLength = Int(buffer.frameLength)
-        guard frameLength > 0 else { return }
+        guard frameLength > 0, buffer.format.sampleRate > 0 else { return }
 
         if filteredScratch.count < frameLength {
             filteredScratch = [Float](repeating: 0, count: frameLength)
@@ -955,8 +965,9 @@ final class NoiseMonitorEngine {
         lastUIUpdate = now
         uiFrameCounter += 1
 
-        var spectrum: FFTSpectrum?
         var freshLiveDecibels: [Float]?
+        var analyzedSampleRate: Double?
+        var analyzedFFTSize: Int?
         let fftConfiguration = currentFFTConfiguration
         let shouldComputeSpectrum = !(isSleepModeActive && isAppInBackground)
         if shouldComputeSpectrum,
@@ -973,18 +984,17 @@ final class NoiseMonitorEngine {
                     calibrationOffset: offset
                 )
             }) {
-                lastLiveSpectrumDecibels = analyzed.decibels
-                lastSpectrumSampleRate = analyzed.sampleRate
-                lastSpectrumFFTSize = analyzed.fftSize
-                activeFFTConfiguration = fftConfiguration
                 freshLiveDecibels = analyzed.decibels
+                analyzedSampleRate = analyzed.sampleRate
+                analyzedFFTSize = analyzed.fftSize
             }
         }
 
-        advancePeakAmounts(with: freshLiveDecibels)
-        if let live = lastLiveSpectrumDecibels {
-            spectrum = makeSpectrumSnapshot(liveDecibels: live)
-        }
+        let spectrum = spectrumPeakTracker.processFrame(
+            liveDecibels: freshLiveDecibels,
+            sampleRate: analyzedSampleRate,
+            fftSize: analyzedFFTSize
+        )
 
         historyBuffer.append(smoothed)
         var historySnapshot: [Float] = []
@@ -1058,5 +1068,97 @@ final class NoiseMonitorEngine {
     private func setUserError(_ message: String, context: String) {
         errorMessage = message
         AppTelemetry.recordMessage(message, context: context)
+    }
+}
+
+/// Thread-safe spectrum peak-hold state accessed from `processingQueue` and MainActor reconfiguration.
+private final class SpectrumPeakTracker: @unchecked Sendable {
+    private let lock = NSLock()
+    private var peakAmounts: [Float]
+    private var lastLiveDecibels: [Float]?
+    private var lastSampleRate: Double
+    private var lastFFTSize: Int
+
+    /// Matches `NoiseMonitorEngine.Performance.peakDecayFactor`.
+    private static let peakDecayFactor: Float = 0.985
+
+    init(binCount: Int) {
+        let floor = SpectrumDSPGuards.analyzerDecibelFloor
+        peakAmounts = [Float](repeating: floor, count: binCount)
+        lastSampleRate = 44_100
+        lastFFTSize = FFTConfiguration.standard.fftSize
+    }
+
+    func configure(for configuration: FFTConfiguration) {
+        lock.lock()
+        defer { lock.unlock() }
+
+        let requiredBins = configuration.binCount
+        let floor = SpectrumDSPGuards.analyzerDecibelFloor
+        if peakAmounts.count != requiredBins {
+            peakAmounts = [Float](repeating: floor, count: requiredBins)
+        } else {
+            for index in peakAmounts.indices {
+                peakAmounts[index] = floor
+            }
+        }
+        lastLiveDecibels = nil
+    }
+
+    func resetPeaks() {
+        lock.lock()
+        defer { lock.unlock() }
+
+        let floor = SpectrumDSPGuards.analyzerDecibelFloor
+        for index in peakAmounts.indices {
+            peakAmounts[index] = floor
+        }
+        lastLiveDecibels = nil
+    }
+
+    /// 指数衰减 + 峰值锁定；每 UI 帧调用一次（processingQueue）。
+    func processFrame(
+        liveDecibels: [Float]?,
+        sampleRate: Double? = nil,
+        fftSize: Int? = nil
+    ) -> FFTSpectrum? {
+        lock.lock()
+        defer { lock.unlock() }
+
+        if let liveDecibels, let sampleRate, let fftSize {
+            lastLiveDecibels = liveDecibels
+            lastSampleRate = sampleRate
+            lastFFTSize = fftSize
+        }
+
+        advancePeakAmountsLocked(with: liveDecibels)
+
+        guard let live = lastLiveDecibels else { return nil }
+        let peakSnapshot = Array(peakAmounts.prefix(live.count))
+        return FFTSpectrum(
+            decibels: live,
+            sampleRate: lastSampleRate,
+            fftSize: lastFFTSize,
+            peakDecibels: peakSnapshot
+        )
+    }
+
+    private func advancePeakAmountsLocked(with current: [Float]?) {
+        let floor = SpectrumDSPGuards.analyzerDecibelFloor
+        let decayFactor = Self.peakDecayFactor
+
+        for index in peakAmounts.indices {
+            if index < SpectrumDSPGuards.pathDrawingMinBin {
+                peakAmounts[index] = floor
+                continue
+            }
+            let decayedPeak = peakAmounts[index] * decayFactor
+            let decayed = decayedPeak < floor ? floor : decayedPeak
+            if let current, index < current.count {
+                peakAmounts[index] = max(decayed, current[index])
+            } else {
+                peakAmounts[index] = decayed
+            }
+        }
     }
 }

@@ -186,6 +186,8 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
         format: AVAudioFormat,
         vadGatedByFilter: Bool = true
     ) {
+        guard let recordingFormat = Self.normalizedRecordingFormat(from: format) else { return }
+
         if voiceActivatedEnabled {
             ringBuffer?.write(filteredSamples, count: frameLength)
         }
@@ -195,7 +197,7 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
                 filteredSamples: filteredSamples,
                 frameLength: frameLength,
                 dbSPL: dbSPL,
-                format: format
+                format: recordingFormat
             )
         }
 
@@ -204,9 +206,25 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
                 filteredSamples: filteredSamples,
                 frameLength: frameLength,
                 dbSPL: dbSPL,
-                format: format
+                format: recordingFormat
             )
         }
+    }
+
+    /// Tap buffers can be stereo or use a different layout than our mono AAC writer expects.
+    private static func normalizedRecordingFormat(from format: AVAudioFormat) -> AVAudioFormat? {
+        guard format.sampleRate > 0 else { return nil }
+        if format.channelCount == 1,
+           format.commonFormat == .pcmFormatFloat32,
+           !format.isInterleaved {
+            return format
+        }
+        return AVAudioFormat(
+            commonFormat: .pcmFormatFloat32,
+            sampleRate: format.sampleRate,
+            channels: 1,
+            interleaved: false
+        )
     }
 
     @discardableResult
@@ -541,24 +559,32 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
     }
 
     private func openSessionFileLocked(format: AVAudioFormat) throws {
+        guard format.sampleRate > 0 else {
+            throw VoiceRecorderError.invalidAudioFormat
+        }
         guard let timestamp = sessionTimestamp else {
             throw VoiceRecorderError.missingSessionMetadata
         }
 
         let fileName = Self.makeSessionFileName(timestamp: timestamp)
         let fileURL = try recordingsDirectory().appendingPathComponent(fileName)
-        sessionAudioFile = try AVAudioFile(forWriting: fileURL, settings: aacSettings(sampleRate: format.sampleRate))
-        sessionFormat = format
+        let audioFile = try AVAudioFile(forWriting: fileURL, settings: aacSettings(sampleRate: format.sampleRate))
+        sessionAudioFile = audioFile
+        sessionFormat = audioFile.processingFormat
     }
 
     private func openSegmentFileLocked(format: AVAudioFormat, index: Int) throws {
+        guard format.sampleRate > 0 else {
+            throw VoiceRecorderError.invalidAudioFormat
+        }
         guard let fileName = segmentFileName(index: index) else {
             throw VoiceRecorderError.missingSessionMetadata
         }
 
         let fileURL = try recordingsDirectory().appendingPathComponent(fileName)
-        segmentAudioFile = try AVAudioFile(forWriting: fileURL, settings: aacSettings(sampleRate: format.sampleRate))
-        segmentFormat = format
+        let audioFile = try AVAudioFile(forWriting: fileURL, settings: aacSettings(sampleRate: format.sampleRate))
+        segmentAudioFile = audioFile
+        segmentFormat = audioFile.processingFormat
         hasWrittenSegmentAudio = true
     }
 
@@ -629,13 +655,13 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
     }
 
     private func flushSessionToFileLocked() throws {
-        guard let file = sessionAudioFile, let format = sessionFormat else { return }
-        try sessionPcmAccumulator.drain(into: file, format: format)
+        guard let file = sessionAudioFile else { return }
+        try sessionPcmAccumulator.drain(into: file, format: file.processingFormat)
     }
 
     private func flushSegmentToFileLocked() throws {
-        guard let file = segmentAudioFile, let format = segmentFormat else { return }
-        try segmentPcmAccumulator.drain(into: file, format: format)
+        guard let file = segmentAudioFile else { return }
+        try segmentPcmAccumulator.drain(into: file, format: file.processingFormat)
     }
 
     // MARK: - Timeline
@@ -779,4 +805,5 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
 
 private enum VoiceRecorderError: Error {
     case missingSessionMetadata
+    case invalidAudioFormat
 }
