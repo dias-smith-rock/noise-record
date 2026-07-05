@@ -53,6 +53,33 @@ Enable **Crashlytics** and **Google Analytics** in [Firebase Console](https://co
 | `product_language_changed` | App language changed | `language` |
 | `product_permission_denied` | Microphone permission denied | `type`: microphone |
 | `product_live_activity_started` | Live Activity started | `mode` |
+| `product_tab_selected` | Main tab switched | `tab`: monitor \| voice \| video \| files \| settings |
+| `product_deeplink_opened` | Universal link / URL opened | `target`: evidence \| sleep_report \| monitor |
+| `product_monitor_fab_tap` | Monitor FAB tapped | `action`: start \| stop \| sleep_end |
+| `product_sleep_start_tap` | Sleep monitoring started from header | `mode`: standard \| high_sensitivity |
+| `product_sleep_report_open` | Morning report opened | `source`: header_menu \| deeplink \| post_session |
+| `product_sleep_history_open` | Sleep history opened | `gated`: true \| false |
+| `product_sleep_export_csv_tap` | Sleep report CSV export tapped | — |
+| `product_sleep_export_pdf_tap` | Sleep report PDF export tapped | — |
+| `product_sleep_pdf_format_selected` | PDF format chosen | `format`: legacyOvernight \| nighttimeEnvironmental |
+| `product_sleep_pdf_share_tap` | Embedded PDF share tapped | `format` |
+| `product_sleep_session_started` | Sleep session started successfully | `mode` |
+| `product_sleep_session_ended` | Sleep session ended | `anomaly_count` |
+| `product_paywall_close_tap` | Paywall close tapped | `context` |
+| `product_paywall_purchase_tap` | Paywall purchase CTA tapped | `context`, `tier`: monthly \| yearly |
+| `product_paywall_restore_tap` | Paywall restore tapped | `context` |
+| `product_paywall_legal_link_tap` | Paywall legal link tapped | `link`: privacy \| terms |
+| `product_recording_open_tap` | Recording detail opened | `kind`: audio \| video |
+| `product_recording_share_tap` | Recording shared | `kind` |
+| `product_recording_delete_tap` | Recording(s) deleted | `count` |
+| `product_recording_rename_tap` | Recording renamed | — |
+| `product_recording_sort_tap` | Recording list sort toggled | — |
+| `product_settings_remove_ads_tap` | Settings remove-ads entry tapped | — |
+| `product_settings_review_tap` | App review prompt accepted | — |
+| `product_settings_clear_measurements_tap` | Clear measurements confirmed | — |
+| `product_settings_privacy_options_tap` | AdMob privacy options opened | — |
+| `product_video_record_tap` | Video record button tapped | — |
+| `product_video_preview_open_tap` | Video preview opened | — |
 
 Legacy product events retained: `monitor_start`, `monitoring_state`, `video_recording_start`, `background_recording_start`, `app_launch`, `app_error`, `launch_milestone`.
 

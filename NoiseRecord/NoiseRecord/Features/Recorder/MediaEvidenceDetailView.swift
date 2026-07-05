@@ -116,6 +116,10 @@ struct MediaEvidenceDetailView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
+                    AppTelemetry.logProductEvent(
+                        "recording_share_tap",
+                        parameters: ["kind": analyticsMediaKind]
+                    )
                     SharePresenter.present(items: [fileURL])
                 } label: {
                     Image(systemName: "square.and.arrow.up")
@@ -139,6 +143,13 @@ struct MediaEvidenceDetailView: View {
             Button(L10n.ok, role: .cancel) { playbackError = nil }
         } message: {
             Text(playbackError ?? "")
+        }
+    }
+
+    private var analyticsMediaKind: String {
+        switch kind {
+        case .audio: "audio"
+        case .video: "video"
         }
     }
 

@@ -71,6 +71,10 @@ struct ContentView: View {
             TabBarAppearanceUpdater.applyTabTitles()
         }
         .onChange(of: selectedTab) { _, tab in
+            AppTelemetry.logProductEvent(
+                "tab_selected",
+                parameters: ["tab": analyticsTabName(for: tab)]
+            )
             if suppressNextTabSelectionAd {
                 suppressNextTabSelectionAd = false
             } else {
@@ -93,6 +97,10 @@ struct ContentView: View {
             guard url.scheme == LiveActivityDeepLink.scheme else { return }
             if url.host == LiveActivityDeepLink.evidenceHost,
                let recordingID = UUID(uuidString: url.lastPathComponent) {
+                AppTelemetry.logProductEvent(
+                    "deeplink_opened",
+                    parameters: ["target": "evidence"]
+                )
                 pendingEvidenceRecordingID = recordingID
                 suppressNextTabSelectionAd = true
                 mountedTabs.insert(.files)
@@ -101,12 +109,20 @@ struct ContentView: View {
             }
             if url.host == LiveActivityDeepLink.sleepReportHost,
                let sessionID = UUID(uuidString: url.lastPathComponent) {
-                sleepCoordinator.presentReport(sessionID: sessionID)
+                AppTelemetry.logProductEvent(
+                    "deeplink_opened",
+                    parameters: ["target": "sleep_report"]
+                )
+                sleepCoordinator.presentReport(sessionID: sessionID, source: "deeplink")
                 suppressNextTabSelectionAd = true
                 selectedTab = .monitor
                 return
             }
             guard url.host == LiveActivityDeepLink.monitorHost else { return }
+            AppTelemetry.logProductEvent(
+                "deeplink_opened",
+                parameters: ["target": "monitor"]
+            )
             suppressNextTabSelectionAd = true
             selectedTab = .monitor
         }
@@ -447,6 +463,16 @@ struct ContentView: View {
             || AppReviewStore.isFullscreenLEDBusy
             || sleepCoordinator.isSleepReportFlowActive
             || sleepCoordinator.showReportSheet
+    }
+
+    private func analyticsTabName(for tab: MainTab) -> String {
+        switch tab {
+        case .monitor: "monitor"
+        case .voice: "voice"
+        case .video: "video"
+        case .files: "files"
+        case .settings: "settings"
+        }
     }
 }
 

@@ -152,6 +152,9 @@ struct RecordingListView: View {
             .onChange(of: selectedTab) { _, _ in
                 exitSelectionMode()
             }
+            .onChange(of: sortOption, initial: false) { _, _ in
+                AppTelemetry.logProductEvent("recording_sort_tap")
+            }
 
             filesListPage
 
@@ -520,6 +523,10 @@ struct RecordingListView: View {
             toggleAudioSelection(session.id)
             return
         }
+        AppTelemetry.logProductEvent(
+            "recording_open_tap",
+            parameters: ["kind": "audio"]
+        )
         guard session.fileExists else {
             playbackErrorMessage = L10n.filesAudioNotFound(session.fileName)
             return
@@ -540,6 +547,10 @@ struct RecordingListView: View {
             toggleVideoSelection(session.id)
             return
         }
+        AppTelemetry.logProductEvent(
+            "recording_open_tap",
+            parameters: ["kind": "video"]
+        )
         guard session.fileExists else {
             playbackErrorMessage = L10n.filesVideoNotFound(session.fileName)
             return
@@ -645,6 +656,10 @@ struct RecordingListView: View {
             playbackErrorMessage = L10n.filesAudioNotFound(session.fileName)
             return
         }
+        AppTelemetry.logProductEvent(
+            "recording_share_tap",
+            parameters: ["kind": "audio"]
+        )
         SharePresenter.present(items: [session.fileURL])
     }
 
@@ -653,6 +668,10 @@ struct RecordingListView: View {
             playbackErrorMessage = L10n.filesVideoNotFound(session.fileName)
             return
         }
+        AppTelemetry.logProductEvent(
+            "recording_share_tap",
+            parameters: ["kind": "video"]
+        )
         SharePresenter.present(items: [session.fileURL])
     }
 
@@ -717,6 +736,10 @@ struct RecordingListView: View {
                 .map(\.fileURL)
         }
         guard !urls.isEmpty else { return }
+        AppTelemetry.logProductEvent(
+            "recording_share_tap",
+            parameters: ["kind": selectedTab == .audio ? "audio" : "video"]
+        )
         SharePresenter.present(items: urls)
     }
 
@@ -744,13 +767,20 @@ struct RecordingListView: View {
     }
 
     private func deleteSelected() {
+        let count: Int
         if selectedTab == .audio {
             let targets = sessions.filter { selectedAudioIDs.contains($0.id) }
+            count = targets.count
             targets.forEach { deleteAudio($0) }
         } else {
             let targets = videoSessions.filter { selectedVideoIDs.contains($0.id) }
+            count = targets.count
             targets.forEach { deleteVideo($0) }
         }
+        AppTelemetry.logProductEvent(
+            "recording_delete_tap",
+            parameters: ["count": String(count)]
+        )
         try? modelContext.save()
         exitSelectionMode()
     }
@@ -767,6 +797,8 @@ struct RecordingListView: View {
         guard let target = renameTarget else { return }
         let trimmed = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
+
+        AppTelemetry.logProductEvent("recording_rename_tap")
 
         switch target {
         case .audio(let session):

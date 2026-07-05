@@ -101,6 +101,19 @@ struct DashboardView: View {
             ) {
                 guard audioStateManager.appAudioState != .playing else { return }
                 AdSceneLifecycle.recordFirstInteraction(source: "monitor_toggle")
+                if sleepCoordinator.isSleepMonitoring {
+                    AppTelemetry.logProductEvent(
+                        "monitor_fab_tap",
+                        parameters: ["action": "sleep_end"]
+                    )
+                } else {
+                    AppTelemetry.logProductEvent(
+                        "monitor_fab_tap",
+                        parameters: [
+                            "action": audioStateManager.appAudioState == .monitoring ? "stop" : "start",
+                        ]
+                    )
+                }
                 Task {
                     switch audioStateManager.appAudioState {
                     case .monitoring:
@@ -379,10 +392,15 @@ struct DashboardView: View {
 
     private func openLatestMorningReport() {
         guard let sessionID = latestCompletedSessionID else { return }
-        sleepCoordinator.presentReport(sessionID: sessionID)
+        sleepCoordinator.presentReport(sessionID: sessionID, source: "header_menu")
     }
 
     private func openSleepHistory() {
+        let gated = !SubscriptionManager.shared.canAccessSleepHistory
+        AppTelemetry.logProductEvent(
+            "sleep_history_open",
+            parameters: ["gated": gated ? "true" : "false"]
+        )
         if SubscriptionManager.shared.canAccessSleepHistory {
             sleepCoordinator.presentHistory()
         } else {
@@ -391,6 +409,12 @@ struct DashboardView: View {
     }
 
     private func startSleepMonitoringFromHeader() async {
+        AppTelemetry.logProductEvent(
+            "sleep_start_tap",
+            parameters: [
+                "mode": engine.isHighSensitivityMode ? "high_sensitivity" : "standard",
+            ]
+        )
         let started = await sleepCoordinator.startSession(isHighSensitivity: engine.isHighSensitivityMode)
         if started {
             audioStateManager.noteMonitoringStarted()

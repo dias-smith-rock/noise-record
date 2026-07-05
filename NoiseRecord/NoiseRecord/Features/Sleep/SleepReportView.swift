@@ -79,11 +79,19 @@ struct SleepReportView: View {
             ) {
                 Button(SleepForensicReportFormat.legacyOvernight.title) {
                     if let pendingPDFSession {
+                        AppTelemetry.logProductEvent(
+                            "sleep_pdf_format_selected",
+                            parameters: ["format": SleepForensicReportFormat.legacyOvernight.rawValue]
+                        )
                         exportPDF(pendingPDFSession, format: .legacyOvernight)
                     }
                 }
                 Button(SleepForensicReportFormat.nighttimeEnvironmental.title) {
                     if let pendingPDFSession {
+                        AppTelemetry.logProductEvent(
+                            "sleep_pdf_format_selected",
+                            parameters: ["format": SleepForensicReportFormat.nighttimeEnvironmental.rawValue]
+                        )
                         exportPDF(pendingPDFSession, format: .nighttimeEnvironmental)
                     }
                 }
@@ -192,6 +200,11 @@ struct SleepReportView: View {
                     title: L10n.sleepReportViewHistory,
                     systemImage: "chart.line.uptrend.xyaxis"
                 ) {
+                    let gated = !SubscriptionManager.shared.canAccessSleepHistory
+                    AppTelemetry.logProductEvent(
+                        "sleep_history_open",
+                        parameters: ["gated": gated ? "true" : "false"]
+                    )
                     if SubscriptionManager.shared.canAccessSleepHistory {
                         showHistory = true
                     } else {
@@ -204,6 +217,7 @@ struct SleepReportView: View {
                 title: L10n.sleepReportExport,
                 systemImage: "square.and.arrow.up"
             ) {
+                AppTelemetry.logProductEvent("sleep_export_csv_tap")
                 exportCSV(session)
             }
 
@@ -211,6 +225,7 @@ struct SleepReportView: View {
                 title: L10n.sleepReportExportPDF,
                 systemImage: "doc.richtext"
             ) {
+                AppTelemetry.logProductEvent("sleep_export_pdf_tap")
                 guard SubscriptionManager.shared.canAccessSleepExport else {
                     PaywallPresenter.shared.present(context: .sleepExport)
                     return
@@ -233,6 +248,10 @@ struct SleepReportView: View {
                     Spacer()
                     if embeddedPDFURL != nil, !embeddedPDFLoadFailed {
                         Button {
+                            AppTelemetry.logProductEvent(
+                                "sleep_pdf_share_tap",
+                                parameters: ["format": embeddedPDFFormat.rawValue]
+                            )
                             showPDFShareSheet = true
                         } label: {
                             Label(L10n.share, systemImage: "square.and.arrow.up")

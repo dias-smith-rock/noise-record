@@ -34,6 +34,16 @@ nonisolated enum AppTelemetry {
         #endif
     }
 
+    /// Logs a product analytics event as `product_{action}`.
+    ///
+    /// Click/tap events use the same helper. Naming convention:
+    /// - Navigation: `tab_selected`, `deeplink_opened`
+    /// - Monitor/sleep: `monitor_fab_tap`, `sleep_start_tap`, `sleep_report_open`, …
+    /// - Export/paywall: `sleep_export_csv_tap`, `paywall_purchase_tap`, …
+    /// - Files/settings/video: `recording_share_tap`, `settings_remove_ads_tap`, …
+    ///
+    /// Parameters are capped at `maxAnalyticsParameterCount` keys and
+    /// `maxAnalyticsParameterLength` characters per value.
     static func logProductEvent(
         _ action: String,
         parameters: [String: String] = [:]

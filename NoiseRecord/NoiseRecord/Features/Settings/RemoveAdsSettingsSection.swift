@@ -12,6 +12,7 @@ struct RemoveAdsSettingsPromo: View {
                 ProVIPStatusBanner(theme: theme)
             } else {
                 ProUpgradeBanner(theme: theme) {
+                    AppTelemetry.logProductEvent("settings_remove_ads_tap")
                     PaywallPresenter.shared.present(context: .settings)
                 }
             }

@@ -100,6 +100,15 @@ final class SleepNoiseMonitorCoordinator {
 
         applySleepVADThresholdsIfNeeded(for: session, engine: engine, force: true)
 
+        if engine.isMonitoring {
+            AppTelemetry.logProductEvent(
+                "sleep_session_started",
+                parameters: [
+                    "mode": isHighSensitivity ? "high_sensitivity" : "standard",
+                ]
+            )
+        }
+
         return engine.isMonitoring
     }
 
@@ -181,6 +190,14 @@ final class SleepNoiseMonitorCoordinator {
         SleepMonitorSettingsStore.pendingReportSessionID = session.id
         latestReportSessionID = session.id
         showReportSheet = true
+        AppTelemetry.logProductEvent(
+            "sleep_session_ended",
+            parameters: ["anomaly_count": String(session.anomalyCount)]
+        )
+        AppTelemetry.logProductEvent(
+            "sleep_report_open",
+            parameters: ["source": "post_session"]
+        )
         activeSession = nil
         isHighSensitivitySession = false
         lastSleepSessionIDForRecording = session.id
@@ -246,7 +263,11 @@ final class SleepNoiseMonitorCoordinator {
         }
     }
 
-    func presentReport(sessionID: UUID) {
+    func presentReport(sessionID: UUID, source: String) {
+        AppTelemetry.logProductEvent(
+            "sleep_report_open",
+            parameters: ["source": source]
+        )
         latestReportSessionID = sessionID
         isSleepReportFlowActive = true
         showReportSheet = true
@@ -258,7 +279,7 @@ final class SleepNoiseMonitorCoordinator {
 
     func presentPendingReportIfNeeded() {
         guard let pending = SleepMonitorSettingsStore.pendingReportSessionID else { return }
-        presentReport(sessionID: pending)
+        presentReport(sessionID: pending, source: "post_session")
     }
 
     func dismissReportSheet() {

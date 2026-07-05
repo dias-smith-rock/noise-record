@@ -43,4 +43,19 @@ final class AppTelemetryTests: XCTestCase {
         XCTAssertNil(AppTelemetry.commercialIAPOutcome(for: "purchase_started"))
         XCTAssertNil(AppTelemetry.commercialIAPOutcome(for: "purchase_user_cancelled"))
     }
+
+    func testClickEventParametersAreSanitized() {
+        let parameters = AppTelemetry.sanitizedAnalyticsParameters([
+            "tab": "monitor",
+            "action": "start",
+            "context": "sleep_export",
+            "format": "legacyOvernight",
+            "tier": "yearly",
+            "overflow": "ignored",
+        ])
+        XCTAssertEqual(parameters?.count, AppTelemetry.maxAnalyticsParameterCount)
+        XCTAssertEqual(parameters?["action"] as? String, "start")
+        XCTAssertEqual(parameters?["tab"] as? String, "monitor")
+        XCTAssertNil(parameters?["tier"])
+    }
 }

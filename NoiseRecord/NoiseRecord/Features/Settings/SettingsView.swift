@@ -317,6 +317,7 @@ struct SettingsView: View {
                 Link(L10n.settingsPrivacyPolicy, destination: LegalURLs.privacyPolicy)
                 if showsPrivacyChoices {
                     Button {
+                        AppTelemetry.logProductEvent("settings_privacy_options_tap")
                         Task {
                             try? await AdConsentManager.presentPrivacyOptions()
                             refreshPrivacyChoicesVisibility()
@@ -385,6 +386,7 @@ struct SettingsView: View {
             titleVisibility: .visible
         ) {
             Button(L10n.delete, role: .destructive) {
+                AppTelemetry.logProductEvent("settings_clear_measurements_tap")
                 clearMeasurementHistory()
             }
             Button(L10n.cancel, role: .cancel) {}
@@ -398,6 +400,7 @@ struct SettingsView: View {
         }
         .alert(L10n.settingsReviewPromptTitle, isPresented: $showAppReviewPrompt) {
             Button(L10n.settingsReviewAction) {
+                AppTelemetry.logProductEvent("settings_review_tap")
                 AppReviewPresenter.openAppStoreReviewPage()
             }
             Button(L10n.appReviewLater, role: .cancel) {}

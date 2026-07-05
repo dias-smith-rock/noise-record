@@ -503,6 +503,7 @@ struct VideoEvidenceView: View {
                         .foregroundStyle(theme.accent)
                         .multilineTextAlignment(.center)
                     Button(L10n.videoPreviewRecording) {
+                        AppTelemetry.logProductEvent("video_preview_open_tap")
                         Task {
                             do {
                                 try audioStateManager.prepareAndStartPlayback()
@@ -525,6 +526,7 @@ struct VideoEvidenceView: View {
                         }
                     }
                 } else {
+                    AppTelemetry.logProductEvent("video_record_tap")
                     Task { await startEvidenceRecording() }
                 }
             } label: {

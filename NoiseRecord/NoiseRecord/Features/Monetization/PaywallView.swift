@@ -56,11 +56,21 @@ struct PaywallView: View {
             )
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button(L10n.close) { closePaywall(purchased: false) }
-                        .foregroundStyle(.white.opacity(0.85))
+                    Button(L10n.close) {
+                        AppTelemetry.logProductEvent(
+                            "paywall_close_tap",
+                            parameters: ["context": context.rawValue]
+                        )
+                        closePaywall(purchased: false)
+                    }
+                    .foregroundStyle(.white.opacity(0.85))
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(L10n.settingsRemoveAdsRestore) {
+                        AppTelemetry.logProductEvent(
+                            "paywall_restore_tap",
+                            parameters: ["context": context.rawValue]
+                        )
                         Task { await restorePurchases() }
                     }
                     .font(.subheadline.weight(.medium))
@@ -282,6 +292,13 @@ struct PaywallView: View {
                 }
 
                 Button {
+                    AppTelemetry.logProductEvent(
+                        "paywall_purchase_tap",
+                        parameters: [
+                            "context": context.rawValue,
+                            "tier": selectedTier.rawValue,
+                        ]
+                    )
                     Task { await purchaseSelectedTier() }
                 } label: {
                     Group {
@@ -327,15 +344,22 @@ struct PaywallView: View {
 
     private var legalLinks: some View {
         HStack(spacing: 20) {
-            legalExternalLink(L10n.settingsPrivacyPolicy, url: LegalURLs.privacyPolicy)
-            legalExternalLink(L10n.settingsTermsOfService, url: LegalURLs.termsOfService)
+            legalExternalLink(L10n.settingsPrivacyPolicy, url: LegalURLs.privacyPolicy, link: "privacy")
+            legalExternalLink(L10n.settingsTermsOfService, url: LegalURLs.termsOfService, link: "terms")
         }
         .font(.caption.weight(.medium))
         .frame(maxWidth: .infinity)
     }
 
-    private func legalExternalLink(_ title: String, url: URL) -> some View {
+    private func legalExternalLink(_ title: String, url: URL, link: String) -> some View {
         Button(title) {
+            AppTelemetry.logProductEvent(
+                "paywall_legal_link_tap",
+                parameters: [
+                    "context": context.rawValue,
+                    "link": link,
+                ]
+            )
             UIApplication.shared.open(url)
         }
         .foregroundStyle(.white.opacity(0.6))
