@@ -44,11 +44,13 @@ struct SleepMonitorHeaderMenu: View, Equatable {
                 Menu {
                     sleepHistoryAndReportMenuItems(includeStart: false)
                 } label: {
-                    moonIconLabel
+                    sleepHeaderCapsule()
                 }
             } else {
-                ProTabHeaderIconButton(systemImage: "moon.zzz.fill", theme: theme) {
+                Menu {
                     sleepHistoryAndReportMenuItems(includeStart: true)
+                } label: {
+                    sleepHeaderCapsule()
                 }
                 .disabled(isStarting)
             }
@@ -110,19 +112,25 @@ struct SleepMonitorHeaderMenu: View, Equatable {
         }
     }
 
-    private var moonIconLabel: some View {
-        Image(systemName: "moon.zzz.fill")
-            .font(.body.weight(.semibold))
-            .foregroundStyle(theme.accent)
-            .frame(width: 36, height: 36)
-            .background(theme.badgeBackground)
-            .clipShape(Circle())
-            .contentShape(Circle())
-    }
-
-    private var elapsedText: String {
-        guard let sleepMonitoringStartedAt else { return "—" }
-        return DurationFormatting.hms(from: Date().timeIntervalSince(sleepMonitoringStartedAt))
+    private func sleepHeaderCapsule() -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: "moon.zzz.fill")
+                .font(.subheadline.weight(.semibold))
+            Text(L10n.sleepMonitorHeaderButton)
+                .font(.subheadline.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .foregroundStyle(theme.accent)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(theme.badgeBackground)
+        .overlay(
+            Capsule()
+                .strokeBorder(theme.accent.opacity(0.5), lineWidth: 1)
+        )
+        .clipShape(Capsule())
+        .accessibilityLabel(L10n.sleepMenuStart)
     }
 
     private func sleepCapsule(title: String, systemImage: String, prominent: Bool) -> some View {
@@ -137,6 +145,11 @@ struct SleepMonitorHeaderMenu: View, Equatable {
         .padding(.vertical, 8)
         .background(prominent ? theme.accent : theme.badgeBackground)
         .clipShape(Capsule())
+    }
+
+    private var elapsedText: String {
+        guard let sleepMonitoringStartedAt else { return "—" }
+        return DurationFormatting.hms(from: Date().timeIntervalSince(sleepMonitoringStartedAt))
     }
 
     private func startSleepMonitoring() async {

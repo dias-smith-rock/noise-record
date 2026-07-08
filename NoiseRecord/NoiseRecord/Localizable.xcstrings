@@ -97519,13 +97519,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sleep"
+            "value" : "Noche"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sleep"
+            "value" : "Nuit"
           }
         },
         "hi" : {
@@ -97537,13 +97537,13 @@
         "pt" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sleep"
+            "value" : "Noite"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sleep"
+            "value" : "Ночь"
           }
         },
         "zh-Hans" : {
