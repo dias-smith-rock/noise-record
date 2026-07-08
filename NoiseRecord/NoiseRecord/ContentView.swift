@@ -18,7 +18,7 @@ struct ContentView: View {
     @State private var mountedTabs: Set<MainTab> = [.monitor]
     @State private var hasUnreadFiles = false
     @State private var showAppReviewPrompt = false
-    @State private var showSessionStopPrompt = false
+    @State private var showMicPermissionIntro = false
     @State private var suppressNextTabSelectionAd = false
     @State private var pendingEvidenceRecordingID: UUID?
     @Bindable private var appearance = AppAppearanceSettings.shared
@@ -50,6 +50,7 @@ struct ContentView: View {
         .onAppear {
             LaunchPerformance.mark(.launchContentViewAppear)
             LaunchPerformance.mark(.launchFirstInteractive)
+            MonitoringFunnelTracker.resetProcessLaunchClock()
             sleepCoordinator.configure(engine: engine, modelContext: modelContext)
             refreshUnreadBadge()
             engine.onRecordingFinished = { event in
@@ -69,13 +70,18 @@ struct ContentView: View {
                 TabBarAppearanceUpdater.cacheTabBarController(from: root)
             }
             TabBarAppearanceUpdater.applyTabTitles()
+            TabBarAppearanceUpdater.setFilesBadgeVisible(hasUnreadFiles)
             Task { await SleepNotificationScheduler.scheduleDailyReminders() }
+        }
+        .onChange(of: hasUnreadFiles) { _, visible in
+            TabBarAppearanceUpdater.setFilesBadgeVisible(visible)
         }
         .onChange(of: selectedTab) { _, tab in
             AppTelemetry.logProductEvent(
                 "tab_selected",
                 parameters: ["tab": analyticsTabName(for: tab)]
             )
+            TabBarAppearanceUpdater.setFilesBadgeVisible(hasUnreadFiles)
             if suppressNextTabSelectionAd {
                 suppressNextTabSelectionAd = false
             } else {
@@ -92,6 +98,7 @@ struct ContentView: View {
         }
         .onChange(of: appearance.languageRefreshID) { _, _ in
             TabBarAppearanceUpdater.applyTabTitles()
+            TabBarAppearanceUpdater.setFilesBadgeVisible(hasUnreadFiles)
             refreshMonitorTabIconIfNeeded()
         }
         .onOpenURL { url in
@@ -196,20 +203,42 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .launchAutoStartMonitoring)) { _ in
             Task {
-                guard MonitorSettingsStore.autoStartMonitoringOnLaunch else { return }
-                guard audioStateManager.appAudioState != .playing else { return }
-                await audioStateManager.manuallyResumeMonitoring()
-                if engine.isMonitoring {
-                    AppTelemetry.logProductEvent("monitoring_auto_start_launch")
+                await handleLaunchAutoStartMonitoring()
+            }
+        }
+        .sheet(isPresented: $showMicPermissionIntro) {
+            MicPermissionIntroSheet(
+                theme: ModeVisualTheme.theme(
+                    for: AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
+                ),
+                onContinue: {
+                    MicPermissionIntroStore.markSeen()
+                    showMicPermissionIntro = false
+                    Task { await performLaunchAutoStartMonitoring() }
+                },
+                onDismiss: {
+                    MicPermissionIntroStore.markSeen()
+                    showMicPermissionIntro = false
+                }
+            )
+        }
+        .onChange(of: engine.currentDB) { _, currentDB in
+            MonitoringFunnelTracker.observeReading(
+                currentDB: currentDB,
+                isMonitoring: engine.isMonitoring
+            )
+        }
+        .onChange(of: engine.isMonitoring) { wasMonitoring, isMonitoring in
+            if isMonitoring {
+                audioStateManager.noteMonitoringStarted()
+                if !wasMonitoring {
+                    MonitoringFunnelTracker.noteMonitoringStarted()
                 }
             }
         }
         .appReviewPrompt(isPresented: $showAppReviewPrompt)
         .onChange(of: engine.sessionStopPromptID) { _, promptID in
-            showSessionStopPrompt = promptID != nil
-        }
-        .onChange(of: showSessionStopPrompt) { _, isPresented in
-            if !isPresented {
+            if promptID == nil {
                 evaluateAppReviewPromptIfNeeded()
             }
         }
@@ -229,29 +258,6 @@ struct ContentView: View {
         .onChange(of: engine.sessionAutoSaveGateID) { _, gateID in
             guard gateID != nil else { return }
             applyDeferredSessionSaveGate()
-        }
-        .alert(L10n.dashboardStopPromptSessionTitle, isPresented: $showSessionStopPrompt) {
-            Button(L10n.dashboardStopPromptSave) {
-                handleDeferredSessionSave()
-            }
-            Button(L10n.dashboardStopPromptDiscard, role: .destructive) {
-                engine.discardDeferredSessionRecording()
-            }
-        } message: {
-            if let summary = engine.pendingSessionStopSummary {
-                Text(
-                    L10n.dashboardStopPromptSessionMessage(
-                        duration: DurationFormatting.hms(from: summary.duration),
-                        fileSize: DurationFormatting.fileSize(from: summary.fileSizeBytes),
-                        segmentCount: summary.autoSavedSegmentCount
-                    )
-                )
-            }
-        }
-        .onChange(of: engine.isMonitoring) { _, isMonitoring in
-            if isMonitoring {
-                audioStateManager.noteMonitoringStarted()
-            }
         }
         .onChange(of: scenePhase) { _, phase in
             switch phase {
@@ -329,7 +335,6 @@ struct ContentView: View {
                 pendingOpenRecordingID: $pendingEvidenceRecordingID
             )
         }
-        .badge(hasUnreadFiles ? "" : nil)
         .tag(MainTab.files)
         .tabItem {
             Label(L10n.tabFiles, systemImage: "list.bullet")
@@ -367,7 +372,9 @@ struct ContentView: View {
         )
         let audioCount = (try? modelContext.fetchCount(audioDescriptor)) ?? 0
         let videoCount = (try? modelContext.fetchCount(videoDescriptor)) ?? 0
-        hasUnreadFiles = audioCount > 0 || videoCount > 0
+        let hasUnread = audioCount > 0 || videoCount > 0
+        hasUnreadFiles = hasUnread
+        TabBarAppearanceUpdater.setFilesBadgeVisible(hasUnread)
     }
 
     private func refreshMonitorTabIconIfNeeded() {
@@ -458,7 +465,7 @@ struct ContentView: View {
     }
 
     private var isAppReviewPromptBusy: Bool {
-        showSessionStopPrompt
+        engine.sessionStopPromptID != nil
             || PaywallPresenter.shared.isPresented
             || videoCoordinator.isRecording
             || AppReviewStore.isFullscreenLEDBusy
@@ -473,6 +480,30 @@ struct ContentView: View {
         case .video: "video"
         case .files: "files"
         case .settings: "settings"
+        }
+    }
+
+    private func handleLaunchAutoStartMonitoring() async {
+        guard MonitorSettingsStore.autoStartMonitoringOnLaunch else { return }
+        guard audioStateManager.appAudioState != .playing else { return }
+
+        if shouldPresentMicPermissionIntro {
+            showMicPermissionIntro = true
+            return
+        }
+
+        await performLaunchAutoStartMonitoring()
+    }
+
+    private var shouldPresentMicPermissionIntro: Bool {
+        AudioSessionManager.isMicrophonePermissionUndetermined
+            && !MicPermissionIntroStore.hasSeenIntro
+    }
+
+    private func performLaunchAutoStartMonitoring() async {
+        await audioStateManager.manuallyResumeMonitoring()
+        if engine.isMonitoring {
+            AppTelemetry.logProductEvent("monitoring_auto_start_launch")
         }
     }
 }

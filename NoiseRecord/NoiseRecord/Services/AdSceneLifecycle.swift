@@ -8,8 +8,8 @@ extension Notification.Name {
 }
 
 /// Drives cold/hot-start ad presentation via SwiftUI scene lifecycle.
-/// Cold start without IAP: show remove-ads sheet first; if dismissed without purchase, show app-open ad.
-/// Hot start and post-purchase cold start still use first-interaction ad presentation.
+/// First cold start: auto-start monitoring and defer Paywall until value moment or 2nd launch.
+/// Repeat cold start: show Paywall first for non-premium users, then app-open ad if dismissed.
 /// `UIApplicationDelegate.applicationDidBecomeActive` is not reliably invoked in this SwiftUI app.
 @MainActor
 enum AdSceneLifecycle {
@@ -50,8 +50,22 @@ enum AdSceneLifecycle {
                 pendingLaunchMonitoringAutoStart = true
                 AppTelemetry.logAdLifecycle(channel: "lifecycle", step: "launch_monitoring_auto_start_armed")
 
+                let launchCount = LaunchExperienceStore.recordColdLaunch()
+                AppTelemetry.logProductEvent(
+                    "cold_launch_recorded",
+                    parameters: ["count": String(launchCount)]
+                )
+
                 if !SubscriptionManager.isPremiumSnapshot {
-                    armLaunchRemoveAdsPromo()
+                    if LaunchExperienceStore.shouldDeferLaunchPaywallOnColdStart {
+                        if AdMobConfig.adsEnabled {
+                            pendingPresentation = .cold
+                            AppTelemetry.logAdLifecycle(channel: "cold", step: "armed_on_first_launch_deferred_paywall")
+                        }
+                        scheduleLaunchAutoStartMonitoring()
+                    } else {
+                        armLaunchRemoveAdsPromo()
+                    }
                 } else if AdMobConfig.adsEnabled {
                     pendingPresentation = .cold
                     AppTelemetry.logAdLifecycle(channel: "cold", step: "armed_on_cold_start")

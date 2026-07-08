@@ -45,12 +45,18 @@ struct SleepMonitorHeaderMenu: View, Equatable {
                     sleepHistoryAndReportMenuItems(includeStart: false)
                 } label: {
                     sleepHeaderCapsule()
+                        .onTapGesture {
+                            logSleepHeaderTap(state: "monitoring")
+                        }
                 }
             } else {
                 Menu {
                     sleepHistoryAndReportMenuItems(includeStart: true)
                 } label: {
                     sleepHeaderCapsule()
+                        .onTapGesture {
+                            logSleepHeaderTap(state: "idle")
+                        }
                 }
                 .disabled(isStarting)
             }
@@ -156,5 +162,12 @@ struct SleepMonitorHeaderMenu: View, Equatable {
         isStarting = true
         defer { isStarting = false }
         await onStartSleepMonitoring()
+    }
+
+    private func logSleepHeaderTap(state: String) {
+        AppTelemetry.logProductEvent(
+            "sleep_header_tap",
+            parameters: ["state": state]
+        )
     }
 }

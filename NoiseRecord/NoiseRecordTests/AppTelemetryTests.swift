@@ -32,8 +32,16 @@ final class AppTelemetryTests: XCTestCase {
         XCTAssertEqual(AppTelemetry.commercialAdOutcome(for: "show_presenting"), "show")
         XCTAssertEqual(AppTelemetry.commercialAdOutcome(for: "dismissed"), "dismiss")
         XCTAssertEqual(AppTelemetry.commercialAdOutcome(for: "load_failed"), "fail")
+        XCTAssertEqual(AppTelemetry.commercialAdOutcome(for: "present_failed"), "fail")
         XCTAssertNil(AppTelemetry.commercialAdOutcome(for: "load_skipped_already_loading"))
         XCTAssertNil(AppTelemetry.commercialAdOutcome(for: "armed_on_cold_start"))
+    }
+
+    func testAppErrorDedupeSuppressesRepeatedContextWithinWindow() {
+        AppTelemetry.resetErrorDedupeForTesting()
+        XCTAssertTrue(AppTelemetry.shouldEmitAppError(context: "pipeline_recovery", message: "retry"))
+        XCTAssertFalse(AppTelemetry.shouldEmitAppError(context: "pipeline_recovery", message: "retry"))
+        XCTAssertTrue(AppTelemetry.shouldEmitAppError(context: "pipeline_recovery", message: "different"))
     }
 
     func testCommercialIAPOutcomeWhitelist() {

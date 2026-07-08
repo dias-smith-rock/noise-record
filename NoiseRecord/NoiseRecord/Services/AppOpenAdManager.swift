@@ -40,7 +40,6 @@ final class AppOpenAdManager: NSObject {
                 self.isLoadingAd = false
 
                 if let error {
-                    AppTelemetry.logAdColdFail(error.localizedDescription)
                     AppTelemetry.logAdLifecycle(
                         channel: "cold",
                         step: "load_failed",
@@ -195,7 +194,6 @@ extension AppOpenAdManager: FullScreenContentDelegate {
         _ ad: FullScreenPresentingAd,
         didFailToPresentFullScreenContentWithError error: Error
     ) {
-        AppTelemetry.logAdColdFail(error.localizedDescription)
         AppTelemetry.logAdLifecycle(
             channel: "cold",
             step: "present_failed",

@@ -27,6 +27,10 @@ enum AudioSessionError: LocalizedError {
 }
 
 struct AudioSessionManager {
+    static var isMicrophonePermissionUndetermined: Bool {
+        AVAudioApplication.shared.recordPermission == .undetermined
+    }
+
     static func requestPermission() async -> Bool {
         await withCheckedContinuation { continuation in
             AVAudioApplication.requestRecordPermission { granted in

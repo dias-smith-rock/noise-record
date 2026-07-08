@@ -39,7 +39,6 @@ final class HotStartAdManager: NSObject {
                 self.isLoadingAd = false
 
                 if let error {
-                    AppTelemetry.logAdHotFail(error.localizedDescription)
                     AppTelemetry.logAdLifecycle(
                         channel: "hot",
                         step: "load_failed",
@@ -158,7 +157,6 @@ extension HotStartAdManager: FullScreenContentDelegate {
         _ ad: FullScreenPresentingAd,
         didFailToPresentFullScreenContentWithError error: Error
     ) {
-        AppTelemetry.logAdHotFail(error.localizedDescription)
         AppTelemetry.logAdLifecycle(
             channel: "hot",
             step: "present_failed",

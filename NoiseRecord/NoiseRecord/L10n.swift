@@ -21,6 +21,7 @@ nonisolated enum L10n {
     static var share: String { localized("common.share") }
     static var rename: String { localized("common.rename") }
     static var gotIt: String { localized("common.gotIt") }
+    static var skip: String { localized("common.skip") }
     static var errorTitle: String { localized("alert.error.title") }
 
     // MARK: - Tabs
@@ -353,6 +354,38 @@ nonisolated enum L10n {
     static var permissionOpenSettings: String { localized("permission.openSettings") }
     static var permissionMicrophoneDeniedTitle: String { localized("permission.microphone.denied.title") }
     static var permissionMicrophoneDeniedMessage: String { localized("permission.microphone.denied.message") }
+    static var micPermissionIntroTitle: String { localized("permission.microphone.intro.title") }
+    static var micPermissionIntroBody: String { localized("permission.microphone.intro.body") }
+    static var micPermissionIntroPointMeasure: String { localized("permission.microphone.intro.point.measure") }
+    static var micPermissionIntroPointLocal: String { localized("permission.microphone.intro.point.local") }
+    static var micPermissionIntroPointSleep: String { localized("permission.microphone.intro.point.sleep") }
+    static var micPermissionIntroContinue: String { localized("permission.microphone.intro.continue") }
+
+    // MARK: - App onboarding
+
+    static var appOnboardingStepMeasureTitle: String { localized("onboarding.app.step.measure.title") }
+    static var appOnboardingStepMeasureBody: String { localized("onboarding.app.step.measure.body") }
+    static var appOnboardingStepSleepTitle: String { localized("onboarding.app.step.sleep.title") }
+    static var appOnboardingStepSleepBody: String { localized("onboarding.app.step.sleep.body") }
+    static var appOnboardingStepExportTitle: String { localized("onboarding.app.step.export.title") }
+    static var appOnboardingStepExportBody: String { localized("onboarding.app.step.export.body") }
+
+    // MARK: - Monitor session summary
+
+    static var monitorSessionSummaryTitle: String { localized("monitor.sessionSummary.title") }
+    static var monitorSessionSummaryDuration: String { localized("monitor.sessionSummary.duration") }
+    static var monitorSessionSummaryMax: String { localized("monitor.sessionSummary.max") }
+    static var monitorSessionSummaryAverage: String { localized("monitor.sessionSummary.average") }
+    static var monitorSessionSummaryHint: String { localized("monitor.sessionSummary.hint") }
+    static var monitorSessionSummarySleepCTA: String { localized("monitor.sessionSummary.sleepCTA") }
+    static var monitorSessionSummaryHistoryCTA: String { localized("monitor.sessionSummary.historyCTA") }
+    static var monitorSessionEndFileSize: String { localized("monitor.sessionEnd.fileSize") }
+
+    static func monitorSessionEndAutoSavedClips(_ count: Int) -> String {
+        String(format: localized("monitor.sessionEnd.autoSavedClips"), count)
+    }
+
+    static var monitorSessionEndSavedToFiles: String { localized("monitor.sessionEnd.savedToFiles") }
     static var permissionCameraDeniedTitle: String { localized("permission.camera.denied.title") }
     static var permissionCameraDeniedMessage: String { localized("permission.camera.denied.message") }
     static var permissionLocationDeniedTitle: String { localized("permission.location.denied.title") }

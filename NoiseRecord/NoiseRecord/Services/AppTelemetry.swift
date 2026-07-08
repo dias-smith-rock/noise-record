@@ -89,7 +89,7 @@ nonisolated enum AppTelemetry {
             return "show"
         case "dismissed":
             return "dismiss"
-        case "load_failed", "load_failed_empty_ad", "show_failed":
+        case "load_failed", "load_failed_empty_ad", "show_failed", "present_failed":
             return "fail"
         default:
             return nil
@@ -109,19 +109,28 @@ nonisolated enum AppTelemetry {
         }
     }
 
+    private static let errorDedupeLock = NSLock()
+    private static var recentErrorSignatures: [String: Date] = [:]
+    private static let errorDedupeInterval: TimeInterval = 60
+
     static func recordError(_ error: Error, context: String) {
-        log("\(context): \(error.localizedDescription)")
+        let message = error.localizedDescription
+        guard shouldEmitAppError(context: context, message: message) else { return }
+
+        log("\(context): \(message)")
         Crashlytics.crashlytics().record(error: error)
         logEvent(
             "app_error",
             parameters: [
                 "context": truncatedAnalyticsValue(context),
-                "message": truncatedAnalyticsValue(error.localizedDescription),
+                "message": truncatedAnalyticsValue(message),
             ]
         )
     }
 
     static func recordMessage(_ message: String, context: String) {
+        guard shouldEmitAppError(context: context, message: message) else { return }
+
         log("\(context): \(message)")
         logEvent(
             "app_error",
@@ -131,6 +140,30 @@ nonisolated enum AppTelemetry {
             ]
         )
     }
+
+    static func shouldEmitAppError(context: String, message: String) -> Bool {
+        let signature = "\(context)|\(message)"
+        let now = Date()
+        return errorDedupeLock.withLock {
+            recentErrorSignatures = recentErrorSignatures.filter {
+                now.timeIntervalSince($0.value) < errorDedupeInterval
+            }
+            if let lastSeen = recentErrorSignatures[signature],
+               now.timeIntervalSince(lastSeen) < errorDedupeInterval {
+                return false
+            }
+            recentErrorSignatures[signature] = now
+            return true
+        }
+    }
+
+    #if DEBUG
+    static func resetErrorDedupeForTesting() {
+        errorDedupeLock.withLock {
+            recentErrorSignatures.removeAll()
+        }
+    }
+    #endif
 
     static func setMonitoringActive(_ isActive: Bool) {
         Crashlytics.crashlytics().setCustomValue(isActive, forKey: "monitoring_active")

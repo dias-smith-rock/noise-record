@@ -18,8 +18,11 @@ struct DashboardView: View {
     @State private var csvExportErrorMessage: String?
     @State private var measurementPersistTick = 0
     @State private var isFullScreenPresented = false
-    @State private var showsFullscreenLEDGuide = false
-    @State private var fullscreenButtonFrame: CGRect = .zero
+    @State private var showsAppOnboarding = false
+    @State private var showSessionEndSheet = false
+    @State private var sessionEndMonitoringSummary: MonitorSessionSummary?
+    @State private var sessionEndWaveformSamples: [Float] = []
+    @State private var toastMessage: String?
     @State private var environment = AmbientEnvironmentProvider()
     @State private var showLocationWeatherPermissionDenied = false
     @State private var showLocationAccessGuide = false
@@ -63,7 +66,7 @@ struct DashboardView: View {
         .onAppear {
             LaunchPerformance.mark(.launchFirstInteractive)
             environment.startUpdating()
-            refreshFullscreenLEDGuideVisibility()
+            refreshAppOnboardingVisibility()
             waveformReferenceLimitDB = NoiseReferenceLimits.residentialNightDB
             refreshLatestSleepSession()
             scheduleLocationPermissionPromptIfNeeded()
@@ -75,7 +78,7 @@ struct DashboardView: View {
             waveformReferenceLimitDB = NoiseReferenceLimits.residentialNightDB
         }
         .onChange(of: isTabActive) { _, isActive in
-            refreshFullscreenLEDGuideVisibility()
+            refreshAppOnboardingVisibility()
             if isActive {
                 refreshLatestSleepSession()
                 Task { @MainActor in
@@ -87,6 +90,16 @@ struct DashboardView: View {
         .onChange(of: sleepCoordinator.showReportSheet) { _, isPresented in
             if !isPresented {
                 refreshLatestSleepSession()
+            }
+        }
+        .onChange(of: showSessionEndSheet) { _, isPresented in
+            if !isPresented {
+                sessionEndMonitoringSummary = nil
+                sessionEndWaveformSamples = []
+                NotificationCenter.default.post(
+                    name: AppReviewStore.shouldReevaluatePromptNotification,
+                    object: nil
+                )
             }
         }
         .onDisappear {
@@ -119,6 +132,7 @@ struct DashboardView: View {
                     case .monitoring:
                         handleStopMonitoringTapped()
                     case .idle:
+                        MonitoringFunnelTracker.noteMonitoringStarted()
                         await audioStateManager.manuallyResumeMonitoring()
                     case .playing:
                         break
@@ -187,6 +201,26 @@ struct DashboardView: View {
         } message: {
             Text(csvExportErrorMessage ?? "")
         }
+        .sheet(isPresented: $showSessionEndSheet) {
+            MonitorSessionEndSheet(
+                monitoringSummary: sessionEndMonitoringSummary,
+                recordingSummary: engine.pendingSessionStopSummary,
+                waveformSamples: sessionEndWaveformSamples,
+                measurementMode: measurementMode,
+                theme: theme,
+                onSave: handleSessionEndSave,
+                onDiscard: handleSessionEndDiscard,
+                onViewHistory: {
+                    dismissSessionEndSheet()
+                    openSleepHistory()
+                },
+                onStartSleep: {
+                    dismissSessionEndSheet()
+                    Task { await startSleepMonitoringFromHeader() }
+                },
+                onDismiss: dismissSessionEndSheet
+            )
+        }
         .fullScreenCover(isPresented: $isFullScreenPresented) {
             FullscreenLEDView(
                 engine: engine,
@@ -218,25 +252,21 @@ struct DashboardView: View {
                 }
             }
         }
-        .onPreferenceChange(FullscreenGuideButtonFrameKey.self) { frame in
-            fullscreenButtonFrame = frame
-        }
         .overlay {
-            if showsFullscreenLEDGuide, fullscreenButtonFrame.width > 0 {
-                FullscreenLEDGuideOverlay(
-                    theme: theme,
-                    buttonFrame: fullscreenButtonFrame,
-                    onDismiss: { dismissFullscreenLEDGuide(method: "tap_scrim") },
-                    onGuideDismiss: { dismissFullscreenLEDGuide(method: "got_it") },
-                    onFullscreenTap: {
-                        dismissFullscreenLEDGuide(method: "tap_button")
-                        HotStartAdManager.shared.loadAd()
-                        isFullScreenPresented = true
-                    }
-                )
+            if showsAppOnboarding {
+                AppOnboardingOverlay(theme: theme) {
+                    dismissAppOnboarding(method: "completed")
+                }
+                .onAppear {
+                    AppTelemetry.logProductEvent(
+                        "onboarding_step_viewed",
+                        parameters: ["step": "1"]
+                    )
+                }
             }
         }
-        .animation(.easeInOut(duration: 0.25), value: showsFullscreenLEDGuide)
+        .animation(.easeInOut(duration: 0.25), value: showsAppOnboarding)
+        .proToast(message: $toastMessage)
     }
 
     private var dashboardContent: some View {
@@ -261,9 +291,8 @@ struct DashboardView: View {
                 mode: measurementMode,
                 humidityText: environment.humidityDisplay,
                 temperatureText: environment.temperatureDisplay,
-                hidesFullscreenButton: showsFullscreenLEDGuide,
+                hidesFullscreenButton: showsAppOnboarding,
                 onFullscreenTap: {
-                    dismissFullscreenLEDGuide()
                     HotStartAdManager.shared.loadAd()
                     isFullScreenPresented = true
                 }
@@ -381,7 +410,60 @@ struct DashboardView: View {
             }
             return
         }
+
+        let monitoringSummary = MonitoringFunnelTracker.noteMonitoringStopped(engine: engine)
         audioStateManager.stopMonitoringManually()
+        sessionEndWaveformSamples = engine.history
+        presentSessionEndSheetIfNeeded(monitoringSummary: monitoringSummary)
+    }
+
+    private func presentSessionEndSheetIfNeeded(monitoringSummary: MonitorSessionSummary?) {
+        let hasRecording = engine.sessionStopPromptID != nil
+        let hasMonitoringSummary = monitoringSummary.map { $0.duration >= 3 } ?? false
+        guard hasRecording || hasMonitoringSummary else { return }
+
+        sessionEndMonitoringSummary = monitoringSummary
+        showSessionEndSheet = true
+    }
+
+    private func dismissSessionEndSheet() {
+        showSessionEndSheet = false
+        sessionEndMonitoringSummary = nil
+        sessionEndWaveformSamples = []
+    }
+
+    private func handleSessionEndSave() {
+        switch engine.deferredSessionSaveGate() {
+        case .saveImmediately:
+            completeSessionEndSave()
+        case .requiresPaywall:
+            AppTelemetry.logProductEvent(
+                "freemium_limit_hit",
+                parameters: ["limit_type": "voice_duration"]
+            )
+            PaywallPresenter.shared.present(context: .voiceDurationLimit) { purchased in
+                if purchased {
+                    completeSessionEndSave()
+                } else {
+                    engine.discardDeferredSessionRecording()
+                    dismissSessionEndSheet()
+                }
+            }
+        case .nothingToSave:
+            engine.clearStopSavePromptState()
+            dismissSessionEndSheet()
+        }
+    }
+
+    private func completeSessionEndSave() {
+        engine.commitDeferredSessionRecording()
+        dismissSessionEndSheet()
+        toastMessage = L10n.monitorSessionEndSavedToFiles
+    }
+
+    private func handleSessionEndDiscard() {
+        engine.discardDeferredSessionRecording()
+        dismissSessionEndSheet()
     }
 
     private func refreshLatestSleepSession() {
@@ -457,23 +539,24 @@ struct DashboardView: View {
         presentLocationPermissionPromptIfNeeded()
     }
 
-    private func refreshFullscreenLEDGuideVisibility() {
-        guard isTabActive, !FullscreenLEDGuideStore.hasSeenGuide else {
-            showsFullscreenLEDGuide = false
+    private func refreshAppOnboardingVisibility() {
+        guard isTabActive, !AppOnboardingStore.hasCompletedOnboarding else {
+            showsAppOnboarding = false
             return
         }
-        showsFullscreenLEDGuide = true
+        showsAppOnboarding = true
     }
 
-    private func dismissFullscreenLEDGuide(method: String? = nil) {
-        guard showsFullscreenLEDGuide else { return }
-        if let method {
+    private func dismissAppOnboarding(method: String) {
+        guard showsAppOnboarding else { return }
+        if method != "completed" {
             AppTelemetry.logProductEvent(
                 "onboarding_dismissed",
                 parameters: ["method": method]
             )
         }
-        showsFullscreenLEDGuide = false
+        showsAppOnboarding = false
+        AppOnboardingStore.markCompleted()
         FullscreenLEDGuideStore.markSeen()
     }
 
