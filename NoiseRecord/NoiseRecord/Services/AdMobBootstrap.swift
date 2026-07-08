@@ -101,6 +101,7 @@ enum AdMobBootstrap {
                 }
                 AppOpenAdManager.shared.loadAd()
                 HotStartAdManager.shared.loadAd()
+                AdSceneLifecycle.notifyColdStartAdPipelineReady()
             }
         }
     }

@@ -11,6 +11,7 @@ struct SleepReportView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Bindable private var appearance = AppAppearanceSettings.shared
+    @Bindable private var subscriptions = SubscriptionManager.shared
     @State private var session: SleepNoiseSession?
     @State private var showHistory = false
     @State private var csvExportErrorMessage: String?
@@ -56,6 +57,11 @@ struct SleepReportView: View {
                 }
             }
             .scrollContentBackground(.hidden)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if showsPDFUnlockBar {
+                    pdfUnlockBar
+                }
+            }
             .navigationTitle(L10n.sleepReportTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -120,6 +126,21 @@ struct SleepReportView: View {
             guard let session else { return }
             refreshEmbeddedPDF(session, format: embeddedPDFFormat)
         }
+    }
+
+    private var showsPDFUnlockBar: Bool {
+        session != nil && !subscriptions.canAccessSleepExport
+    }
+
+    private var pdfUnlockBar: some View {
+        PDFPreviewUnlockBar(theme: theme) {
+            AppTelemetry.logProductEvent("sleep_pdf_unlock_tap")
+            PaywallPresenter.shared.present(context: .sleepExport)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .padding(.bottom, 10)
+        .background(.bar)
     }
 
     @ViewBuilder
@@ -200,16 +221,11 @@ struct SleepReportView: View {
                     title: L10n.sleepReportViewHistory,
                     systemImage: "chart.line.uptrend.xyaxis"
                 ) {
-                    let gated = !SubscriptionManager.shared.canAccessSleepHistory
                     AppTelemetry.logProductEvent(
                         "sleep_history_open",
-                        parameters: ["gated": gated ? "true" : "false"]
+                        parameters: ["gated": "false"]
                     )
-                    if SubscriptionManager.shared.canAccessSleepHistory {
-                        showHistory = true
-                    } else {
-                        PaywallPresenter.shared.present(context: .sleepHistory)
-                    }
+                    showHistory = true
                 }
             }
 
@@ -238,66 +254,67 @@ struct SleepReportView: View {
 
     @ViewBuilder
     private var embeddedPDFPreviewSection: some View {
-        if SubscriptionManager.shared.canAccessSleepExport {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    Text(embeddedPDFFormat.title)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(theme.accent.opacity(0.85))
-                        .lineLimit(2)
-                    Spacer()
-                    if embeddedPDFURL != nil, !embeddedPDFLoadFailed {
-                        Button {
-                            AppTelemetry.logProductEvent(
-                                "sleep_pdf_share_tap",
-                                parameters: ["format": embeddedPDFFormat.rawValue]
-                            )
-                            showPDFShareSheet = true
-                        } label: {
-                            Label(L10n.share, systemImage: "square.and.arrow.up")
-                                .font(.subheadline.weight(.semibold))
-                        }
-                        .foregroundStyle(theme.accent)
-                    }
-                }
-
-                Group {
-                    if embeddedPDFLoadFailed {
-                        ContentUnavailableView(
-                            L10n.sleepReportExportPDF,
-                            systemImage: "doc.richtext",
-                            description: Text(L10n.errorTitle)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(embeddedPDFFormat.title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(theme.accent.opacity(0.85))
+                    .lineLimit(2)
+                Spacer()
+                if subscriptions.canAccessSleepExport,
+                   embeddedPDFURL != nil, !embeddedPDFLoadFailed {
+                    Button {
+                        AppTelemetry.logProductEvent(
+                            "sleep_pdf_share_tap",
+                            parameters: ["format": embeddedPDFFormat.rawValue]
                         )
-                        .frame(height: 160)
-                    } else if let embeddedPDFURL {
-                        PDFPagesStackView(
-                            url: embeddedPDFURL,
-                            loadFailed: $embeddedPDFLoadFailed,
-                            currentPage: $embeddedPDFCurrentPage,
-                            totalPages: $embeddedPDFTotalPages
-                        )
-                    } else {
-                        ProgressView()
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 120)
-                            .tint(theme.accent)
+                        showPDFShareSheet = true
+                    } label: {
+                        Label(L10n.share, systemImage: "square.and.arrow.up")
+                            .font(.subheadline.weight(.semibold))
                     }
+                    .foregroundStyle(theme.accent)
                 }
-                .frame(maxWidth: .infinity)
-                .background(theme.cardTint)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .strokeBorder(theme.surfaceBorder, lineWidth: 1)
-                )
+            }
 
-                if !embeddedPDFLoadFailed, embeddedPDFTotalPages > 0 {
-                    Text("\(embeddedPDFCurrentPage) / \(embeddedPDFTotalPages)")
-                        .font(.caption.weight(.medium))
-                        .monospacedDigit()
-                        .foregroundStyle(.secondary)
+            Group {
+                if embeddedPDFLoadFailed {
+                    ContentUnavailableView(
+                        L10n.sleepReportExportPDF,
+                        systemImage: "doc.richtext",
+                        description: Text(L10n.errorTitle)
+                    )
+                    .frame(height: 160)
+                } else if let embeddedPDFURL {
+                    PDFPagesStackView(
+                        url: embeddedPDFURL,
+                        reportFormat: embeddedPDFFormat,
+                        isPreviewBlurred: !subscriptions.canAccessSleepExport,
+                        loadFailed: $embeddedPDFLoadFailed,
+                        currentPage: $embeddedPDFCurrentPage,
+                        totalPages: $embeddedPDFTotalPages
+                    )
+                } else {
+                    ProgressView()
                         .frame(maxWidth: .infinity)
+                        .frame(height: 120)
+                        .tint(theme.accent)
                 }
+            }
+            .frame(maxWidth: .infinity)
+            .background(theme.cardTint)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(theme.surfaceBorder, lineWidth: 1)
+            )
+
+            if !embeddedPDFLoadFailed, embeddedPDFTotalPages > 0 {
+                Text("\(embeddedPDFCurrentPage) / \(embeddedPDFTotalPages)")
+                    .font(.caption.weight(.medium))
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
             }
         }
     }
@@ -388,13 +405,6 @@ struct SleepReportView: View {
     }
 
     private func refreshEmbeddedPDF(_ session: SleepNoiseSession, format: SleepForensicReportFormat) {
-        guard SubscriptionManager.shared.canAccessSleepExport else {
-            embeddedPDFURL = nil
-            embeddedPDFLoadFailed = false
-            embeddedPDFTotalPages = 0
-            return
-        }
-
         embeddedPDFFormat = format
         embeddedPDFLoadFailed = false
         embeddedPDFCurrentPage = 1
@@ -472,11 +482,14 @@ private enum PDFPageImageRenderer {
 
 private struct PDFPagesStackView: View {
     let url: URL
+    let reportFormat: SleepForensicReportFormat
+    let isPreviewBlurred: Bool
     @Binding var loadFailed: Bool
     @Binding var currentPage: Int
     @Binding var totalPages: Int
 
     @State private var pageImages: [UIImage] = []
+    @State private var pageClearTopRatios: [CGFloat] = []
     @State private var renderWidth: CGFloat = 0
 
     var body: some View {
@@ -487,12 +500,14 @@ private struct PDFPagesStackView: View {
                     .frame(height: 120)
             } else {
                 ForEach(Array(pageImages.enumerated()), id: \.offset) { index, image in
-                    Image(uiImage: image)
-                        .resizable()
-                        .interpolation(.high)
-                        .scaledToFit()
-                        .frame(maxWidth: .infinity)
-                        .background(Color.white)
+                    BlurredPDFPageImage(
+                        image: image,
+                        clearTopRatio: pageClearTopRatios.indices.contains(index)
+                            ? pageClearTopRatios[index]
+                            : 1
+                    )
+                    .frame(maxWidth: .infinity)
+                    .background(Color.white)
                         .background {
                             GeometryReader { geometry in
                                 let frame = geometry.frame(in: .global)
@@ -524,7 +539,7 @@ private struct PDFPagesStackView: View {
                   best.visibleArea > 1 else { return }
             currentPage = best.pageIndex + 1
         }
-        .task(id: "\(url.absoluteString)-\(renderWidth)") {
+        .task(id: "\(url.absoluteString)-\(renderWidth)-\(isPreviewBlurred)-\(reportFormat.rawValue)") {
             await loadPages()
         }
     }
@@ -548,12 +563,15 @@ private struct PDFPagesStackView: View {
         guard let document, document.pageCount > 0 else {
             loadFailed = true
             pageImages = []
+            pageClearTopRatios = []
             totalPages = 0
             return
         }
 
         var images: [UIImage] = []
+        var clearTopRatios: [CGFloat] = []
         images.reserveCapacity(document.pageCount)
+        clearTopRatios.reserveCapacity(document.pageCount)
 
         for index in 0..<document.pageCount {
             guard let page = document.page(at: index),
@@ -561,16 +579,26 @@ private struct PDFPagesStackView: View {
                 continue
             }
             images.append(image)
+            clearTopRatios.append(
+                PDFPreviewBlurGate.clearTopRatio(
+                    forPageIndex: index,
+                    page: page,
+                    format: reportFormat,
+                    isPreviewBlurred: isPreviewBlurred
+                )
+            )
         }
 
         guard !images.isEmpty else {
             loadFailed = true
             pageImages = []
+            pageClearTopRatios = []
             totalPages = 0
             return
         }
 
         pageImages = images
+        pageClearTopRatios = clearTopRatios
         totalPages = images.count
         currentPage = 1
         loadFailed = false

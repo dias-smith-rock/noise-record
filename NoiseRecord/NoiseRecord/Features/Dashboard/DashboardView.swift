@@ -396,16 +396,11 @@ struct DashboardView: View {
     }
 
     private func openSleepHistory() {
-        let gated = !SubscriptionManager.shared.canAccessSleepHistory
         AppTelemetry.logProductEvent(
             "sleep_history_open",
-            parameters: ["gated": gated ? "true" : "false"]
+            parameters: ["gated": "false"]
         )
-        if SubscriptionManager.shared.canAccessSleepHistory {
-            sleepCoordinator.presentHistory()
-        } else {
-            PaywallPresenter.shared.present(context: .sleepHistory)
-        }
+        sleepCoordinator.presentHistory()
     }
 
     private func startSleepMonitoringFromHeader() async {

@@ -97882,6 +97882,29 @@
         }
       }
     },
+    "sleep.report.pdfUnlockTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlock Full Report"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "解锁完整法医报告"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "解鎖完整法醫報告"
+          }
+        }
+      }
+    },
     "sleep.report.floorLevel" : {
       "extractionState" : "manual",
       "localizations" : {

@@ -24,6 +24,8 @@ enum AdSceneLifecycle {
     private static var hasPresentedSinceForeground = false
     private static var shouldPresentLaunchRemoveAdsPromo = false
     private static var pendingLaunchMonitoringAutoStart = false
+    /// 冷启动 Paywall 关闭后、非 VIP 用户待展示的开屏广告。
+    private static var pendingColdStartAdAfterLaunchPromoDismiss = false
 
     /// 是否应在当前冷启动展示免广告购买 Sheet（读取后由 `consumeLaunchRemoveAdsPromoPresentation` 消费）。
     static var isLaunchRemoveAdsPromoPending: Bool {
@@ -79,6 +81,7 @@ enum AdSceneLifecycle {
             hasPresentedSinceForeground = false
             shouldPresentLaunchRemoveAdsPromo = false
             pendingLaunchMonitoringAutoStart = false
+            pendingColdStartAdAfterLaunchPromoDismiss = false
             AppTelemetry.logAdLifecycle(channel: "lifecycle", step: "scene_entered_background")
             if AdMobConfig.adsEnabled, AdConsentManager.canRequestAds {
                 HotStartAdManager.shared.loadAd()
@@ -135,7 +138,7 @@ enum AdSceneLifecycle {
         }
     }
 
-    /// 免广告购买 Sheet 关闭后：已购买则结束；未购买则立即尝试展示冷启动开屏广告。
+    /// 免广告购买 Sheet 关闭后：已购买则结束；未购买则排队展示冷启动开屏广告。
     static func handleLaunchRemoveAdsPromoDismissed(purchased: Bool) {
         AppTelemetry.logAdLifecycle(
             channel: "iap_promo",
@@ -143,21 +146,66 @@ enum AdSceneLifecycle {
             metadata: ["purchased": String(purchased)]
         )
 
-        if purchased {
-            pendingPresentation = nil
-            hasPresentedSinceForeground = true
-            return
-        }
-
         pendingPresentation = nil
         hasPresentedSinceForeground = true
 
-        guard AdMobConfig.adsEnabled, AdConsentManager.canRequestAds else { return }
+        if purchased || SubscriptionManager.isPremiumSnapshot {
+            pendingColdStartAdAfterLaunchPromoDismiss = false
+            return
+        }
 
+        pendingColdStartAdAfterLaunchPromoDismiss = true
+        scheduleColdStartAdAfterLaunchPromoDismiss()
+    }
+
+    /// AdMob 同意流程与 SDK 初始化完成后，重试冷启动 Paywall 关闭后的开屏广告。
+    static func notifyColdStartAdPipelineReady() {
+        scheduleColdStartAdAfterLaunchPromoDismiss()
+    }
+
+    private static func scheduleColdStartAdAfterLaunchPromoDismiss() {
+        guard pendingColdStartAdAfterLaunchPromoDismiss else { return }
         Task { @MainActor in
-            await LaunchPerformance.whenFirstInteractive()
-            AppTelemetry.logAdLifecycle(channel: "cold", step: "show_requested_after_launch_promo_dismiss")
-            AppOpenAdManager.shared.showAdIfAvailable()
+            await presentColdStartAdAfterLaunchPromoDismissIfNeeded()
+        }
+    }
+
+    private static func presentColdStartAdAfterLaunchPromoDismissIfNeeded() async {
+        guard pendingColdStartAdAfterLaunchPromoDismiss else { return }
+        guard AdMobConfig.adsEnabled else {
+            pendingColdStartAdAfterLaunchPromoDismiss = false
+            return
+        }
+        if SubscriptionManager.isPremiumSnapshot {
+            pendingColdStartAdAfterLaunchPromoDismiss = false
+            return
+        }
+
+        await LaunchPerformance.whenFirstInteractive()
+        AdMobBootstrap.scheduleConsentAndAdMobStartIfNeeded()
+        await waitUntilAdsCanBeRequested(timeoutSeconds: 20)
+
+        guard pendingColdStartAdAfterLaunchPromoDismiss else { return }
+        guard AdConsentManager.canRequestAds else {
+            AppTelemetry.logAdLifecycle(channel: "cold", step: "show_deferred_paywall_dismiss_waiting_consent")
+            return
+        }
+
+        // 等待 Paywall Sheet 关闭动画结束，避免 rootViewController 仍被 Sheet 占用。
+        try? await Task.sleep(for: .milliseconds(450))
+
+        guard pendingColdStartAdAfterLaunchPromoDismiss else { return }
+        pendingColdStartAdAfterLaunchPromoDismiss = false
+        AppTelemetry.logAdLifecycle(channel: "cold", step: "show_requested_after_launch_promo_dismiss")
+        AppOpenAdManager.shared.showAdIfAvailable()
+    }
+
+    private static func waitUntilAdsCanBeRequested(timeoutSeconds: TimeInterval) async {
+        let deadline = Date().addingTimeInterval(timeoutSeconds)
+        while Date() < deadline {
+            if AdConsentManager.canRequestAds { return }
+            AdMobBootstrap.scheduleConsentAndAdMobStartIfNeeded()
+            try? await Task.sleep(for: .milliseconds(200))
         }
     }
 

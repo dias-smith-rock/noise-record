@@ -178,11 +178,7 @@ struct SettingsView: View {
                 ))
 
                 NavigationLink {
-                    if SubscriptionManager.shared.canAccessSleepHistory {
-                        SleepHistoryView(measurementMode: measurementMode)
-                    } else {
-                        SleepHistoryPaywallGateView()
-                    }
+                    SleepHistoryView(measurementMode: measurementMode)
                 } label: {
                     Text(L10n.sleepReportViewHistory)
                 }

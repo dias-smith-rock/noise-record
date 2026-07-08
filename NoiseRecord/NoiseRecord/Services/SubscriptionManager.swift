@@ -99,22 +99,12 @@ final class SubscriptionManager {
     /// Legacy alias — maps to `hasRemovedAds`.
     var isAdsRemoved: Bool { hasRemovedAds }
 
-    /// 7 日睡眠历史；DEBUG 构建跳过 Premium 限制便于 UI 验证。
-    var canAccessSleepHistory: Bool {
-        #if DEBUG
-        true
-        #else
-        isPremiumUser
-        #endif
-    }
+    /// 7 日睡眠历史（免费功能）。
+    var canAccessSleepHistory: Bool { true }
 
-    /// 睡眠数据导出（CSV / 司法级 PDF）；DEBUG 构建跳过 Premium 限制便于 UI 验证。
+    /// 睡眠数据导出（CSV / 司法级 PDF 分享）。
     var canAccessSleepExport: Bool {
-        #if DEBUG
-        true
-        #else
         isPremiumUser
-        #endif
     }
 
     private var cachedProducts: [String: Product] = [:]
