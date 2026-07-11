@@ -120,16 +120,6 @@ struct SettingsView: View {
             }
 
             Section {
-                EngineModeSwitchView(engine: engine)
-                    .listRowInsets(EdgeInsets(top: 12, leading: 0, bottom: 12, trailing: 0))
-                    .listRowBackground(Color.clear)
-            } header: {
-                Text(L10n.settingsMeasurementMode)
-            } footer: {
-                Text(measurementMode.coreDescription)
-            }
-
-            Section {
                 ProCard(theme: theme) {
                     ProToggleRow(
                         title: L10n.settingsAutoStartMonitoringTitle,

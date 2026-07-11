@@ -51880,6 +51880,29 @@
         }
       }
     },
+    "paywall.benefit.sleepReport" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Full overnight sleep reports & PDF/CSV export"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "夜间监测完整报告查看与 PDF/CSV 导出"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "夜間監測完整報告查看與 PDF/CSV 匯出"
+          }
+        }
+      }
+    },
     "paywall.benefit.spectrum" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -52931,19 +52954,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Export sleep noise data with Pro."
+            "value" : "View the full overnight report and export with Pro."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "升级 Pro 导出睡眠噪声数据。"
+            "value" : "升级 Pro 查看完整夜间报告并导出。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "升級 Pro 匯出睡眠噪聲數據。"
+            "value" : "升級 Pro 查看完整夜間報告並匯出。"
           }
         }
       }

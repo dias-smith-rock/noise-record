@@ -39,6 +39,7 @@ struct PaywallView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 8)
             }
+            .scrollClipDisabled()
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 stickyContinueFooter
             }
@@ -158,6 +159,7 @@ struct PaywallView: View {
         VStack(alignment: .leading, spacing: 12) {
             benefitRow(L10n.paywallBenefitVoiceUnlimited, icon: "mic.badge.plus")
             benefitRow(L10n.paywallBenefitVideo, icon: "video.badge.checkmark")
+            benefitRow(L10n.paywallBenefitSleepReport, icon: "moon.stars.fill")
             benefitRow(L10n.paywallBenefitAI, icon: "waveform.badge.magnifyingglass")
             benefitRow(L10n.paywallBenefitNoAds, icon: "sparkles")
         }
@@ -181,11 +183,23 @@ struct PaywallView: View {
     }
 
     private var tierCardsSection: some View {
-        HStack(alignment: .top, spacing: 8) {
-            ForEach(SubscriptionTier.allCases) { tier in
-                tierCard(tier)
+        GeometryReader { proxy in
+            let spacing: CGFloat = 6
+            let bleed: CGFloat = 6
+            let availableWidth = max(0, proxy.size.width - bleed * 2)
+            let cardWidth = (availableWidth - spacing * 2) / 3
+
+            HStack(alignment: .top, spacing: spacing) {
+                ForEach(SubscriptionTier.allCases) { tier in
+                    tierCard(tier)
+                        .frame(width: cardWidth)
+                }
             }
+            .padding(.horizontal, bleed)
+            .padding(.vertical, 8)
+            .frame(width: proxy.size.width, alignment: .center)
         }
+        .frame(height: 136)
     }
 
     private func tierCard(_ tier: SubscriptionTier) -> some View {
@@ -235,12 +249,11 @@ struct PaywallView: View {
                 .frame(minHeight: 24)
             }
             .frame(maxWidth: .infinity, minHeight: 118)
-            .padding(.horizontal, 6)
+            .padding(.horizontal, 4)
             .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: 14)
                     .fill(isYearly ? accent.opacity(0.12) : Color.white.opacity(0.05))
-                    .shadow(color: isYearly && isSelected ? glow : .clear, radius: 10, y: 3)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
@@ -249,12 +262,19 @@ struct PaywallView: View {
                         lineWidth: isSelected ? 2 : 1
                     )
             )
+            .background {
+                if isYearly && isSelected {
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(Color.clear)
+                        .shadow(color: glow, radius: 8, y: 3)
+                }
+            }
             .overlay(alignment: .topTrailing) {
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.caption)
                         .foregroundStyle(accent)
-                        .padding(6)
+                        .padding(4)
                 }
             }
         }
@@ -279,17 +299,19 @@ struct PaywallView: View {
             .frame(height: 16)
             .allowsHitTesting(false)
 
-            VStack(spacing: 12) {
-                if subscriptions.shouldPresentFreeTrial(for: selectedTier) {
-                    Text(L10n.paywallTrialDisclaimer(days: subscriptions.introductoryTrialDays(for: selectedTier)))
-                        .font(.caption2)
-                        .foregroundStyle(.white.opacity(0.55))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 20)
-                } else {
-                    legalFooter
-                        .padding(.horizontal, 20)
+            VStack(spacing: 10) {
+                VStack(spacing: 6) {
+                    if subscriptions.shouldPresentFreeTrial(for: selectedTier) {
+                        Text(L10n.paywallTrialDisclaimer(days: subscriptions.introductoryTrialDays(for: selectedTier)))
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.55))
+                            .multilineTextAlignment(.center)
+                    } else {
+                        legalFooter
+                    }
+                    compactLegalLinks
                 }
+                .padding(.horizontal, 20)
 
                 Button {
                     AppTelemetry.logProductEvent(
@@ -320,16 +342,13 @@ struct PaywallView: View {
                 .padding(.horizontal, 20)
 
                 Text(subscriptions.purchaseButtonSubtitle(for: selectedTier))
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.62))
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.5))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 20)
-
-                legalLinks
-                    .padding(.top, 4)
             }
             .padding(.top, 8)
-            .padding(.bottom, 12)
+            .padding(.bottom, 10)
             .background(Color.black)
         }
     }
@@ -342,13 +361,15 @@ struct PaywallView: View {
             .frame(maxWidth: .infinity)
     }
 
-    private var legalLinks: some View {
-        HStack(spacing: 20) {
+    private var compactLegalLinks: some View {
+        HStack(spacing: 0) {
             legalExternalLink(L10n.settingsPrivacyPolicy, url: LegalURLs.privacyPolicy, link: "privacy")
+            Text("·")
+                .foregroundStyle(.white.opacity(0.28))
+                .padding(.horizontal, 6)
             legalExternalLink(L10n.settingsTermsOfService, url: LegalURLs.termsOfService, link: "terms")
         }
-        .font(.caption.weight(.medium))
-        .frame(maxWidth: .infinity)
+        .font(.caption2.weight(.medium))
     }
 
     private func legalExternalLink(_ title: String, url: URL, link: String) -> some View {
@@ -362,7 +383,7 @@ struct PaywallView: View {
             )
             UIApplication.shared.open(url)
         }
-        .foregroundStyle(.white.opacity(0.6))
+        .foregroundStyle(.white.opacity(0.45))
     }
 
     private func closePaywall(purchased: Bool) {

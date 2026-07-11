@@ -501,6 +501,7 @@ nonisolated enum L10n {
     static var paywallPurchasedMessage: String { localized("paywall.alert.purchased.message") }
     static var paywallBenefitVideo: String { localized("paywall.benefit.video") }
     static var paywallBenefitAI: String { localized("paywall.benefit.ai") }
+    static var paywallBenefitSleepReport: String { localized("paywall.benefit.sleepReport") }
     static var paywallBenefitVoiceUnlimited: String { localized("paywall.benefit.voiceUnlimited") }
     static var paywallBenefitNoAds: String { localized("paywall.benefit.noAds") }
     static var paywallContextVideo: String { localized("paywall.context.video") }
