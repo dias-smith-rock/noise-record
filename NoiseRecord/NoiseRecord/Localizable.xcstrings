@@ -436,6 +436,9 @@
         }
       }
     },
+    "%lld dB" : {
+
+    },
     "72" : {
       "localizations" : {
         "ar" : {
@@ -5451,29 +5454,6 @@
         }
       }
     },
-    "common.skip" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skip"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "跳过"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "跳過"
-          }
-        }
-      }
-    },
     "common.ok" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6306,6 +6286,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "分享"
+          }
+        }
+      }
+    },
+    "common.skip" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "跳过"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "跳過"
           }
         }
       }
@@ -9650,6 +9653,144 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "恢復即時監測"
+          }
+        }
+      }
+    },
+    "dashboard.overnightMonitoring.activeBody" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monitoring for %@. Tap the Sleep menu above for reports."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已监测 %@。可在右上角 Sleep 菜单查看报告。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已監測 %@。可在右上角 Sleep 選單查看報告。"
+          }
+        }
+      }
+    },
+    "dashboard.overnightMonitoring.activeTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Overnight monitoring active"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "夜间监测进行中"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "夜間監測進行中"
+          }
+        }
+      }
+    },
+    "dashboard.overnightMonitoring.historyBody" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compare noise trends across the last 7 nights."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看近 7 晚睡眠噪声趋势对比。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看近 7 晚睡眠噪聲趨勢對比。"
+          }
+        }
+      }
+    },
+    "dashboard.overnightMonitoring.reportBody" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Review last night's noise floor, grade, and anomalies."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看昨晚噪底、评级与异常事件。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看昨晚噪底、評級與異常事件。"
+          }
+        }
+      }
+    },
+    "dashboard.overnightMonitoring.startBody" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plug in your device and track noise through the night."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建议连接电源，整夜追踪环境噪声。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建議連接電源，整夜追蹤環境噪聲。"
+          }
+        }
+      }
+    },
+    "dashboard.overnightMonitoring.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Overnight Monitoring"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "夜间监测"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "夜間監測"
           }
         }
       }
@@ -13205,54 +13346,6 @@
             "value" : "虛線：住宅夜間參考（~%d dB(A)）。各地限制有所不同；不用於執行。"
           }
         }
-      }
-    },
-    "dashboard.overnightMonitoring.activeBody" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Monitoring for %@. Tap the Sleep menu above for reports." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已监测 %@。可在右上角 Sleep 菜单查看报告。" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已監測 %@。可在右上角 Sleep 選單查看報告。" } }
-      }
-    },
-    "dashboard.overnightMonitoring.activeTitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Overnight monitoring active" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "夜间监测进行中" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "夜間監測進行中" } }
-      }
-    },
-    "dashboard.overnightMonitoring.historyBody" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Compare noise trends across the last 7 nights." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "查看近 7 晚睡眠噪声趋势对比。" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "查看近 7 晚睡眠噪聲趨勢對比。" } }
-      }
-    },
-    "dashboard.overnightMonitoring.reportBody" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Review last night's noise floor, grade, and anomalies." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "查看昨晚噪底、评级与异常事件。" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "查看昨晚噪底、評級與異常事件。" } }
-      }
-    },
-    "dashboard.overnightMonitoring.startBody" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Plug in your device and track noise through the night." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "建议连接电源，整夜追踪环境噪声。" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "建議連接電源，整夜追蹤環境噪聲。" } }
-      }
-    },
-    "dashboard.overnightMonitoring.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Overnight Monitoring" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "夜间监测" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "夜間監測" } }
       }
     },
     "dashboard.waveform.title" : {
@@ -47957,6 +48050,236 @@
         }
       }
     },
+    "monitor.sessionEnd.autoSavedClips" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auto-saved clips: %d"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自动保存片段：%d"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自動儲存片段：%d"
+          }
+        }
+      }
+    },
+    "monitor.sessionEnd.fileSize" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Size"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "大小"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "大小"
+          }
+        }
+      }
+    },
+    "monitor.sessionEnd.savedToFiles" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved to Files"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已保存到「文件」"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已儲存到「檔案」"
+          }
+        }
+      }
+    },
+    "monitor.sessionSummary.average" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Average"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "平均"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "平均"
+          }
+        }
+      }
+    },
+    "monitor.sessionSummary.duration" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duration"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "时长"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "時長"
+          }
+        }
+      }
+    },
+    "monitor.sessionSummary.hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep monitoring overnight or review past sessions to spot noise patterns."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开启夜间监测或查看历史，发现噪声规律。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開啟夜間監測或查看歷史，發現噪聲規律。"
+          }
+        }
+      }
+    },
+    "monitor.sessionSummary.historyCTA" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View History"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看历史"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看歷史"
+          }
+        }
+      }
+    },
+    "monitor.sessionSummary.max" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Peak"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "峰值"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "峰值"
+          }
+        }
+      }
+    },
+    "monitor.sessionSummary.sleepCTA" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start Overnight Monitoring"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开启夜间监测"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開啟夜間監測"
+          }
+        }
+      }
+    },
+    "monitor.sessionSummary.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Session Summary"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本次监测摘要"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本次監測摘要"
+          }
+        }
+      }
+    },
     "noiseRisk.dangerous" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -48789,6 +49112,144 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "安靜"
+          }
+        }
+      }
+    },
+    "onboarding.app.step.export.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Record video evidence or export PDF reports when noise becomes a problem."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "噪声扰民时可录制视频取证，或导出 PDF 报告。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "噪聲擾民時可錄製影片取證，或匯出 PDF 報告。"
+          }
+        }
+      }
+    },
+    "onboarding.app.step.export.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export When You Need Proof"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要时导出取证"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要時匯出取證"
+          }
+        }
+      }
+    },
+    "onboarding.app.step.measure.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the app and see real-time decibel readings for your environment."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开 App 即可看到环境的实时分贝读数。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開啟 App 即可看到環境的即時分貝讀數。"
+          }
+        }
+      }
+    },
+    "onboarding.app.step.measure.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Measure Noise Instantly"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "即时测量噪声"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "即時測量噪聲"
+          }
+        }
+      }
+    },
+    "onboarding.app.step.sleep.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap「Overnight」at night to track sleep noise and get a morning report."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "晚上点击右上角「夜间」，追踪睡眠噪声并生成晨报。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "晚上點擊右上角「夜間」，追蹤睡眠噪聲並產生晨報。"
+          }
+        }
+      }
+    },
+    "onboarding.app.step.sleep.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Overnight Sleep Reports"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "夜间睡眠报告"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "夜間睡眠報告"
           }
         }
       }
@@ -54085,134 +54546,6 @@
             "value" : "免費版每次儲存錄音最長 3 分鐘，升級 Pro 可儲存更長錄製。"
           }
         }
-      }
-    },
-    "monitor.sessionSummary.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Session Summary" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "本次监测摘要" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "本次監測摘要" } }
-      }
-    },
-    "monitor.sessionSummary.duration" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Duration" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "时长" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "時長" } }
-      }
-    },
-    "monitor.sessionSummary.max" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Peak" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "峰值" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "峰值" } }
-      }
-    },
-    "monitor.sessionSummary.average" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Average" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "平均" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "平均" } }
-      }
-    },
-    "monitor.sessionSummary.hint" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Keep monitoring overnight or review past sessions to spot noise patterns." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开启夜间监测或查看历史，发现噪声规律。" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開啟夜間監測或查看歷史，發現噪聲規律。" } }
-      }
-    },
-    "monitor.sessionSummary.sleepCTA" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Start Overnight Monitoring" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开启夜间监测" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開啟夜間監測" } }
-      }
-    },
-    "monitor.sessionSummary.historyCTA" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "View History" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "查看历史" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "查看歷史" } }
-      }
-    },
-    "monitor.sessionEnd.fileSize" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Size" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "大小" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "大小" } }
-      }
-    },
-    "monitor.sessionEnd.autoSavedClips" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Auto-saved clips: %d" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "自动保存片段：%d" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "自動儲存片段：%d" } }
-      }
-    },
-    "monitor.sessionEnd.savedToFiles" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Saved to Files" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已保存到「文件」" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已儲存到「檔案」" } }
-      }
-    },
-    "onboarding.app.step.measure.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Measure Noise Instantly" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "即时测量噪声" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "即時測量噪聲" } }
-      }
-    },
-    "onboarding.app.step.measure.body" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open the app and see real-time decibel readings for your environment." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开 App 即可看到环境的实时分贝读数。" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開啟 App 即可看到環境的即時分貝讀數。" } }
-      }
-    },
-    "onboarding.app.step.sleep.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Overnight Sleep Reports" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "夜间睡眠报告" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "夜間睡眠報告" } }
-      }
-    },
-    "onboarding.app.step.sleep.body" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tap「Overnight」at night to track sleep noise and get a morning report." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "晚上点击右上角「夜间」，追踪睡眠噪声并生成晨报。" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "晚上點擊右上角「夜間」，追蹤睡眠噪聲並產生晨報。" } }
-      }
-    },
-    "onboarding.app.step.export.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Export When You Need Proof" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "需要时导出取证" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "需要時匯出取證" } }
-      }
-    },
-    "onboarding.app.step.export.body" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Record video evidence or export PDF reports when noise becomes a problem." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "噪声扰民时可录制视频取证，或导出 PDF 报告。" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "噪聲擾民時可錄製影片取證，或匯出 PDF 報告。" } }
       }
     },
     "paywall.continue" : {
@@ -61739,52 +62072,142 @@
         }
       }
     },
-    "permission.microphone.intro.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Microphone for Noise Measurement" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "需要麦克风来测量噪声" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "需要麥克風來測量噪聲" } }
-      }
-    },
     "permission.microphone.intro.body" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Decibel Meter listens to ambient sound to show real-time noise levels. We only use the mic while monitoring is active." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "分贝仪通过麦克风采集环境声音，显示实时噪声水平。仅在监测开启时使用麦克风。" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "分貝儀透過麥克風採集環境聲音，顯示即時噪聲水平。僅在監測開啟時使用麥克風。" } }
-      }
-    },
-    "permission.microphone.intro.point.measure" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Measure environmental noise in real time" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "实时测量环境噪声" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "即時測量環境噪聲" } }
-      }
-    },
-    "permission.microphone.intro.point.local" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Audio stays on your device — nothing is uploaded" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "数据仅存于本机，不会上传" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "資料僅存於本機，不會上傳" } }
-      }
-    },
-    "permission.microphone.intro.point.sleep" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Optional overnight monitoring for sleep reports" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "可选夜间监测，生成睡眠噪声报告" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "可選夜間監測，產生睡眠噪聲報告" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Decibel Meter listens to ambient sound to show real-time noise levels. We only use the mic while monitoring is active."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分贝仪通过麦克风采集环境声音，显示实时噪声水平。仅在监测开启时使用麦克风。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分貝儀透過麥克風採集環境聲音，顯示即時噪聲水平。僅在監測開啟時使用麥克風。"
+          }
+        }
       }
     },
     "permission.microphone.intro.continue" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "继续" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "繼續" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "继续"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "繼續"
+          }
+        }
+      }
+    },
+    "permission.microphone.intro.point.local" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio stays on your device — nothing is uploaded"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "数据仅存于本机，不会上传"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "資料僅存於本機，不會上傳"
+          }
+        }
+      }
+    },
+    "permission.microphone.intro.point.measure" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Measure environmental noise in real time"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "实时测量环境噪声"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "即時測量環境噪聲"
+          }
+        }
+      }
+    },
+    "permission.microphone.intro.point.sleep" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Optional overnight monitoring for sleep reports"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "可选夜间监测，生成睡眠噪声报告"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "可選夜間監測，產生睡眠噪聲報告"
+          }
+        }
+      }
+    },
+    "permission.microphone.intro.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Microphone for Noise Measurement"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要麦克风来测量噪声"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要麥克風來測量噪聲"
+          }
+        }
       }
     },
     "permission.openSettings" : {
@@ -98152,29 +98575,6 @@
         }
       }
     },
-    "sleep.report.pdfUnlockTitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Unlock Full Report"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "解锁完整法医报告"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "解鎖完整法醫報告"
-          }
-        }
-      }
-    },
     "sleep.report.floorLevel" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -98263,6 +98663,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "整體：%@ dB"
+          }
+        }
+      }
+    },
+    "sleep.report.pdfUnlockTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlock Full Report"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "解锁完整法医报告"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "解鎖完整法醫報告"
           }
         }
       }

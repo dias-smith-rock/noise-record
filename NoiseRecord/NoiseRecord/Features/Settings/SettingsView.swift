@@ -84,246 +84,21 @@ struct SettingsView: View {
                 .padding(.bottom, 8)
                 .id(appearance.languageRefreshID)
 
-            Form {
-            Section {
-                NavigationLink {
-                    LanguagePickerView(appearance: appearance)
-                } label: {
-                    LabeledContent(L10n.settingsLanguage, value: appearance.preferredLanguage.displayName)
+            ScrollView {
+                VStack(spacing: 20) {
+                    appearanceSettingsSection
+                    monitoringSettingsSection
+                    sleepSettingsSection
+                    calibrationSettingsSection
+                    dataSettingsSection
+                    aboutSettingsSection
+                    #if DEBUG
+                    debugSettingsSection
+                    #endif
                 }
-
-                Picker(L10n.settingsTheme, selection: $appearance.colorSchemePreference) {
-                    ForEach(AppColorSchemePreference.allCases) { preference in
-                        Text(preference.title).tag(preference)
-                    }
-                }
-
-                NavigationLink {
-                    AccentColorSettingsView(appearance: appearance)
-                } label: {
-                    LabeledContent(L10n.settingsAccentColor, value: appearance.accentSummary)
-                }
-
-                Picker(L10n.settingsTemperatureUnit, selection: $appearance.temperatureUnitPreference) {
-                    ForEach(TemperatureUnitPreference.allCases) { unit in
-                        Text(unit.displayName).tag(unit)
-                    }
-                }
-                .pickerStyle(.segmented)
-            } header: {
-                Text(L10n.settingsAppearanceHeader)
-            } footer: {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(L10n.settingsAccentColorFooter)
-                    Text(L10n.settingsTemperatureFooter)
-                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
             }
-
-            Section {
-                ProCard(theme: theme) {
-                    ProToggleRow(
-                        title: L10n.settingsAutoStartMonitoringTitle,
-                        subtitle: L10n.settingsAutoStartMonitoringSubtitle,
-                        isOn: Binding(
-                            get: { MonitorSettingsStore.autoStartMonitoringOnLaunch },
-                            set: { MonitorSettingsStore.autoStartMonitoringOnLaunch = $0 }
-                        ),
-                        theme: theme,
-                        icon: "waveform.circle.fill"
-                    )
-                }
-                .listRowInsets(EdgeInsets(top: 12, leading: 0, bottom: 12, trailing: 0))
-                .listRowBackground(Color.clear)
-
-                Button {
-                    handleLocationAccessTapped()
-                } label: {
-                    LabeledContent(L10n.settingsLocationAccess, value: locationAuthorizationSummary)
-                }
-            } header: {
-                Text(L10n.settingsMonitoringHeader)
-            } footer: {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(L10n.settingsAutoStartMonitoringFooter)
-                    Text(L10n.settingsLocationAccessFooter)
-                }
-            }
-
-            Section {
-                DatePicker(
-                    L10n.sleepSettingsWakeTime,
-                    selection: $wakeReminderTime,
-                    displayedComponents: .hourAndMinute
-                )
-                .onChange(of: wakeReminderTime) { _, newValue in
-                    applyWakeReminderTime(newValue)
-                }
-
-                Toggle(L10n.sleepSettingsNotifications, isOn: Binding(
-                    get: { SleepMonitorSettingsStore.notificationsEnabled },
-                    set: { newValue in
-                        SleepMonitorSettingsStore.notificationsEnabled = newValue
-                        Task { await SleepNotificationScheduler.scheduleDailyReminders() }
-                    }
-                ))
-
-                NavigationLink {
-                    SleepHistoryView(measurementMode: measurementMode)
-                } label: {
-                    Text(L10n.sleepReportViewHistory)
-                }
-            } header: {
-                Text(L10n.sleepSettingsHeader)
-            }
-
-            if !engine.isHighSensitivityMode {
-                Section {
-                    Picker(L10n.settingsWeightingPicker, selection: Binding(
-                        get: { engine.weightingType },
-                        set: { engine.updateWeighting($0) }
-                    )) {
-                        ForEach(WeightingType.allCases, id: \.self) { type in
-                            Text(type.displayName).tag(type)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                } header: {
-                    Text(L10n.settingsWeightingHeader)
-                } footer: {
-                    Text(L10n.settingsWeightingFooter)
-                }
-            }
-
-            Section {
-                VStack(alignment: .leading, spacing: 8) {
-                    LabeledContent(
-                        L10n.settingsWaveformReferenceLimit,
-                        value: "\(Int(waveformReferenceLimit)) dB"
-                    )
-                    Slider(
-                        value: $waveformReferenceLimit,
-                        in: NoiseReferenceLimits.configurableMinDB...NoiseReferenceLimits.configurableMaxDB,
-                        step: 1
-                    )
-                    Button(L10n.settingsWaveformReferenceReset) {
-                        NoiseReferenceLimits.resetResidentialNightReference()
-                        waveformReferenceLimit = NoiseReferenceLimits.residentialNightDB
-                    }
-                }
-            } header: {
-                Text(L10n.settingsWaveformReferenceHeader)
-            } footer: {
-                Text(L10n.settingsWaveformReferenceFooter)
-            }
-
-            Section {
-                LabeledContent(L10n.settingsCurrentMode, value: measurementMode.userFacingTitle)
-                LabeledContent(L10n.settingsTechnicalBadge, value: measurementMode.technicalBadge)
-                LabeledContent(L10n.settingsDeviceModel, value: HardwareIdentifier.marketingName)
-                LabeledContent(L10n.settingsDeviceOffset, value: String(format: "%.1f dB", DeviceCalibrationStore.deviceOffset))
-                LabeledContent(L10n.settingsUserAdjustment, value: String(format: "%+.1f dB", displayedUserAdjustment))
-                LabeledContent(L10n.settingsTotalOffset, value: String(format: "%.1f dB", displayedTotalOffset))
-                LabeledContent(L10n.settingsRmsFloor, value: String(format: "%.0e", SPLCalculator.rmsFloor))
-
-                VStack(alignment: .leading) {
-                    Text(L10n.settingsReferenceLevel(Int(calibrationReference)))
-                    Slider(value: $calibrationReference, in: 10...140, step: 1)
-                }
-
-                Button(L10n.settingsCalibrateButton) {
-                    let previousAdjustment = DeviceCalibrationStore.userAdjustment
-                    DeviceCalibrationStore.calibrate(
-                        referenceSPL: calibrationReference,
-                        displayedSPL: engine.currentDB
-                    )
-                    engine.refreshCalibrationOffset()
-                    refreshCalibrationDisplay()
-
-                    let newAdjustment = displayedUserAdjustment
-                    let delta = newAdjustment - previousAdjustment
-                    if abs(delta) < 0.05 {
-                        calibrationAlertMessage = L10n.settingsCalibrationSavedSmall(
-                            adjustment: formatSignedDB(newAdjustment),
-                            totalOffset: formatDB(displayedTotalOffset)
-                        )
-                    } else {
-                        calibrationAlertMessage = L10n.settingsCalibrationSavedChanged(
-                            reference: Int(calibrationReference),
-                            previous: formatSignedDB(previousAdjustment),
-                            newValue: formatSignedDB(newAdjustment),
-                            totalOffset: formatDB(displayedTotalOffset)
-                        )
-                    }
-                    showCalibrationAlert = true
-                    AppTelemetry.logProductEvent("calibration_updated")
-                }
-                .disabled(!engine.isMonitoring)
-
-                Button(L10n.settingsResetButton, role: .destructive) {
-                    performResetCalibration()
-                }
-            } header: {
-                Text(L10n.settingsCalibrationHeader)
-            } footer: {
-                Text(L10n.settingsCalibrationFooter)
-            }
-
-            Section {
-                LabeledContent(L10n.settingsMeasurementSampleCount, value: "\(measurementSampleCount)")
-                Button(L10n.settingsClearMeasurements, role: .destructive) {
-                    showClearMeasurementsConfirm = true
-                }
-                .disabled(measurementSampleCount == 0)
-            } header: {
-                Text(L10n.settingsDataHeader)
-            }
-
-            #if DEBUG
-            Section {
-                Button("插入 Mock 睡眠数据（7 晚）") {
-                    _ = SleepDebugMockData.seedMockSessions(in: modelContext)
-                }
-                Button("清除睡眠数据", role: .destructive) {
-                    SleepDebugMockData.clearAllSleepSessions(in: modelContext)
-                }
-            } header: {
-                Text("Debug")
-            } footer: {
-                Text("模拟器首次启动且无睡眠记录时会自动注入。真机 Debug 可加 Launch Argument：-SeedSleepMockData")
-            }
-            #endif
-
-            Section {
-                Button {
-                    showAppReviewPrompt = true
-                } label: {
-                    Label(L10n.settingsReviewApp, systemImage: "text.bubble")
-                }
-
-                Link(L10n.settingsPrivacyPolicy, destination: LegalURLs.privacyPolicy)
-                if showsPrivacyChoices {
-                    Button {
-                        AppTelemetry.logProductEvent("settings_privacy_options_tap")
-                        Task {
-                            try? await AdConsentManager.presentPrivacyOptions()
-                            refreshPrivacyChoicesVisibility()
-                        }
-                    } label: {
-                        Label(L10n.settingsPrivacyChoices, systemImage: "hand.raised")
-                    }
-                }
-                Link(L10n.settingsTermsOfService, destination: LegalURLs.termsOfService)
-                Link(destination: SupportContact.mailtoURL) {
-                    LabeledContent(L10n.settingsSupport, value: SupportContact.email)
-                }
-                LabeledContent(L10n.settingsVersion, value: appVersionString)
-            } header: {
-                Text(L10n.settingsAboutHeader)
-            } footer: {
-                Text(L10n.settingsDisclaimerBody)
-            }
-            }
-            .scrollContentBackground(.hidden)
             .id(appearance.languageRefreshID)
         }
         .observesAppLanguage()
@@ -397,6 +172,401 @@ struct SettingsView: View {
             LocationAccessGuideSheet()
         }
     }
+
+    // MARK: - Sections
+
+    @ViewBuilder
+    private var appearanceSettingsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ProSectionHeader(title: L10n.settingsAppearanceHeader, theme: theme)
+
+            ProCard(theme: theme) {
+                VStack(spacing: 0) {
+                    SettingsNavigationRow(
+                        title: L10n.settingsLanguage,
+                        value: appearance.preferredLanguage.displayName
+                    ) {
+                        LanguagePickerView(appearance: appearance)
+                    }
+
+                    SettingsDivider(theme: theme)
+
+                    SettingsInlineRow(title: L10n.settingsTheme) {
+                        Picker(L10n.settingsTheme, selection: $appearance.colorSchemePreference) {
+                            ForEach(AppColorSchemePreference.allCases) { preference in
+                                Text(preference.title).tag(preference)
+                            }
+                        }
+                        .labelsHidden()
+                    }
+
+                    SettingsDivider(theme: theme)
+
+                    SettingsNavigationRow(
+                        title: L10n.settingsAccentColor,
+                        value: appearance.accentSummary
+                    ) {
+                        AccentColorSettingsView(appearance: appearance)
+                    }
+
+                    SettingsDivider(theme: theme)
+
+                    SettingsCompoundRow {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(L10n.settingsTemperatureUnit)
+                                .font(.subheadline)
+                            Picker(L10n.settingsTemperatureUnit, selection: $appearance.temperatureUnitPreference) {
+                                ForEach(TemperatureUnitPreference.allCases) { unit in
+                                    Text(unit.displayName).tag(unit)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                        }
+                    }
+                }
+            }
+
+            SettingsSectionFooter(texts: [
+                L10n.settingsAccentColorFooter,
+                L10n.settingsTemperatureFooter
+            ])
+        }
+    }
+
+    @ViewBuilder
+    private var monitoringSettingsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ProSectionHeader(title: L10n.settingsMonitoringHeader, theme: theme)
+
+            ProCard(theme: theme) {
+                VStack(spacing: 0) {
+                    ProToggleRow(
+                        title: L10n.settingsAutoStartMonitoringTitle,
+                        subtitle: L10n.settingsAutoStartMonitoringSubtitle,
+                        isOn: Binding(
+                            get: { MonitorSettingsStore.autoStartMonitoringOnLaunch },
+                            set: { MonitorSettingsStore.autoStartMonitoringOnLaunch = $0 }
+                        ),
+                        theme: theme,
+                        icon: "waveform.circle.fill"
+                    )
+                    .settingsCardRowPadding()
+
+                    SettingsDivider(theme: theme)
+
+                    SettingsActionRow(
+                        title: L10n.settingsLocationAccess,
+                        value: locationAuthorizationSummary,
+                        action: handleLocationAccessTapped
+                    )
+                }
+            }
+
+            if !engine.isHighSensitivityMode {
+                ProCard(theme: theme) {
+                    SettingsCompoundRow {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(L10n.settingsWeightingPicker)
+                                .font(.subheadline)
+                            Picker(L10n.settingsWeightingPicker, selection: Binding(
+                                get: { engine.weightingType },
+                                set: { engine.updateWeighting($0) }
+                            )) {
+                                ForEach(WeightingType.allCases, id: \.self) { type in
+                                    Text(type.displayName).tag(type)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                        }
+                    }
+                }
+            }
+
+            ProCard(theme: theme) {
+                SettingsCompoundRow {
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text(L10n.settingsWaveformReferenceLimit)
+                                .font(.subheadline)
+                            Spacer()
+                            Text("\(Int(waveformReferenceLimit)) dB")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .monospacedDigit()
+                        }
+                        Slider(
+                            value: $waveformReferenceLimit,
+                            in: NoiseReferenceLimits.configurableMinDB...NoiseReferenceLimits.configurableMaxDB,
+                            step: 1
+                        )
+                        .tint(theme.accent)
+                        Button(L10n.settingsWaveformReferenceReset) {
+                            NoiseReferenceLimits.resetResidentialNightReference()
+                            waveformReferenceLimit = NoiseReferenceLimits.residentialNightDB
+                        }
+                        .font(.subheadline)
+                    }
+                }
+            }
+
+            SettingsSectionFooter(texts: monitoringSectionFooterTexts)
+        }
+    }
+
+    private var monitoringSectionFooterTexts: [String] {
+        var texts = [
+            L10n.settingsAutoStartMonitoringFooter,
+            L10n.settingsLocationAccessFooter
+        ]
+        if !engine.isHighSensitivityMode {
+            texts.append(L10n.settingsWeightingFooter)
+        }
+        texts.append(L10n.settingsWaveformReferenceFooter)
+        return texts
+    }
+
+    @ViewBuilder
+    private var sleepSettingsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ProSectionHeader(title: L10n.sleepSettingsHeader, theme: theme)
+
+            ProCard(theme: theme) {
+                VStack(spacing: 0) {
+                    SettingsCompoundRow {
+                        DatePicker(
+                            L10n.sleepSettingsWakeTime,
+                            selection: $wakeReminderTime,
+                            displayedComponents: .hourAndMinute
+                        )
+                        .onChange(of: wakeReminderTime) { _, newValue in
+                            applyWakeReminderTime(newValue)
+                        }
+                    }
+
+                    SettingsDivider(theme: theme)
+
+                    SettingsInlineRow(title: L10n.sleepSettingsNotifications) {
+                        Toggle(L10n.sleepSettingsNotifications, isOn: Binding(
+                            get: { SleepMonitorSettingsStore.notificationsEnabled },
+                            set: { newValue in
+                                SleepMonitorSettingsStore.notificationsEnabled = newValue
+                                Task { await SleepNotificationScheduler.scheduleDailyReminders() }
+                            }
+                        ))
+                        .labelsHidden()
+                        .tint(theme.accent)
+                    }
+
+                    SettingsDivider(theme: theme)
+
+                    SettingsNavigationRow(title: L10n.sleepReportViewHistory) {
+                        SleepHistoryView(measurementMode: measurementMode)
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var calibrationSettingsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ProSectionHeader(title: L10n.settingsCalibrationHeader, theme: theme)
+
+            ProCard(theme: theme) {
+                VStack(spacing: 0) {
+                    SettingsValueRow(title: L10n.settingsCurrentMode, value: measurementMode.userFacingTitle)
+                    SettingsDivider(theme: theme)
+                    SettingsValueRow(title: L10n.settingsTechnicalBadge, value: measurementMode.technicalBadge)
+                    SettingsDivider(theme: theme)
+                    SettingsValueRow(title: L10n.settingsDeviceModel, value: HardwareIdentifier.marketingName)
+                    SettingsDivider(theme: theme)
+                    SettingsValueRow(
+                        title: L10n.settingsDeviceOffset,
+                        value: String(format: "%.1f dB", DeviceCalibrationStore.deviceOffset)
+                    )
+                    SettingsDivider(theme: theme)
+                    SettingsValueRow(
+                        title: L10n.settingsUserAdjustment,
+                        value: String(format: "%+.1f dB", displayedUserAdjustment)
+                    )
+                    SettingsDivider(theme: theme)
+                    SettingsValueRow(
+                        title: L10n.settingsTotalOffset,
+                        value: String(format: "%.1f dB", displayedTotalOffset)
+                    )
+                    SettingsDivider(theme: theme)
+                    SettingsValueRow(
+                        title: L10n.settingsRmsFloor,
+                        value: String(format: "%.0e", SPLCalculator.rmsFloor)
+                    )
+                }
+            }
+
+            ProCard(theme: theme) {
+                SettingsCompoundRow {
+                    VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(L10n.settingsReferenceLevel(Int(calibrationReference)))
+                                .font(.subheadline)
+                            Slider(value: $calibrationReference, in: 10...140, step: 1)
+                                .tint(theme.accent)
+                        }
+
+                        Button(L10n.settingsCalibrateButton) {
+                            let previousAdjustment = DeviceCalibrationStore.userAdjustment
+                            DeviceCalibrationStore.calibrate(
+                                referenceSPL: calibrationReference,
+                                displayedSPL: engine.currentDB
+                            )
+                            engine.refreshCalibrationOffset()
+                            refreshCalibrationDisplay()
+
+                            let newAdjustment = displayedUserAdjustment
+                            let delta = newAdjustment - previousAdjustment
+                            if abs(delta) < 0.05 {
+                                calibrationAlertMessage = L10n.settingsCalibrationSavedSmall(
+                                    adjustment: formatSignedDB(newAdjustment),
+                                    totalOffset: formatDB(displayedTotalOffset)
+                                )
+                            } else {
+                                calibrationAlertMessage = L10n.settingsCalibrationSavedChanged(
+                                    reference: Int(calibrationReference),
+                                    previous: formatSignedDB(previousAdjustment),
+                                    newValue: formatSignedDB(newAdjustment),
+                                    totalOffset: formatDB(displayedTotalOffset)
+                                )
+                            }
+                            showCalibrationAlert = true
+                            AppTelemetry.logProductEvent("calibration_updated")
+                        }
+                        .disabled(!engine.isMonitoring)
+
+                        Button(L10n.settingsResetButton, role: .destructive) {
+                            performResetCalibration()
+                        }
+                    }
+                }
+            }
+
+            SettingsSectionFooter(texts: [L10n.settingsCalibrationFooter])
+        }
+    }
+
+    @ViewBuilder
+    private var dataSettingsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ProSectionHeader(title: L10n.settingsDataHeader, theme: theme)
+
+            ProCard(theme: theme) {
+                VStack(spacing: 0) {
+                    SettingsValueRow(
+                        title: L10n.settingsMeasurementSampleCount,
+                        value: "\(measurementSampleCount)"
+                    )
+
+                    SettingsDivider(theme: theme)
+
+                    SettingsButtonRow(
+                        title: L10n.settingsClearMeasurements,
+                        role: .destructive
+                    ) {
+                        showClearMeasurementsConfirm = true
+                    }
+                    .disabled(measurementSampleCount == 0)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var aboutSettingsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ProSectionHeader(title: L10n.settingsAboutHeader, theme: theme)
+
+            ProCard(theme: theme) {
+                VStack(spacing: 0) {
+                    SettingsButtonRow(
+                        title: L10n.settingsReviewApp,
+                        systemImage: "text.bubble"
+                    ) {
+                        showAppReviewPrompt = true
+                    }
+
+                    SettingsDivider(theme: theme)
+
+                    SettingsLinkRow(
+                        title: L10n.settingsPrivacyPolicy,
+                        url: LegalURLs.privacyPolicy
+                    )
+
+                    if showsPrivacyChoices {
+                        SettingsDivider(theme: theme)
+
+                        SettingsButtonRow(
+                            title: L10n.settingsPrivacyChoices,
+                            systemImage: "hand.raised"
+                        ) {
+                            AppTelemetry.logProductEvent("settings_privacy_options_tap")
+                            Task {
+                                try? await AdConsentManager.presentPrivacyOptions()
+                                refreshPrivacyChoicesVisibility()
+                            }
+                        }
+                    }
+
+                    SettingsDivider(theme: theme)
+
+                    SettingsLinkRow(
+                        title: L10n.settingsTermsOfService,
+                        url: LegalURLs.termsOfService
+                    )
+
+                    SettingsDivider(theme: theme)
+
+                    SettingsLinkRow(
+                        title: L10n.settingsSupport,
+                        value: SupportContact.email,
+                        url: SupportContact.mailtoURL
+                    )
+
+                    SettingsDivider(theme: theme)
+
+                    SettingsValueRow(title: L10n.settingsVersion, value: appVersionString)
+                }
+            }
+
+            SettingsSectionFooter(texts: [L10n.settingsDisclaimerBody])
+        }
+    }
+
+    #if DEBUG
+    @ViewBuilder
+    private var debugSettingsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ProSectionHeader(title: "Debug", theme: theme)
+
+            ProCard(theme: theme) {
+                VStack(spacing: 0) {
+                    SettingsButtonRow(title: "插入 Mock 睡眠数据（7 晚）") {
+                        _ = SleepDebugMockData.seedMockSessions(in: modelContext)
+                    }
+
+                    SettingsDivider(theme: theme)
+
+                    SettingsButtonRow(title: "清除睡眠数据", role: .destructive) {
+                        SleepDebugMockData.clearAllSleepSessions(in: modelContext)
+                    }
+                }
+            }
+
+            SettingsSectionFooter(texts: [
+                "模拟器首次启动且无睡眠记录时会自动注入。真机 Debug 可加 Launch Argument：-SeedSleepMockData"
+            ])
+        }
+    }
+    #endif
+
+    // MARK: - Actions
 
     private func handleLocationAccessTapped() {
         if shouldShowLocationAccessGuide {
