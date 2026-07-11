@@ -13207,6 +13207,54 @@
         }
       }
     },
+    "dashboard.overnightMonitoring.activeBody" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Monitoring for %@. Tap the Sleep menu above for reports." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已监测 %@。可在右上角 Sleep 菜单查看报告。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已監測 %@。可在右上角 Sleep 選單查看報告。" } }
+      }
+    },
+    "dashboard.overnightMonitoring.activeTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Overnight monitoring active" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "夜间监测进行中" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "夜間監測進行中" } }
+      }
+    },
+    "dashboard.overnightMonitoring.historyBody" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Compare noise trends across the last 7 nights." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "查看近 7 晚睡眠噪声趋势对比。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "查看近 7 晚睡眠噪聲趨勢對比。" } }
+      }
+    },
+    "dashboard.overnightMonitoring.reportBody" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Review last night's noise floor, grade, and anomalies." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "查看昨晚噪底、评级与异常事件。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "查看昨晚噪底、評級與異常事件。" } }
+      }
+    },
+    "dashboard.overnightMonitoring.startBody" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Plug in your device and track noise through the night." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "建议连接电源，整夜追踪环境噪声。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "建議連接電源，整夜追蹤環境噪聲。" } }
+      }
+    },
+    "dashboard.overnightMonitoring.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Overnight Monitoring" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "夜间监测" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "夜間監測" } }
+      }
+    },
     "dashboard.waveform.title" : {
       "extractionState" : "manual",
       "localizations" : {

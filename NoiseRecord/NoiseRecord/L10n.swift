@@ -52,6 +52,16 @@ nonisolated enum L10n {
     static var dashboardAvg: String { localized("dashboard.stat.avg") }
     static var dashboardLeq: String { localized("dashboard.stat.leq") }
     static var dashboardWaveform: String { localized("dashboard.waveform.title") }
+    static var dashboardOvernightMonitoringTitle: String { localized("dashboard.overnightMonitoring.title") }
+    static var dashboardOvernightMonitoringStartBody: String { localized("dashboard.overnightMonitoring.startBody") }
+    static var dashboardOvernightMonitoringReportBody: String { localized("dashboard.overnightMonitoring.reportBody") }
+    static var dashboardOvernightMonitoringHistoryBody: String { localized("dashboard.overnightMonitoring.historyBody") }
+    static var dashboardOvernightMonitoringActiveTitle: String { localized("dashboard.overnightMonitoring.activeTitle") }
+
+    static func dashboardOvernightMonitoringActiveBody(_ elapsed: String) -> String {
+        String(format: localized("dashboard.overnightMonitoring.activeBody"), elapsed)
+    }
+
     static var dashboardFullBand: String { localized("dashboard.waveform.fullBandBadge") }
     static func dashboardWaveformReferenceCaption(limit: Int) -> String {
         String(format: localized("dashboard.waveform.referenceCaption"), limit)

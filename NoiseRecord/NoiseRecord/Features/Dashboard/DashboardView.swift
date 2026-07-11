@@ -345,6 +345,18 @@ struct DashboardView: View {
                     .foregroundStyle(.tertiary)
             }
 
+            OvernightMonitoringSection(
+                theme: theme,
+                isSleepMonitoring: sleepCoordinator.isSleepMonitoring,
+                canStartOvernight: !sleepCoordinator.isSleepMonitoring
+                    && !(engine.isMonitoring && !sleepCoordinator.isSleepMonitoring),
+                sleepMonitoringStartedAt: sleepCoordinator.activeSession?.startedAt,
+                hasLatestReport: latestCompletedSessionID != nil,
+                onStart: startSleepMonitoringFromHeader,
+                onOpenReport: openLatestMorningReportFromDashboard,
+                onOpenHistory: openSleepHistoryFromDashboard
+            )
+
             Text(footerNote)
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
@@ -473,14 +485,33 @@ struct DashboardView: View {
     }
 
     private func openLatestMorningReport() {
+        openLatestMorningReport(source: "header_menu")
+    }
+
+    private func openLatestMorningReportFromDashboard() {
+        openLatestMorningReport(source: "dashboard_section")
+    }
+
+    private func openLatestMorningReport(source: String) {
         guard let sessionID = latestCompletedSessionID else { return }
-        sleepCoordinator.presentReport(sessionID: sessionID, source: "header_menu")
+        sleepCoordinator.presentReport(sessionID: sessionID, source: source)
     }
 
     private func openSleepHistory() {
+        openSleepHistory(source: "header_menu")
+    }
+
+    private func openSleepHistoryFromDashboard() {
+        openSleepHistory(source: "dashboard_section")
+    }
+
+    private func openSleepHistory(source: String) {
         AppTelemetry.logProductEvent(
             "sleep_history_open",
-            parameters: ["gated": "false"]
+            parameters: [
+                "gated": "false",
+                "source": source,
+            ]
         )
         sleepCoordinator.presentHistory()
     }

@@ -44,7 +44,7 @@ struct SleepMonitorHeaderMenu: View, Equatable {
                 Menu {
                     sleepHistoryAndReportMenuItems(includeStart: false)
                 } label: {
-                    sleepHeaderCapsule()
+                    SleepHeaderGuideCapsule(theme: theme)
                         .onTapGesture {
                             logSleepHeaderTap(state: "monitoring")
                         }
@@ -53,7 +53,7 @@ struct SleepMonitorHeaderMenu: View, Equatable {
                 Menu {
                     sleepHistoryAndReportMenuItems(includeStart: true)
                 } label: {
-                    sleepHeaderCapsule()
+                    SleepHeaderGuideCapsule(theme: theme)
                         .onTapGesture {
                             logSleepHeaderTap(state: "idle")
                         }
@@ -118,27 +118,6 @@ struct SleepMonitorHeaderMenu: View, Equatable {
         }
     }
 
-    private func sleepHeaderCapsule() -> some View {
-        HStack(spacing: 5) {
-            Image(systemName: "moon.zzz.fill")
-                .font(.subheadline.weight(.semibold))
-            Text(L10n.sleepMonitorHeaderButton)
-                .font(.subheadline.weight(.semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-        }
-        .foregroundStyle(theme.accent)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(theme.badgeBackground)
-        .overlay(
-            Capsule()
-                .strokeBorder(theme.accent.opacity(0.5), lineWidth: 1)
-        )
-        .clipShape(Capsule())
-        .accessibilityLabel(L10n.sleepMenuStart)
-    }
-
     private func sleepCapsule(title: String, systemImage: String, prominent: Bool) -> some View {
         HStack(spacing: 4) {
             Image(systemName: systemImage)
@@ -169,5 +148,39 @@ struct SleepMonitorHeaderMenu: View, Equatable {
             "sleep_header_tap",
             parameters: ["state": state]
         )
+    }
+}
+
+private struct SleepHeaderGuideCapsule: View {
+    let theme: ModeVisualTheme
+    @State private var isPulsing = false
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: "moon.zzz.fill")
+                .font(.subheadline.weight(.semibold))
+                .symbolEffect(.pulse.byLayer, options: .repeating.speed(0.5))
+            Text(L10n.sleepMonitorHeaderButton)
+                .font(.subheadline.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .foregroundStyle(theme.accent)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(theme.badgeBackground)
+        .overlay(
+            Capsule()
+                .strokeBorder(theme.accent.opacity(isPulsing ? 0.95 : 0.45), lineWidth: isPulsing ? 1.5 : 1)
+        )
+        .clipShape(Capsule())
+        .scaleEffect(isPulsing ? 1.04 : 1)
+        .shadow(color: theme.accent.opacity(isPulsing ? 0.3 : 0), radius: isPulsing ? 7 : 0)
+        .accessibilityLabel(L10n.sleepMenuStart)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.3).repeatForever(autoreverses: true)) {
+                isPulsing = true
+            }
+        }
     }
 }
