@@ -25,6 +25,7 @@ final class FirebaseAppDelegate: NSObject, UIApplicationDelegate {
             queue: .main
         ) { _ in
             Task { @MainActor in
+                guard LaunchExperienceStore.allowsAdsOnFirstInstallDay else { return }
                 AdMobBootstrap.scheduleConsentAndAdMobStartIfNeeded()
             }
         }
@@ -34,6 +35,7 @@ final class FirebaseAppDelegate: NSObject, UIApplicationDelegate {
 
     func applicationDidBecomeActive(_ application: UIApplication) {
         Task { @MainActor in
+            guard LaunchExperienceStore.allowsAdsOnFirstInstallDay else { return }
             AdMobBootstrap.scheduleConsentAndAdMobStartIfNeeded()
         }
     }

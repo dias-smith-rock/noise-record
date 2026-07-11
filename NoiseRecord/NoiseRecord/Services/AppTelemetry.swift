@@ -2,7 +2,6 @@ import FirebaseAnalytics
 import FirebaseCore
 import FirebaseCrashlytics
 import Foundation
-
 /// Firebase Analytics + Crashlytics bootstrap and logging helpers.
 nonisolated enum AppTelemetry {
     static let maxAnalyticsParameterCount = 5
@@ -32,6 +31,17 @@ nonisolated enum AppTelemetry {
             print("[AppTelemetry] event \(name)")
         }
         #endif
+    }
+
+    static func setInstallCohortProperties(installDate: Date) {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyy-MM-dd"
+        let cohort = formatter.string(from: installDate)
+        Analytics.setUserProperty(cohort, forName: "install_cohort")
+        Analytics.setUserProperty(cohort, forName: "install_date")
     }
 
     /// Logs a product analytics event as `product_{action}`.
@@ -258,6 +268,11 @@ nonisolated enum AppTelemetry {
             var commercialMetadata = metadata
             commercialMetadata["channel"] = channel
             commercialMetadata["step"] = step
+            if outcome == "fail" {
+                guard AdSessionPolicy.shouldReportCommercialFail(channel: channel, step: step) else {
+                    return
+                }
+            }
             logCommercialEvent(domain: "ad", outcome: outcome, metadata: commercialMetadata)
         }
     }

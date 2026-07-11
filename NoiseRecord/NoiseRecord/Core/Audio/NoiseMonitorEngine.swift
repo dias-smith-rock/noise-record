@@ -376,6 +376,35 @@ final class NoiseMonitorEngine {
         stopMonitoring(presentSessionSavePrompt: true)
     }
 
+    /// 新手任务：满 10 秒时导出当前监测录音到 Files，并继续监测。
+    func exportOnboardingMonitoringSnapshot() {
+        guard isMonitoring, !isSleepModeActive else { return }
+        guard !AppOnboardingStore.hasSavedMeasureReport else { return }
+
+        let events = voiceRecorder.endSession(
+            peakDB: maxDB,
+            averageDB: averageDB,
+            noiseType: latestNoiseLabel,
+            latitude: locationProvider.latitude,
+            longitude: locationProvider.longitude
+        )
+
+        var didSaveSessionReport = false
+        for event in events where event.isSessionRecording {
+            onRecordingFinished?(event)
+            didSaveSessionReport = true
+        }
+
+        guard didSaveSessionReport else {
+            voiceRecorder.beginSession()
+            return
+        }
+
+        AppOnboardingStore.markMeasureReportSaved()
+        AppTelemetry.logProductEvent("onboarding_measure_report_saved")
+        voiceRecorder.beginSession()
+    }
+
     func stopMonitoring(presentSessionSavePrompt: Bool = true) {
         guard isMonitoring else { return }
         if presentSessionSavePrompt {

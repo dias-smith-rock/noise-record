@@ -12,6 +12,7 @@ nonisolated enum AppReviewStore {
     static let shouldPresentPromptNotification = Notification.Name("AppReviewStore.shouldPresentPrompt")
     static let shouldReevaluatePromptNotification = Notification.Name("AppReviewStore.shouldReevaluatePrompt")
     static let minimumMonitoringSeconds: TimeInterval = 60
+    static let minimumFilesForReviewPrompt = 2
 
     private static let hasShownReviewPromptKey = "appReview.hasShownPrompt"
     private static let legacyHasShownReviewPromptKey = "appReview.hasShownFirstFilePrompt"
@@ -19,6 +20,7 @@ nonisolated enum AppReviewStore {
     private static let cumulativeMonitoringSecondsKey = "appReview.cumulativeMonitoringSeconds"
     private static let coreFeaturePrefix = "appReview.coreFeature."
     private static var isPromptPresentationPending = false
+    private static var latestFilesCount = 0
 
     private static let lock = NSLock()
     private static var defaults: UserDefaults = .standard
@@ -80,6 +82,7 @@ nonisolated enum AppReviewStore {
             defaults.removeObject(forKey: key)
         }
         isPromptPresentationPending = false
+        latestFilesCount = 0
     }
 
     static func recordMonitoringElapsed(_ seconds: TimeInterval) {
@@ -117,8 +120,17 @@ nonisolated enum AppReviewStore {
         defaults.set(true, forKey: hasUsedCoreFeatureKey)
     }
 
+    static func updateLatestFilesCount(_ count: Int) {
+        latestFilesCount = max(0, count)
+    }
+
     static func evaluatePromptIfEligible(isBusy: Bool) {
+        evaluatePromptIfEligible(isBusy: isBusy, filesCount: latestFilesCount)
+    }
+
+    static func evaluatePromptIfEligible(isBusy: Bool, filesCount: Int) {
         guard hasUsedCoreFeature, !isBusy else { return }
+        guard filesCount >= minimumFilesForReviewPrompt else { return }
         guard !hasShownReviewPrompt, !isPromptPresentationPending else { return }
 #if DEBUG
         if allowsRepeatedPromptInDebug {

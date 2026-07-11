@@ -16,15 +16,26 @@ struct ContentView: View {
     @State private var videoCoordinator = VideoEvidenceCoordinator()
     @State private var selectedTab: MainTab = .monitor
     @State private var mountedTabs: Set<MainTab> = [.monitor]
-    @State private var hasUnreadFiles = false
     @State private var showAppReviewPrompt = false
     @State private var showMicPermissionIntro = false
     @State private var suppressNextTabSelectionAd = false
     @State private var pendingEvidenceRecordingID: UUID?
+    @Query(filter: #Predicate<RecordingSession> { $0.isNew == true })
+    private var unreadAudioSessions: [RecordingSession]
+    @Query(filter: #Predicate<VideoEvidenceSession> { $0.isNew == true })
+    private var unreadVideoSessions: [VideoEvidenceSession]
     @Bindable private var appearance = AppAppearanceSettings.shared
     @Bindable private var paywallPresenter = PaywallPresenter.shared
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
+
+    private var hasUnreadFiles: Bool {
+        !unreadAudioSessions.isEmpty || !unreadVideoSessions.isEmpty
+    }
+
+    private var unreadFilesCount: Int {
+        unreadAudioSessions.count + unreadVideoSessions.count
+    }
 
     init() {
         let engine = NoiseMonitorEngine()
@@ -52,7 +63,7 @@ struct ContentView: View {
             LaunchPerformance.mark(.launchFirstInteractive)
             MonitoringFunnelTracker.resetProcessLaunchClock()
             sleepCoordinator.configure(engine: engine, modelContext: modelContext)
-            refreshUnreadBadge()
+            syncAppReviewFilesCount()
             engine.onRecordingFinished = { event in
                 saveRecording(event)
             }
@@ -61,7 +72,7 @@ struct ContentView: View {
             }
             VideoEvidenceRecovery.removeStalePartFiles()
             _ = VideoEvidenceRecovery.recoverOrphanedFiles(modelContext: modelContext)
-            refreshUnreadBadge()
+            syncAppReviewFilesCount()
             if let root = UIApplication.shared.connectedScenes
                 .compactMap({ $0 as? UIWindowScene })
                 .flatMap(\.windows)
@@ -70,18 +81,16 @@ struct ContentView: View {
                 TabBarAppearanceUpdater.cacheTabBarController(from: root)
             }
             TabBarAppearanceUpdater.applyTabTitles()
-            TabBarAppearanceUpdater.setFilesBadgeVisible(hasUnreadFiles)
             Task { await SleepNotificationScheduler.scheduleDailyReminders() }
         }
-        .onChange(of: hasUnreadFiles) { _, visible in
-            TabBarAppearanceUpdater.setFilesBadgeVisible(visible)
+        .onChange(of: unreadFilesCount) { _, _ in
+            syncAppReviewFilesCount()
         }
         .onChange(of: selectedTab) { _, tab in
             AppTelemetry.logProductEvent(
                 "tab_selected",
                 parameters: ["tab": analyticsTabName(for: tab)]
             )
-            TabBarAppearanceUpdater.setFilesBadgeVisible(hasUnreadFiles)
             if suppressNextTabSelectionAd {
                 suppressNextTabSelectionAd = false
             } else {
@@ -93,12 +102,12 @@ struct ContentView: View {
             }
             mountedTabs.insert(tab)
             if tab == .files {
-                refreshUnreadBadge()
+                syncAppReviewFilesCount()
+                AppOnboardingStore.noteFilesTabVisited()
             }
         }
         .onChange(of: appearance.languageRefreshID) { _, _ in
             TabBarAppearanceUpdater.applyTabTitles()
-            TabBarAppearanceUpdater.setFilesBadgeVisible(hasUnreadFiles)
             refreshMonitorTabIconIfNeeded()
         }
         .onOpenURL { url in
@@ -206,6 +215,10 @@ struct ContentView: View {
                 await handleLaunchAutoStartMonitoring()
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .onboardingMeasureReportDue)) { _ in
+            engine.exportOnboardingMonitoringSnapshot()
+            syncAppReviewFilesCount()
+        }
         .sheet(isPresented: $showMicPermissionIntro) {
             MicPermissionIntroSheet(
                 theme: ModeVisualTheme.theme(
@@ -274,7 +287,7 @@ struct ContentView: View {
                 guard audioStateManager.allowsAutomaticMonitoringRecovery else { return }
                 engine.handleDidBecomeActive()
                 sleepCoordinator.presentPendingReportIfNeeded()
-                refreshUnreadBadge()
+                syncAppReviewFilesCount()
                 evaluateAppReviewPromptIfNeeded()
             @unknown default:
                 break
@@ -327,7 +340,7 @@ struct ContentView: View {
 
     @ViewBuilder
     private var filesTab: some View {
-        tabRoot(for: .files) {
+        let tab = tabRoot(for: .files) {
             RecordingListView(
                 engine: engine,
                 audioStateManager: audioStateManager,
@@ -338,6 +351,12 @@ struct ContentView: View {
         .tag(MainTab.files)
         .tabItem {
             Label(L10n.tabFiles, systemImage: "list.bullet")
+        }
+
+        if hasUnreadFiles {
+            tab.badge(unreadFilesCount)
+        } else {
+            tab
         }
     }
 
@@ -363,18 +382,14 @@ struct ContentView: View {
         }
     }
 
-    private func refreshUnreadBadge() {
-        let audioDescriptor = FetchDescriptor<RecordingSession>(
-            predicate: #Predicate { $0.isNew == true }
-        )
-        let videoDescriptor = FetchDescriptor<VideoEvidenceSession>(
-            predicate: #Predicate { $0.isNew == true }
-        )
-        let audioCount = (try? modelContext.fetchCount(audioDescriptor)) ?? 0
-        let videoCount = (try? modelContext.fetchCount(videoDescriptor)) ?? 0
-        let hasUnread = audioCount > 0 || videoCount > 0
-        hasUnreadFiles = hasUnread
-        TabBarAppearanceUpdater.setFilesBadgeVisible(hasUnread)
+    private func syncAppReviewFilesCount() {
+        AppReviewStore.updateLatestFilesCount(totalSavedFilesCount())
+    }
+
+    private func totalSavedFilesCount() -> Int {
+        let audioTotal = (try? modelContext.fetchCount(FetchDescriptor<RecordingSession>())) ?? 0
+        let videoTotal = (try? modelContext.fetchCount(FetchDescriptor<VideoEvidenceSession>())) ?? 0
+        return audioTotal + videoTotal
     }
 
     private func refreshMonitorTabIconIfNeeded() {
@@ -395,7 +410,7 @@ struct ContentView: View {
         switch engine.deferredSessionSaveGate() {
         case .saveImmediately:
             engine.commitDeferredSessionRecording()
-            refreshUnreadBadge()
+            syncAppReviewFilesCount()
         case .requiresPaywall:
             AppTelemetry.logProductEvent(
                 "freemium_limit_hit",
@@ -404,7 +419,7 @@ struct ContentView: View {
             PaywallPresenter.shared.present(context: .voiceDurationLimit) { purchased in
                 if purchased {
                     engine.commitDeferredSessionRecording()
-                    refreshUnreadBadge()
+                    syncAppReviewFilesCount()
                 } else {
                     engine.discardDeferredSessionRecording()
                 }
@@ -438,8 +453,10 @@ struct ContentView: View {
         modelContext.insert(session)
         try? modelContext.save()
         sleepCoordinator.noteRecordingSaved(session)
-        refreshUnreadBadge()
-        AppReviewStore.noteCoreFeatureUsed(.evidenceSaved)
+        syncAppReviewFilesCount()
+        if totalSavedFilesCount() >= AppReviewStore.minimumFilesForReviewPrompt {
+            AppReviewStore.noteCoreFeatureUsed(.evidenceSaved)
+        }
         evaluateAppReviewPromptIfNeeded()
     }
 

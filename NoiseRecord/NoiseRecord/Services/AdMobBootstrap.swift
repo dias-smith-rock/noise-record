@@ -14,6 +14,10 @@ enum AdMobBootstrap {
             AppTelemetry.logAdLifecycle(channel: "bootstrap", step: "pipeline_skipped_ads_disabled")
             return
         }
+        guard LaunchExperienceStore.allowsAdsOnFirstInstallDay else {
+            AppTelemetry.logAdLifecycle(channel: "bootstrap", step: "pipeline_skipped_first_install_day")
+            return
+        }
         guard !hasScheduledConsentPipeline else { return }
         hasScheduledConsentPipeline = true
 

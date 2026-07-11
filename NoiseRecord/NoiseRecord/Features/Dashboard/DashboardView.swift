@@ -21,6 +21,7 @@ struct DashboardView: View {
     @State private var showsAppOnboarding = false
     @State private var showSessionEndSheet = false
     @State private var sessionEndMonitoringSummary: MonitorSessionSummary?
+    @State private var sessionEndPreviousSession: StoredMonitorSessionSnapshot?
     @State private var sessionEndWaveformSamples: [Float] = []
     @State private var toastMessage: String?
     @State private var environment = AmbientEnvironmentProvider()
@@ -204,6 +205,7 @@ struct DashboardView: View {
         .sheet(isPresented: $showSessionEndSheet) {
             MonitorSessionEndSheet(
                 monitoringSummary: sessionEndMonitoringSummary,
+                previousSession: sessionEndPreviousSession,
                 recordingSummary: engine.pendingSessionStopSummary,
                 waveformSamples: sessionEndWaveformSamples,
                 measurementMode: measurementMode,
@@ -252,25 +254,17 @@ struct DashboardView: View {
                 }
             }
         }
-        .overlay {
-            if showsAppOnboarding {
-                AppOnboardingOverlay(theme: theme) {
-                    dismissAppOnboarding(method: "completed")
-                }
-                .onAppear {
-                    AppTelemetry.logProductEvent(
-                        "onboarding_step_viewed",
-                        parameters: ["step": "1"]
-                    )
-                }
-            }
-        }
-        .animation(.easeInOut(duration: 0.25), value: showsAppOnboarding)
         .proToast(message: $toastMessage)
     }
 
     private var dashboardContent: some View {
         VStack(spacing: 20) {
+            if showsAppOnboarding {
+                AppTaskOnboardingBanner(theme: theme) {
+                    dismissAppOnboarding(method: "skip_banner")
+                }
+            }
+
             VStack(alignment: .leading, spacing: 8) {
                 Text(L10n.dashboardSpectrum)
                     .font(.headline)
@@ -431,16 +425,21 @@ struct DashboardView: View {
 
     private func presentSessionEndSheetIfNeeded(monitoringSummary: MonitorSessionSummary?) {
         let hasRecording = engine.sessionStopPromptID != nil
-        let hasMonitoringSummary = monitoringSummary.map { $0.duration >= 3 } ?? false
+        let hasMonitoringSummary = monitoringSummary.map { $0.duration >= 1 } ?? false
         guard hasRecording || hasMonitoringSummary else { return }
 
+        sessionEndPreviousSession = MonitorSessionHistoryStore.lastSession
         sessionEndMonitoringSummary = monitoringSummary
         showSessionEndSheet = true
     }
 
     private func dismissSessionEndSheet() {
+        if let summary = sessionEndMonitoringSummary {
+            MonitorSessionHistoryStore.save(summary)
+        }
         showSessionEndSheet = false
         sessionEndMonitoringSummary = nil
+        sessionEndPreviousSession = nil
         sessionEndWaveformSamples = []
     }
 
@@ -571,21 +570,19 @@ struct DashboardView: View {
     }
 
     private func refreshAppOnboardingVisibility() {
-        guard isTabActive, !AppOnboardingStore.hasCompletedOnboarding else {
+        guard isTabActive else {
             showsAppOnboarding = false
             return
         }
-        showsAppOnboarding = true
+        showsAppOnboarding = AppOnboardingStore.showsTaskBanner
     }
 
     private func dismissAppOnboarding(method: String) {
         guard showsAppOnboarding else { return }
-        if method != "completed" {
-            AppTelemetry.logProductEvent(
-                "onboarding_dismissed",
-                parameters: ["method": method]
-            )
-        }
+        AppTelemetry.logProductEvent(
+            "onboarding_dismissed",
+            parameters: ["method": method]
+        )
         showsAppOnboarding = false
         AppOnboardingStore.markCompleted()
         FullscreenLEDGuideStore.markSeen()

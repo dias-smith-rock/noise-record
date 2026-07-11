@@ -11,6 +11,19 @@ final class PaywallPresenter {
     private var didResolve = false
 
     func present(context: PaywallContext, onResult: ((Bool) -> Void)? = nil) {
+        if PaywallFrequencyStore.isAutomaticContext(context),
+           PaywallFrequencyStore.shouldSuppressAutomaticPaywall {
+            AppTelemetry.logProductEvent(
+                "paywall_suppressed",
+                parameters: [
+                    "context": context.rawValue,
+                    "reason": "frequency_cap",
+                ]
+            )
+            onResult?(false)
+            return
+        }
+
         self.context = context
         self.onResult = onResult
         didResolve = false
@@ -30,6 +43,9 @@ final class PaywallPresenter {
     func resolve(purchased: Bool) {
         guard !didResolve else { return }
         didResolve = true
+        if !purchased {
+            PaywallFrequencyStore.recordDismiss(context: context)
+        }
         let handler = onResult
         onResult = nil
         isPresented = false
@@ -44,7 +60,11 @@ final class PaywallPresenter {
         }
         didResolve = true
         onResult = nil
-        handler(SubscriptionManager.shared.isPremiumUser)
+        let purchased = SubscriptionManager.shared.isPremiumUser
+        if !purchased {
+            PaywallFrequencyStore.recordDismiss(context: context)
+        }
+        handler(purchased)
     }
 }
 

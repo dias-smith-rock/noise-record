@@ -16,6 +16,10 @@ final class HotStartAdManager: NSObject {
 
     func loadAd() {
         guard AdMobConfig.adsEnabled, AdConsentManager.canRequestAds else { return }
+        guard AdSessionPolicy.shouldAttemptAdLoadOrShow() else {
+            AppTelemetry.logAdLifecycle(channel: "hot", step: "load_skipped_first_install_day")
+            return
+        }
 
         if isLoadingAd {
             AppTelemetry.logAdLifecycle(channel: "hot", step: "load_skipped_already_loading")
@@ -69,6 +73,11 @@ final class HotStartAdManager: NSObject {
 
     func showAdIfAvailable(retryCount: Int = 0) {
         guard AdMobConfig.adsEnabled, AdConsentManager.canRequestAds else { return }
+        guard AdSessionPolicy.shouldAttemptAdLoadOrShow() else {
+            pendingShowAfterLoad = false
+            AppTelemetry.logAdLifecycle(channel: "hot", step: "show_skipped_first_install_day")
+            return
+        }
 
         if isShowingAd {
             AppTelemetry.logAdLifecycle(channel: "hot", step: "show_skipped_already_showing")
@@ -99,6 +108,7 @@ final class HotStartAdManager: NSObject {
 
         pendingShowAfterLoad = false
         isShowingAd = true
+        AdSessionPolicy.notePresentationSucceeded(channel: "hot")
         AppTelemetry.logAdLifecycle(
             channel: "hot",
             step: "show_presenting",
@@ -112,7 +122,8 @@ final class HotStartAdManager: NSObject {
     }
 
     private func scheduleRetry(retryCount: Int) {
-        guard retryCount < AdMobConfig.maxPresentationRetries else {
+        guard AdSessionPolicy.canSchedulePresentationRetry(channel: "hot", retryCount: retryCount) else {
+            pendingShowAfterLoad = false
             AppTelemetry.logAdLifecycle(
                 channel: "hot",
                 step: "show_retry_exhausted",
@@ -125,16 +136,17 @@ final class HotStartAdManager: NSObject {
             return
         }
 
+        let delayMs = AdSessionPolicy.retryDelayMs(for: retryCount)
         AppTelemetry.logAdLifecycle(
             channel: "hot",
             step: "show_retry_scheduled",
             metadata: [
                 "retry": String(retryCount + 1),
-                "delay_ms": String(AdMobConfig.presentationRetryDelayMs),
+                "delay_ms": String(delayMs),
             ]
         )
         Task {
-            try? await Task.sleep(for: .milliseconds(AdMobConfig.presentationRetryDelayMs))
+            try? await Task.sleep(for: .milliseconds(delayMs))
             showAdIfAvailable(retryCount: retryCount + 1)
         }
     }

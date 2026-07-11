@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MonitorSessionEndSheet: View {
     let monitoringSummary: MonitorSessionSummary?
+    let previousSession: StoredMonitorSessionSnapshot?
     let recordingSummary: SessionStopSummary?
     let waveformSamples: [Float]
     let measurementMode: AcousticMeasurementMode
@@ -55,6 +56,12 @@ struct MonitorSessionEndSheet: View {
                                 summaryRow(
                                     title: L10n.monitorSessionSummaryAverage,
                                     value: String(format: "%.0f dB", averageDB)
+                                )
+                            }
+                            if let previousSession, previousSession.maxDB > 0 {
+                                summaryRow(
+                                    title: L10n.monitorSessionSummaryPreviousMax,
+                                    value: String(format: "%.0f dB", previousSession.maxDB)
                                 )
                             }
                             if let recordingSummary {

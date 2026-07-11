@@ -5,6 +5,17 @@ enum LaunchExperienceCoordinator {
     static func presentDeferredLaunchPaywall(trigger: String) {
         guard !SubscriptionManager.shared.isPremiumUser else { return }
         guard !LaunchExperienceStore.hasShownLaunchPaywall else { return }
+        guard !PaywallFrequencyStore.shouldSuppressAutomaticPaywall else {
+            AppTelemetry.logProductEvent(
+                "paywall_suppressed",
+                parameters: [
+                    "context": PaywallContext.launch.rawValue,
+                    "reason": "frequency_cap",
+                    "trigger": trigger,
+                ]
+            )
+            return
+        }
 
         LaunchExperienceStore.markLaunchPaywallShown()
         AppTelemetry.logProductEvent(
@@ -19,6 +30,20 @@ enum LaunchExperienceCoordinator {
 
     static func presentColdStartLaunchPaywallIfArmed() -> Bool {
         guard !SubscriptionManager.shared.isPremiumUser else { return false }
+        guard !PaywallFrequencyStore.shouldSuppressAutomaticPaywall else {
+            _ = AdSceneLifecycle.consumeLaunchRemoveAdsPromoPresentation()
+            AppTelemetry.logProductEvent(
+                "paywall_suppressed",
+                parameters: [
+                    "context": PaywallContext.launch.rawValue,
+                    "reason": "frequency_cap",
+                    "trigger": "cold_start_repeat",
+                ]
+            )
+            AdSceneLifecycle.handleLaunchRemoveAdsPromoDismissed(purchased: false)
+            AdSceneLifecycle.scheduleLaunchAutoStartMonitoringAfterPaywallDismiss()
+            return false
+        }
         guard AdSceneLifecycle.consumeLaunchRemoveAdsPromoPresentation() else { return false }
 
         LaunchExperienceStore.markLaunchPaywallShown()

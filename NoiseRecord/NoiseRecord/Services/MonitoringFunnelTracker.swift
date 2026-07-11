@@ -16,6 +16,7 @@ struct MonitorSessionSummary: Equatable {
 enum MonitoringFunnelTracker {
     private static let minimumMeaningfulDB: Float = 1
     private static let valueMomentDuration: TimeInterval = 30
+    private static let overnightActivationMinDuration: TimeInterval = 120
 
     private static var processLaunchTime = Date()
     private static var monitoringStartedAt: Date?
@@ -46,6 +47,15 @@ enum MonitoringFunnelTracker {
 
     static func observeReading(currentDB: Float, isMonitoring: Bool) {
         guard isMonitoring else { return }
+
+        if let startedAt = monitoringStartedAt {
+            if AppOnboardingStore.noteMonitoringElapsed(
+                Date().timeIntervalSince(startedAt),
+                isMonitoring: true
+            ) {
+                NotificationCenter.default.post(name: .onboardingMeasureReportDue, object: nil)
+            }
+        }
 
         if !hasLoggedFirstDBReading, currentDB >= minimumMeaningfulDB {
             hasLoggedFirstDBReading = true
@@ -92,5 +102,11 @@ enum MonitoringFunnelTracker {
                 "avg_db": String(format: "%.0f", summary.averageDB),
             ]
         )
+
+        if duration >= overnightActivationMinDuration {
+            Task {
+                await SleepNotificationScheduler.scheduleOvernightActivationReminderIfNeeded()
+            }
+        }
     }
 }

@@ -22,6 +22,7 @@ final class AppReviewStoreTests: XCTestCase {
     }
 
     func testMonitoringThresholdPostsPromptWhenNotBusy() {
+        AppReviewStore.updateLatestFilesCount(2)
         AppReviewStore.recordMonitoringElapsed(30)
         XCTAssertFalse(AppReviewStore.hasUsedCoreFeature)
 
@@ -45,6 +46,7 @@ final class AppReviewStoreTests: XCTestCase {
     }
 
     func testBusyStateDefersPrompt() {
+        AppReviewStore.updateLatestFilesCount(2)
         AppReviewStore.noteCoreFeatureUsed(.evidenceSaved)
 
         let promptExpectation = expectation(description: "no prompt while busy")
@@ -76,6 +78,37 @@ final class AppReviewStoreTests: XCTestCase {
         wait(for: [laterExpectation], timeout: 1)
     }
 
+    func testRequiresAtLeastTwoFilesBeforePrompt() {
+        AppReviewStore.noteCoreFeatureUsed(.evidenceSaved)
+
+        let promptExpectation = expectation(description: "no prompt with one file")
+        promptExpectation.isInverted = true
+        let token = NotificationCenter.default.addObserver(
+            forName: AppReviewStore.shouldPresentPromptNotification,
+            object: nil,
+            queue: nil
+        ) { _ in
+            promptExpectation.fulfill()
+        }
+        defer { NotificationCenter.default.removeObserver(token) }
+
+        AppReviewStore.evaluatePromptIfEligible(isBusy: false, filesCount: 1)
+        wait(for: [promptExpectation], timeout: 0.2)
+
+        let laterExpectation = expectation(description: "prompt with two files")
+        let laterToken = NotificationCenter.default.addObserver(
+            forName: AppReviewStore.shouldPresentPromptNotification,
+            object: nil,
+            queue: nil
+        ) { _ in
+            laterExpectation.fulfill()
+        }
+        defer { NotificationCenter.default.removeObserver(laterToken) }
+
+        AppReviewStore.evaluatePromptIfEligible(isBusy: false, filesCount: 2)
+        wait(for: [laterExpectation], timeout: 1)
+    }
+
     func testCoreFeatureKindsMarkUsedOnce() {
         for kind in AppReviewStore.CoreFeatureKind.allCases {
             AppReviewStore.resetForTesting()
@@ -86,6 +119,7 @@ final class AppReviewStoreTests: XCTestCase {
     }
 
     func testEvaluatePostsPromptOnlyOnce() {
+        AppReviewStore.updateLatestFilesCount(2)
         AppReviewStore.noteCoreFeatureUsed(.fullscreenLED)
 
         let firstExpectation = expectation(description: "first prompt")

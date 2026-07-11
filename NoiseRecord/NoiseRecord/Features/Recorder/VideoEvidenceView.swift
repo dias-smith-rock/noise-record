@@ -620,7 +620,13 @@ struct VideoEvidenceView: View {
     }
 
     private func noteVideoEvidenceSavedForReview() {
-        AppReviewStore.noteCoreFeatureUsed(.evidenceSaved)
+        let audioTotal = (try? modelContext.fetchCount(FetchDescriptor<RecordingSession>())) ?? 0
+        let videoTotal = (try? modelContext.fetchCount(FetchDescriptor<VideoEvidenceSession>())) ?? 0
+        let totalFilesCount = audioTotal + videoTotal
+        AppReviewStore.updateLatestFilesCount(totalFilesCount)
+        if totalFilesCount >= AppReviewStore.minimumFilesForReviewPrompt {
+            AppReviewStore.noteCoreFeatureUsed(.evidenceSaved)
+        }
         AppReviewStore.evaluatePromptIfEligible(
             isBusy: PaywallPresenter.shared.isPresented || coordinator.isRecording
         )

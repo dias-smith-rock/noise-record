@@ -19202,6 +19202,22 @@
         }
       }
     },
+    "files.empty.audio.monitoring.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "After you stop monitoring, session recordings will appear here." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "停止监测后，监测记录会保存在这里。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "停止監測後，監測記錄會保存在這裡。" } }
+      }
+    },
+    "files.empty.video.monitoring.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Video evidence clips will appear here after you record on the Video tab." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在 Video 标签页录制后，视频取证会保存在这里。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "在 Video 標籤頁錄製後，視頻取證會保存在這裡。" } }
+      }
+    },
     "files.empty.audio.title" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -48280,6 +48296,14 @@
         }
       }
     },
+    "monitor.sessionSummary.previousMax" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Previous max" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "上次最高" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "上次最高" } }
+      }
+    },
     "noiseRisk.dangerous" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -49206,6 +49230,38 @@
             "value" : "即時測量噪聲"
           }
         }
+      }
+    },
+    "onboarding.app.task.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Getting Started" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "新手任务" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "新手任務" } }
+      }
+    },
+    "onboarding.app.task.measure.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Keep monitoring for 10 seconds to finish task 1." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "保持监测 10 秒，完成任务 1。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "保持監測 10 秒，完成任務 1。" } }
+      }
+    },
+    "onboarding.app.task.files.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open the Files tab to view your saved monitoring report." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开 Files 标签页，查看已保存的监测报告。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "打開 Files 標籤頁，查看已保存的監測報告。" } }
+      }
+    },
+    "onboarding.app.task.voice.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open the Voice tab to see voice-activated recording." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开 Voice 标签页，了解声控录音。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "打開 Voice 標籤頁，了解聲控錄音。" } }
       }
     },
     "onboarding.app.step.sleep.body" : {
@@ -98412,6 +98468,22 @@
             "value" : "開啟夜間噪音監測"
           }
         }
+      }
+    },
+    "sleep.notification.overnightActivationTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Try overnight monitoring tonight" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "今晚试试夜间监测" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "今晚試試夜間監測" } }
+      }
+    },
+    "sleep.notification.overnightActivationBody" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Track bedroom noise while you sleep and get a morning report." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "睡眠时追踪卧室噪声，早晨查看报告。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "睡眠時追蹤臥室噪聲，早晨查看報告。" } }
       }
     },
     "sleep.notification.reportTitle" : {

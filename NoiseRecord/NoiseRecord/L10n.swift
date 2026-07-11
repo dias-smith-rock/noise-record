@@ -379,6 +379,12 @@ nonisolated enum L10n {
     static var appOnboardingStepSleepBody: String { localized("onboarding.app.step.sleep.body") }
     static var appOnboardingStepExportTitle: String { localized("onboarding.app.step.export.title") }
     static var appOnboardingStepExportBody: String { localized("onboarding.app.step.export.body") }
+    static var appTaskOnboardingTitle: String { localized("onboarding.app.task.title") }
+    static var appTaskOnboardingMeasureBody: String { localized("onboarding.app.task.measure.body") }
+    static var appTaskOnboardingFilesBody: String { localized("onboarding.app.task.files.body") }
+    static var monitorSessionSummaryPreviousMax: String { localized("monitor.sessionSummary.previousMax") }
+    static var filesEmptyAudioMonitoringMessage: String { localized("files.empty.audio.monitoring.message") }
+    static var filesEmptyVideoMonitoringMessage: String { localized("files.empty.video.monitoring.message") }
 
     // MARK: - Monitor session summary
 
@@ -705,6 +711,8 @@ nonisolated enum L10n {
     static var sleepNotificationWakeBody: String { localized("sleep.notification.wakeBody") }
     static var sleepNotificationBedtimeTitle: String { localized("sleep.notification.bedtimeTitle") }
     static var sleepNotificationBedtimeBody: String { localized("sleep.notification.bedtimeBody") }
+    static var sleepNotificationOvernightActivationTitle: String { localized("sleep.notification.overnightActivationTitle") }
+    static var sleepNotificationOvernightActivationBody: String { localized("sleep.notification.overnightActivationBody") }
     static var sleepNotificationReportTitle: String { localized("sleep.notification.reportTitle") }
     static var paywallContextSleepHistory: String { localized("paywall.context.sleepHistory") }
     static var paywallContextSleepExport: String { localized("paywall.context.sleepExport") }

@@ -5,6 +5,8 @@ extension Notification.Name {
     static let launchRemoveAdsPromoShouldPresent = Notification.Name("launchRemoveAdsPromoShouldPresent")
     /// 冷启动 Paywall 关闭后（或无需 Paywall 时）请求自动开启监测。
     static let launchAutoStartMonitoring = Notification.Name("launchAutoStartMonitoring")
+    /// 新手任务：首次监测满 10 秒，应自动保存监测报告到 Files。
+    static let onboardingMeasureReportDue = Notification.Name("onboardingMeasureReportDue")
 }
 
 /// Drives cold/hot-start ad presentation via SwiftUI scene lifecycle.
@@ -48,27 +50,35 @@ enum AdSceneLifecycle {
                 isColdStart = false
                 hasPresentedSinceForeground = false
                 pendingLaunchMonitoringAutoStart = true
+                AdSessionPolicy.resetSessionCounters()
                 AppTelemetry.logAdLifecycle(channel: "lifecycle", step: "launch_monitoring_auto_start_armed")
 
                 let launchCount = LaunchExperienceStore.recordColdLaunch()
                 AppTelemetry.logProductEvent(
                     "cold_launch_recorded",
-                    parameters: ["count": String(launchCount)]
+                    parameters: [
+                        "count": String(launchCount),
+                        "first_install_day": LaunchExperienceStore.isFirstInstallDay ? "true" : "false",
+                    ]
                 )
 
                 if !SubscriptionManager.isPremiumSnapshot {
                     if LaunchExperienceStore.shouldDeferLaunchPaywallOnColdStart {
-                        if AdMobConfig.adsEnabled {
+                        if AdMobConfig.adsEnabled, LaunchExperienceStore.allowsAdsOnFirstInstallDay {
                             pendingPresentation = .cold
                             AppTelemetry.logAdLifecycle(channel: "cold", step: "armed_on_first_launch_deferred_paywall")
+                        } else if LaunchExperienceStore.isFirstInstallDay {
+                            AppTelemetry.logAdLifecycle(channel: "cold", step: "skipped_first_install_day")
                         }
                         scheduleLaunchAutoStartMonitoring()
                     } else {
                         armLaunchRemoveAdsPromo()
                     }
-                } else if AdMobConfig.adsEnabled {
+                } else if AdMobConfig.adsEnabled, LaunchExperienceStore.allowsAdsOnFirstInstallDay {
                     pendingPresentation = .cold
                     AppTelemetry.logAdLifecycle(channel: "cold", step: "armed_on_cold_start")
+                } else if LaunchExperienceStore.isFirstInstallDay {
+                    AppTelemetry.logAdLifecycle(channel: "cold", step: "skipped_first_install_day")
                 }
 
                 if SubscriptionManager.isPremiumSnapshot {
@@ -76,7 +86,7 @@ enum AdSceneLifecycle {
                 }
             } else if wasInBackground {
                 wasInBackground = false
-                if AdMobConfig.adsEnabled {
+                if AdMobConfig.adsEnabled, LaunchExperienceStore.allowsAdsOnFirstInstallDay {
                     pendingPresentation = .hot
                     hasPresentedSinceForeground = false
                     AppTelemetry.logAdLifecycle(channel: "hot", step: "armed_on_hot_start")
@@ -85,7 +95,7 @@ enum AdSceneLifecycle {
                 AppTelemetry.logAdLifecycle(channel: "lifecycle", step: "active_without_ad_trigger")
             }
 
-            if AdMobConfig.adsEnabled {
+            if AdMobConfig.adsEnabled, LaunchExperienceStore.allowsAdsOnFirstInstallDay {
                 AdMobBootstrap.scheduleConsentAndAdMobStartIfNeeded()
             }
 
@@ -97,7 +107,9 @@ enum AdSceneLifecycle {
             pendingLaunchMonitoringAutoStart = false
             pendingColdStartAdAfterLaunchPromoDismiss = false
             AppTelemetry.logAdLifecycle(channel: "lifecycle", step: "scene_entered_background")
-            if AdMobConfig.adsEnabled, AdConsentManager.canRequestAds {
+            if AdMobConfig.adsEnabled,
+               LaunchExperienceStore.allowsAdsOnFirstInstallDay,
+               AdConsentManager.canRequestAds {
                 HotStartAdManager.shared.loadAd()
             }
 
@@ -168,6 +180,12 @@ enum AdSceneLifecycle {
             return
         }
 
+        guard LaunchExperienceStore.allowsAdsOnFirstInstallDay else {
+            pendingColdStartAdAfterLaunchPromoDismiss = false
+            AppTelemetry.logAdLifecycle(channel: "cold", step: "skipped_first_install_day_after_paywall")
+            return
+        }
+
         pendingColdStartAdAfterLaunchPromoDismiss = true
         scheduleColdStartAdAfterLaunchPromoDismiss()
     }
@@ -225,7 +243,9 @@ enum AdSceneLifecycle {
 
     /// 进入全屏 LED 看板后展示插屏广告（略作延迟，等待 fullScreenCover 呈现完成）。
     static func showInterstitialOnFullscreenEnter() {
-        guard AdMobConfig.adsEnabled, AdConsentManager.canRequestAds else { return }
+        guard AdMobConfig.adsEnabled,
+              LaunchExperienceStore.allowsAdsOnFirstInstallDay,
+              AdConsentManager.canRequestAds else { return }
 
         AppTelemetry.logAdLifecycle(channel: "fullscreen_led", step: "show_requested")
         HotStartAdManager.shared.loadAd()
@@ -240,6 +260,7 @@ enum AdSceneLifecycle {
     /// Call when the user performs their first intentional action after foregrounding.
     static func recordFirstInteraction(source: String) {
         guard AdMobConfig.adsEnabled else { return }
+        guard LaunchExperienceStore.allowsAdsOnFirstInstallDay else { return }
         guard AdConsentManager.canRequestAds else { return }
         guard !shouldPresentLaunchRemoveAdsPromo else { return }
         guard !hasPresentedSinceForeground, let pending = pendingPresentation else { return }

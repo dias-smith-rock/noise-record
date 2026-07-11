@@ -110,6 +110,22 @@ struct RecordingListView: View {
         .theme(for: measurementMode)
     }
 
+    private var filesEmptyAudioMessage: String {
+        if engine.isMonitoring {
+            L10n.filesEmptyAudioMonitoringMessage
+        } else {
+            L10n.filesEmptyAudioMessage
+        }
+    }
+
+    private var filesEmptyVideoMessage: String {
+        if engine.isMonitoring {
+            L10n.filesEmptyVideoMonitoringMessage
+        } else {
+            L10n.filesEmptyVideoMessage
+        }
+    }
+
     private var sortedAudioSessions: [RecordingSession] {
         switch sortOption {
         case .dateDescending: sessions
@@ -368,7 +384,7 @@ struct RecordingListView: View {
         if sortedVideoSessions.isEmpty {
             ProEmptyState(
                 title: L10n.filesEmptyVideoTitle,
-                message: L10n.filesEmptyVideoMessage,
+                message: filesEmptyVideoMessage,
                 systemImage: "video.slash",
                 theme: theme
             )
@@ -407,7 +423,7 @@ struct RecordingListView: View {
         if sortedAudioSessions.isEmpty {
             ProEmptyState(
                 title: L10n.filesEmptyAudioTitle,
-                message: L10n.filesEmptyAudioMessage,
+                message: filesEmptyAudioMessage,
                 systemImage: "waveform",
                 theme: theme
             )

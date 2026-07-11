@@ -33,21 +33,34 @@ enum TabBarAppearanceUpdater {
         items[2].title = L10n.tabVideo
         items[filesTabIndex].title = L10n.tabFiles
         items[4].title = L10n.tabSettings
+        reapplyFilesBadgeIfNeeded()
     }
 
     @MainActor
     static func setFilesBadgeVisible(_ visible: Bool) {
         filesBadgeShouldBeVisible = visible
+        applyFilesBadgeNow()
+    }
 
+    @MainActor
+    static func reapplyFilesBadgeIfNeeded() {
+        guard filesBadgeShouldBeVisible else { return }
+        applyFilesBadgeNow()
+    }
+
+    @MainActor
+    private static func applyFilesBadgeNow() {
         guard let items = tabBarItems(),
               filesTabIndex < items.count else {
-            scheduleFilesBadgeLayoutRetry()
+            if filesBadgeShouldBeVisible {
+                scheduleFilesBadgeLayoutRetry()
+            }
             return
         }
 
         filesBadgeLayoutRetryCount = 0
         items[filesTabIndex].badgeValue = nil
-        applyFilesTabIcons(to: items[filesTabIndex], showBadge: visible)
+        applyFilesTabIcons(to: items[filesTabIndex], showBadge: filesBadgeShouldBeVisible)
     }
 
     @MainActor
