@@ -714,6 +714,7 @@ nonisolated enum L10n {
     static var sleepNotificationOvernightActivationTitle: String { localized("sleep.notification.overnightActivationTitle") }
     static var sleepNotificationOvernightActivationBody: String { localized("sleep.notification.overnightActivationBody") }
     static var sleepNotificationReportTitle: String { localized("sleep.notification.reportTitle") }
+    static var sleepNotificationStartedToast: String { localized("sleep.notification.startedToast") }
     static var paywallContextSleepHistory: String { localized("paywall.context.sleepHistory") }
     static var paywallContextSleepExport: String { localized("paywall.context.sleepExport") }
 

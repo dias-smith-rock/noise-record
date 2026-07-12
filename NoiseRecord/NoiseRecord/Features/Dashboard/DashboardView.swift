@@ -255,6 +255,13 @@ struct DashboardView: View {
             }
         }
         .proToast(message: $toastMessage)
+        .onReceive(
+            NotificationCenter.default.publisher(
+                for: SleepNotificationRouter.sleepMonitoringStartedFromNotification
+            )
+        ) { _ in
+            toastMessage = L10n.sleepNotificationStartedToast
+        }
     }
 
     private var dashboardContent: some View {

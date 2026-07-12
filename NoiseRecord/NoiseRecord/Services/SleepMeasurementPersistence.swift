@@ -59,6 +59,20 @@ enum SleepMeasurementPersistence {
     }
 
     @MainActor
+    static func latestCompletedSession(on day: Date, in context: ModelContext) -> SleepNoiseSession? {
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: day)
+        guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
+            return nil
+        }
+
+        return recentSessions(limit: 14, in: context).first { session in
+            guard let endedAt = session.endedAt else { return false }
+            return endedAt >= startOfDay && endedAt < endOfDay
+        }
+    }
+
+    @MainActor
     static func sessions(
         since date: Date,
         in context: ModelContext

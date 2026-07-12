@@ -82,6 +82,14 @@ struct ContentView: View {
             }
             TabBarAppearanceUpdater.applyTabTitles()
             Task { await SleepNotificationScheduler.scheduleDailyReminders() }
+            handlePendingSleepNotificationAction()
+        }
+        .onReceive(
+            NotificationCenter.default.publisher(
+                for: SleepNotificationRouter.actionPendingNotification
+            )
+        ) { _ in
+            handlePendingSleepNotificationAction()
         }
         .onChange(of: unreadFilesCount) { _, _ in
             syncAppReviewFilesCount()
@@ -284,6 +292,7 @@ struct ContentView: View {
                 engine.handleDidEnterBackground()
             case .active:
                 AppTelemetry.log("scene_active")
+                handlePendingSleepNotificationAction()
                 guard audioStateManager.allowsAutomaticMonitoringRecovery else { return }
                 engine.handleDidBecomeActive()
                 sleepCoordinator.presentPendingReportIfNeeded()
@@ -522,6 +531,37 @@ struct ContentView: View {
         if engine.isMonitoring {
             AppTelemetry.logProductEvent("monitoring_auto_start_launch")
         }
+    }
+
+    private func handlePendingSleepNotificationAction() {
+        guard let action = SleepNotificationRouter.consumePendingAction() else { return }
+
+        suppressNextTabSelectionAd = true
+        mountedTabs.insert(.monitor)
+        selectedTab = .monitor
+
+        switch action {
+        case .openTodayReport:
+            _ = sleepCoordinator.presentTodayReportIfAvailable(source: "notification")
+        case .openReport(let sessionID):
+            sleepCoordinator.presentReport(sessionID: sessionID, source: "notification")
+        case .startSleepMonitoring:
+            Task {
+                await startSleepMonitoringFromNotification()
+            }
+        }
+    }
+
+    private func startSleepMonitoringFromNotification() async {
+        let started = await sleepCoordinator.startSession(
+            isHighSensitivity: engine.isHighSensitivityMode
+        )
+        guard started else { return }
+        audioStateManager.noteMonitoringStarted()
+        NotificationCenter.default.post(
+            name: SleepNotificationRouter.sleepMonitoringStartedFromNotification,
+            object: nil
+        )
     }
 }
 

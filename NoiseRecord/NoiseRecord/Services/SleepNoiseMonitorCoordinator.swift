@@ -273,6 +273,19 @@ final class SleepNoiseMonitorCoordinator {
         showReportSheet = true
     }
 
+    @discardableResult
+    func presentTodayReportIfAvailable(source: String) -> Bool {
+        guard let modelContext else { return false }
+        guard let session = SleepMeasurementPersistence.latestCompletedSession(
+            on: Date(),
+            in: modelContext
+        ) else {
+            return false
+        }
+        presentReport(sessionID: session.id, source: source)
+        return true
+    }
+
     func presentHistory() {
         showHistorySheet = true
     }

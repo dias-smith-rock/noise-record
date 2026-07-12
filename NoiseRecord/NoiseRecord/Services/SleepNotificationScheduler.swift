@@ -2,11 +2,11 @@ import Foundation
 import UserNotifications
 
 enum SleepNotificationScheduler {
-    private static let wakeReportIdentifier = "sleep.wakeReport"
-    private static let bedtimeReminderIdentifier = "sleep.bedtimeReminder"
-    private static let overnightActivationIdentifier = "sleep.overnightActivation"
+    private static let wakeReportIdentifier = SleepNotificationRouter.wakeReportIdentifier
+    private static let bedtimeReminderIdentifier = SleepNotificationRouter.bedtimeReminderIdentifier
+    private static let overnightActivationIdentifier = SleepNotificationRouter.overnightActivationIdentifier
     private static let overnightActivationScheduledKey = "sleep.overnightActivationScheduled"
-    private static let immediateReportPrefix = "sleep.report."
+    private static let immediateReportPrefix = SleepNotificationRouter.immediateReportPrefix
     private static let bedtimeReminderHour = 21
     private static let bedtimeReminderMinute = 0
 
@@ -45,6 +45,9 @@ enum SleepNotificationScheduler {
         content.title = L10n.sleepNotificationWakeTitle
         content.body = L10n.sleepNotificationWakeBody
         content.sound = .default
+        content.userInfo = [
+            SleepNotificationRouter.actionKey: SleepNotificationRouter.actionOpenTodayReport,
+        ]
 
         var components = SleepMonitorSettingsStore.wakeTimeComponents
         components.second = 0
@@ -64,6 +67,9 @@ enum SleepNotificationScheduler {
         content.title = L10n.sleepNotificationBedtimeTitle
         content.body = L10n.sleepNotificationBedtimeBody
         content.sound = .default
+        content.userInfo = [
+            SleepNotificationRouter.actionKey: SleepNotificationRouter.actionStartSleepMonitoring,
+        ]
 
         var components = DateComponents(
             hour: bedtimeReminderHour,
@@ -93,6 +99,9 @@ enum SleepNotificationScheduler {
         content.title = L10n.sleepNotificationOvernightActivationTitle
         content.body = L10n.sleepNotificationOvernightActivationBody
         content.sound = .default
+        content.userInfo = [
+            SleepNotificationRouter.actionKey: SleepNotificationRouter.actionStartSleepMonitoring,
+        ]
 
         guard let tomorrowNinePM = Calendar.current.nextDate(
             after: Date(),
@@ -127,6 +136,7 @@ enum SleepNotificationScheduler {
         content.sound = .default
         content.userInfo = [
             LiveActivityDeepLink.sessionIDKey: sessionID.uuidString,
+            SleepNotificationRouter.actionKey: SleepNotificationRouter.actionOpenReport,
         ]
 
         let request = UNNotificationRequest(

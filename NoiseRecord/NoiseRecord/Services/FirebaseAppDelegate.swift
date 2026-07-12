@@ -1,7 +1,8 @@
 import UIKit
+import UserNotifications
 
 /// App bootstrap: AdMob lifecycle (Firebase configured in `NoiseRecordApp.init`).
-final class FirebaseAppDelegate: NSObject, UIApplicationDelegate {
+final class FirebaseAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     private var didBecomeActiveObserver: NSObjectProtocol?
 
     func application(
@@ -18,6 +19,8 @@ final class FirebaseAppDelegate: NSObject, UIApplicationDelegate {
                 "hot_unit": AdMobConfig.hotStartInterstitial,
             ]
         )
+
+        UNUserNotificationCenter.current().delegate = self
 
         didBecomeActiveObserver = NotificationCenter.default.addObserver(
             forName: UIApplication.didBecomeActiveNotification,
@@ -45,6 +48,15 @@ final class FirebaseAppDelegate: NSObject, UIApplicationDelegate {
         supportedInterfaceOrientationsFor window: UIWindow?
     ) -> UIInterfaceOrientationMask {
         InterfaceOrientationLocker.supportedMask
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        _ = SleepNotificationRouter.handle(response: response)
+        completionHandler()
     }
 
     deinit {

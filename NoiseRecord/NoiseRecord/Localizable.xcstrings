@@ -98555,6 +98555,29 @@
         }
       }
     },
+    "sleep.notification.startedToast" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Overnight monitoring started"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "夜间监测已开启"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "夜間監測已開啟"
+          }
+        }
+      }
+    },
     "sleep.report.anomaliesTitle" : {
       "extractionState" : "manual",
       "localizations" : {
