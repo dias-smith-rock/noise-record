@@ -7,6 +7,31 @@ nonisolated enum L10n {
         AppLocalization.string(key)
     }
 
+    private static func formatted(_ key: String.LocalizationValue, locale: Locale = AppLocalization.resolvedLocale, _ arguments: CVarArg...) -> String {
+        String(format: localized(key), locale: locale, arguments: arguments)
+    }
+
+    /// Some locales place `%d` before `%@` while call sites always pass `(price, days)`.
+    private static func formattedPriceAndTrialDays(
+        _ key: String.LocalizationValue,
+        price: String,
+        days: Int
+    ) -> String {
+        let template = localized(key)
+        let locale = AppLocalization.resolvedLocale
+        if formatSpecifierDaysPrecedesObject(in: template) {
+            return String(format: template, locale: locale, days, price)
+        }
+        return String(format: template, locale: locale, price, days)
+    }
+
+    private static func formatSpecifierDaysPrecedesObject(in template: String) -> Bool {
+        let daysIndex = template.range(of: "%d")?.lowerBound
+        let objectIndex = template.range(of: "%@")?.lowerBound
+        guard let daysIndex, let objectIndex else { return false }
+        return daysIndex < objectIndex
+    }
+
 
     // MARK: - Common
 
@@ -563,11 +588,11 @@ nonisolated enum L10n {
     static var paywallCTASubscribeNow: String { localized("paywall.cta.subscribeNow") }
 
     static func paywallCTASubtitleTrialYearly(monthlyPrice: String, trialDays: Int) -> String {
-        String(format: localized("paywall.cta.subtitle.trialYearly"), monthlyPrice, trialDays)
+        formattedPriceAndTrialDays("paywall.cta.subtitle.trialYearly", price: monthlyPrice, days: trialDays)
     }
 
     static func paywallCTASubtitleTrialMonthly(monthlyPrice: String, trialDays: Int) -> String {
-        String(format: localized("paywall.cta.subtitle.trialMonthly"), monthlyPrice, trialDays)
+        formattedPriceAndTrialDays("paywall.cta.subtitle.trialMonthly", price: monthlyPrice, days: trialDays)
     }
 
     static func paywallCTASubtitleStandardYearly(annualPrice: String, monthlyPrice: String) -> String {

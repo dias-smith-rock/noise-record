@@ -57,4 +57,14 @@ final class PaywallOfferPresentationTests: XCTestCase {
             L10n.paywallCTASubtitleTrialMonthly(monthlyPrice: "$9.99", trialDays: 3)
         )
     }
+
+    func testYearlyTrialSubtitleFormatsChineseLocaleWithoutCrashing() {
+        let previousLanguage = AppLocalization.currentLanguage()
+        defer { AppLocalization.setActiveLanguage(previousLanguage) }
+
+        AppLocalization.setActiveLanguage(.zhHans)
+        let subtitle = L10n.paywallCTASubtitleTrialYearly(monthlyPrice: "$1.66", trialDays: 3)
+        XCTAssertTrue(subtitle.contains("3"))
+        XCTAssertTrue(subtitle.contains("$1.66"))
+    }
 }
