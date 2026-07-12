@@ -24,7 +24,11 @@ final class SleepNEMRStatisticsTests: XCTestCase {
             startTemperatureCelsius: nil,
             startHumidityPercent: nil,
             endTemperatureCelsius: nil,
-            endHumidityPercent: nil
+            endHumidityPercent: nil,
+            startLatitude: nil,
+            startLongitude: nil,
+            endLatitude: nil,
+            endLongitude: nil
         )
     }
 

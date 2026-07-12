@@ -3,6 +3,24 @@ import Foundation
 struct SleepEnvironmentSnapshot: Sendable, Equatable {
     let temperatureCelsius: Double?
     let humidityPercent: Int?
+    let latitude: Double?
+    let longitude: Double?
+
+    init(
+        temperatureCelsius: Double? = nil,
+        humidityPercent: Int? = nil,
+        latitude: Double? = nil,
+        longitude: Double? = nil
+    ) {
+        self.temperatureCelsius = temperatureCelsius
+        self.humidityPercent = humidityPercent
+        self.latitude = latitude
+        self.longitude = longitude
+    }
+
+    var locationSnapshot: SleepLocationSnapshot {
+        SleepLocationSnapshot(latitude: latitude, longitude: longitude)
+    }
 }
 
 enum SleepEnvironmentFormatter {

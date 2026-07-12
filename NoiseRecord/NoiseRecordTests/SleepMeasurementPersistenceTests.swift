@@ -89,4 +89,29 @@ final class SleepMeasurementPersistenceTests: XCTestCase {
         XCTAssertEqual(fetched?.endTemperatureCelsius, 21.0)
         XCTAssertEqual(fetched?.endHumidityPercent, 70)
     }
+
+    func testGPSFieldsPersistOnSleepSession() throws {
+        let session = makeCompletedSession(
+            startedAt: Date(),
+            endedAt: Date().addingTimeInterval(3600)
+        )
+        session.startLatitude = 37.7749
+        session.startLongitude = -122.4194
+        session.endLatitude = 37.7751
+        session.endLongitude = -122.4190
+
+        context.insert(session)
+        try context.save()
+
+        let sessionID = session.id
+        let descriptor = FetchDescriptor<SleepNoiseSession>(
+            predicate: #Predicate { $0.id == sessionID }
+        )
+        let fetched = try context.fetch(descriptor).first
+
+        XCTAssertEqual(fetched?.startLatitude, 37.7749)
+        XCTAssertEqual(fetched?.startLongitude, -122.4194)
+        XCTAssertEqual(fetched?.endLatitude, 37.7751)
+        XCTAssertEqual(fetched?.endLongitude, -122.4190)
+    }
 }

@@ -52,19 +52,35 @@ enum SleepForensicPDFExporter {
         let startHumidityPercent: Int?
         let endTemperatureCelsius: Double?
         let endHumidityPercent: Int?
+        let startLatitude: Double?
+        let startLongitude: Double?
+        let endLatitude: Double?
+        let endLongitude: Double?
 
         var startEnvironmentSnapshot: SleepEnvironmentSnapshot {
             SleepEnvironmentSnapshot(
                 temperatureCelsius: startTemperatureCelsius,
-                humidityPercent: startHumidityPercent
+                humidityPercent: startHumidityPercent,
+                latitude: startLatitude,
+                longitude: startLongitude
             )
         }
 
         var endEnvironmentSnapshot: SleepEnvironmentSnapshot {
             SleepEnvironmentSnapshot(
                 temperatureCelsius: endTemperatureCelsius,
-                humidityPercent: endHumidityPercent
+                humidityPercent: endHumidityPercent,
+                latitude: endLatitude,
+                longitude: endLongitude
             )
+        }
+
+        var startLocationSnapshot: SleepLocationSnapshot {
+            SleepLocationSnapshot(latitude: startLatitude, longitude: startLongitude)
+        }
+
+        var endLocationSnapshot: SleepLocationSnapshot {
+            SleepLocationSnapshot(latitude: endLatitude, longitude: endLongitude)
         }
     }
 
@@ -95,6 +111,10 @@ enum SleepForensicPDFExporter {
         let environmentSummary = SleepEnvironmentFormatter.pdfEnglishSummary(
             start: payload.session.startEnvironmentSnapshot,
             end: payload.session.endEnvironmentSnapshot
+        )
+        let gpsSummary = SleepLocationFormatter.pdfEnglishSummary(
+            start: payload.session.startLocationSnapshot,
+            end: payload.session.endLocationSnapshot
         )
         let nuisanceDuration = cumulativeDurationAboveLimit(
             points: payload.chartPoints,
@@ -130,7 +150,8 @@ enum SleepForensicPDFExporter {
                 minTimestamp: minTimestamp,
                 peakTimestamp: peakTimestamp,
                 incidentCount: payload.incidents.count,
-                environmentSummary: environmentSummary
+                environmentSummary: environmentSummary,
+                gpsSummary: gpsSummary ?? payload.locationSummary
             )
 
             cursorY = ForensicPDFLayout.ensureSpace(context: context, y: cursorY, required: 120)
@@ -227,7 +248,7 @@ enum SleepForensicPDFExporter {
                 )
             }
 
-        let locationSummary = formattedLocation(from: recordings)
+        let locationSummary = resolvedLocationSummary(session: session, recordings: recordings)
 
         return ExportPayload(
             session: SleepNoiseSessionSnapshot(
@@ -244,7 +265,11 @@ enum SleepForensicPDFExporter {
                 startTemperatureCelsius: session.startTemperatureCelsius,
                 startHumidityPercent: session.startHumidityPercent,
                 endTemperatureCelsius: session.endTemperatureCelsius,
-                endHumidityPercent: session.endHumidityPercent
+                endHumidityPercent: session.endHumidityPercent,
+                startLatitude: session.startLatitude,
+                startLongitude: session.startLongitude,
+                endLatitude: session.endLatitude,
+                endLongitude: session.endLongitude
             ),
             chartPoints: chartPoints,
             incidents: incidents,
@@ -342,7 +367,8 @@ enum SleepForensicPDFExporter {
         minTimestamp: Date?,
         peakTimestamp: Date?,
         incidentCount: Int,
-        environmentSummary: String?
+        environmentSummary: String?,
+        gpsSummary: String?
     ) -> CGFloat {
         var cursor = ForensicPDFLayout.drawBodyParagraphs(
             y: y,
@@ -366,6 +392,9 @@ enum SleepForensicPDFExporter {
         ]
         if let environmentSummary {
             items.append("Ambient Temperature / Humidity: \(environmentSummary)")
+        }
+        if let gpsSummary {
+            items.append("GPS Coordinates: \(gpsSummary)")
         }
 
         cursor = ForensicPDFLayout.drawBulletedList(
@@ -495,15 +524,31 @@ enum SleepForensicPDFExporter {
         return "dBA (A-Weighted), Fast / Standard Mode"
     }
 
+    private static func resolvedLocationSummary(
+        session: SleepNoiseSession,
+        recordings: [RecordingSession]
+    ) -> String? {
+        let start = SleepLocationSnapshot(
+            latitude: session.startLatitude,
+            longitude: session.startLongitude
+        )
+        let end = SleepLocationSnapshot(
+            latitude: session.endLatitude,
+            longitude: session.endLongitude
+        )
+        if let sessionSummary = SleepLocationFormatter.pdfEnglishSummary(start: start, end: end) {
+            return sessionSummary
+        }
+        return formattedLocation(from: recordings)
+    }
+
     private static func formattedLocation(from recordings: [RecordingSession]) -> String? {
         guard let recording = recordings.first(where: { $0.latitude != nil && $0.longitude != nil }),
               let lat = recording.latitude,
               let lon = recording.longitude else {
             return nil
         }
-        let latHemisphere = lat >= 0 ? "N" : "S"
-        let lonHemisphere = lon >= 0 ? "E" : "W"
-        return String(format: "%.4f° %@, %.4f° %@ (Device GPS at capture)", abs(lat), latHemisphere, abs(lon), lonHemisphere)
+        return "\(SleepLocationFormatter.formattedCoordinates(latitude: lat, longitude: lon)) (Device GPS at capture)"
     }
 
     private static func cumulativeDurationAboveLimit(points: [ChartPoint], limit: Float) -> TimeInterval {

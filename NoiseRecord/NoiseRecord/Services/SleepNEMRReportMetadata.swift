@@ -36,6 +36,10 @@ enum SleepNEMRReportMetadata {
             start: session.startEnvironmentSnapshot,
             end: session.endEnvironmentSnapshot
         )
+        let gpsLine = SleepLocationFormatter.pdfNEMRLine(
+            start: session.startLocationSnapshot,
+            end: session.endLocationSnapshot
+        )
 
         return ReportFields(
             reportNumber: reportNumber,
@@ -51,7 +55,11 @@ enum SleepNEMRReportMetadata {
                 monitoringDate: ForensicPDFLayout.formattedDate(session.startedAt),
                 siteAddress: siteAddress
             ),
-            instrumentationRows: instrumentationRows(for: session, environmentLine: environmentLine),
+            instrumentationRows: instrumentationRows(
+                for: session,
+                environmentLine: environmentLine,
+                gpsLine: gpsLine
+            ),
             methodologyRows: methodologyRows(
                 session: session,
                 endedAt: endedAt,
@@ -76,7 +84,8 @@ enum SleepNEMRReportMetadata {
 
     private static func instrumentationRows(
         for session: SleepForensicPDFExporter.SleepNoiseSessionSnapshot,
-        environmentLine: String
+        environmentLine: String,
+        gpsLine: String
     ) -> [(String, String)] {
         let weighting: String
         if session.isHighSensitivitySession {
@@ -105,6 +114,7 @@ enum SleepNEMRReportMetadata {
             ("Acoustic Calibrator / 声校准器", "Not used — consumer device calibration only / 未使用标准声校准器"),
             ("Calibration Record / 校准记录", calibrationText),
             ("Temperature / Humidity / 温度与湿度", environmentLine),
+            ("GPS Coordinates / GPS 坐标", gpsLine),
         ]
     }
 

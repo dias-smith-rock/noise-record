@@ -75,6 +75,9 @@ final class AmbientEnvironmentProvider: NSObject, CLLocationManagerDelegate {
         humidityPercent == nil ? "" : "%"
     }
 
+    var latitude: Double? { lastCoordinate?.latitude }
+    var longitude: Double? { lastCoordinate?.longitude }
+
     override init() {
         super.init()
         locationManager.delegate = self

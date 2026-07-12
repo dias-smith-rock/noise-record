@@ -77,6 +77,8 @@ final class SleepNoiseMonitorCoordinator {
         session.weightingMode = isHighSensitivity ? "highSensitivity" : "standard"
         session.startTemperatureCelsius = environment?.temperatureCelsius
         session.startHumidityPercent = environment?.humidityPercent
+        session.startLatitude = environment?.latitude ?? engine.evidenceLatitude
+        session.startLongitude = environment?.longitude ?? engine.evidenceLongitude
         modelContext.insert(session)
         try? modelContext.save()
 
@@ -121,6 +123,10 @@ final class SleepNoiseMonitorCoordinator {
         guard let session = activeSession else { return }
         session.endTemperatureCelsius = snapshot.temperatureCelsius
         session.endHumidityPercent = snapshot.humidityPercent
+        if let latitude = snapshot.latitude, let longitude = snapshot.longitude {
+            session.endLatitude = latitude
+            session.endLongitude = longitude
+        }
         try? modelContext?.save()
     }
 
@@ -131,6 +137,24 @@ final class SleepNoiseMonitorCoordinator {
         if let environment {
             session.endTemperatureCelsius = environment.temperatureCelsius
             session.endHumidityPercent = environment.humidityPercent
+            if let latitude = environment.latitude, let longitude = environment.longitude {
+                session.endLatitude = latitude
+                session.endLongitude = longitude
+            }
+        }
+
+        if session.endLatitude == nil || session.endLongitude == nil,
+           let latitude = engine.evidenceLatitude,
+           let longitude = engine.evidenceLongitude {
+            session.endLatitude = latitude
+            session.endLongitude = longitude
+        }
+
+        if session.startLatitude == nil || session.startLongitude == nil,
+           let latitude = engine.evidenceLatitude,
+           let longitude = engine.evidenceLongitude {
+            session.startLatitude = latitude
+            session.startLongitude = longitude
         }
 
         let finalSnapshot = finalEngineSnapshot(from: engine)

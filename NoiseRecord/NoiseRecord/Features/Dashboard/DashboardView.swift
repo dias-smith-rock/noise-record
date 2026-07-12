@@ -542,7 +542,9 @@ struct DashboardView: View {
     private func currentEnvironmentSnapshot() -> SleepEnvironmentSnapshot {
         SleepEnvironmentSnapshot(
             temperatureCelsius: environment.temperatureCelsius,
-            humidityPercent: environment.humidityPercent
+            humidityPercent: environment.humidityPercent,
+            latitude: environment.latitude ?? engine.evidenceLatitude,
+            longitude: environment.longitude ?? engine.evidenceLongitude
         )
     }
 
