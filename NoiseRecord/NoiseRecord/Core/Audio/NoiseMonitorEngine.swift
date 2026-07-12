@@ -99,6 +99,9 @@ final class NoiseMonitorEngine {
     var aiClassificationErrorMessage: String?
     var showMicrophonePermissionDenied = false
 
+    var evidenceLatitude: Double? { locationProvider.latitude }
+    var evidenceLongitude: Double? { locationProvider.longitude }
+
     /// Overnight sleep noise-floor monitoring profile.
     var isSleepModeActive = false
     var sleepSessionID: UUID?

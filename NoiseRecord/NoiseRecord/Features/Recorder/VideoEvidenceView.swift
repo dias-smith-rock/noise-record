@@ -77,10 +77,18 @@ final class VideoEvidenceCoordinator {
         }
     }
 
-    func syncLocation() {
+    func syncLocation(from engine: NoiseMonitorEngine? = nil) {
+        let coordinates = resolvedCoordinates(from: engine)
         recorder.dataBridge.updateGPS(
-            latitude: locationProvider.latitude,
-            longitude: locationProvider.longitude
+            latitude: coordinates.latitude,
+            longitude: coordinates.longitude
+        )
+    }
+
+    func resolvedCoordinates(from engine: NoiseMonitorEngine? = nil) -> (latitude: Double?, longitude: Double?) {
+        (
+            locationProvider.latitude ?? engine?.evidenceLatitude,
+            locationProvider.longitude ?? engine?.evidenceLongitude
         )
     }
 
@@ -109,7 +117,6 @@ final class VideoEvidenceCoordinator {
     func stopRecording(completion: @escaping (Result<URL, Error>) -> Void) {
         guard isRecording else { return }
         isRecording = false
-        locationProvider.stopUpdating()
         recorder.stopRecording { [weak self] result in
             Task { @MainActor in
                 self?.isRecording = self?.recorder.isRecording ?? false
@@ -244,6 +251,7 @@ struct VideoEvidenceView: View {
                 engine.refreshCalibrationOffset()
                 lastNoiseSync = .distantPast
                 coordinator.syncNoise(from: engine)
+                coordinator.syncLocation(from: engine)
                 VideoTabPerformance.mark(.syncNoiseDone)
                 audioStateManager.restoreMonitoringPipelineIfNeeded()
                 VideoTabPerformance.mark(.restoreMonitoringDone)
@@ -269,7 +277,16 @@ struct VideoEvidenceView: View {
             coordinator.syncNoise(from: engine)
         }
         .onChange(of: coordinator.locationProvider.latitude) { _, _ in
-            coordinator.syncLocation()
+            coordinator.syncLocation(from: engine)
+        }
+        .onChange(of: coordinator.locationProvider.longitude) { _, _ in
+            coordinator.syncLocation(from: engine)
+        }
+        .onChange(of: engine.evidenceLatitude) { _, _ in
+            coordinator.syncLocation(from: engine)
+        }
+        .onChange(of: engine.evidenceLongitude) { _, _ in
+            coordinator.syncLocation(from: engine)
         }
         .alert(L10n.errorTitle, isPresented: .constant(coordinator.errorMessage != nil)) {
             Button(L10n.ok) { coordinator.errorMessage = nil }
@@ -293,6 +310,9 @@ struct VideoEvidenceView: View {
             }
         }
         .onChange(of: coordinator.locationProvider.authorizationStatus) { _, status in
+            if status == .authorizedWhenInUse || status == .authorizedAlways {
+                coordinator.syncLocation(from: engine)
+            }
             guard !didPromptLocationDenied else { return }
             if status == .denied || status == .restricted {
                 didPromptLocationDenied = true
@@ -472,8 +492,9 @@ struct VideoEvidenceView: View {
     }
 
     private var previewGPSOverlayText: String {
-        if let latitude = coordinator.locationProvider.latitude,
-           let longitude = coordinator.locationProvider.longitude {
+        let coordinates = coordinator.resolvedCoordinates(from: engine)
+        if let latitude = coordinates.latitude,
+           let longitude = coordinates.longitude {
             return L10n.overlayGpsCoordinates(latitude: latitude, longitude: longitude)
         }
         return L10n.overlayGpsUnavailable
@@ -570,7 +591,7 @@ struct VideoEvidenceView: View {
         }
 
         coordinator.syncNoise(from: engine)
-        coordinator.syncLocation()
+        coordinator.syncLocation(from: engine)
         do {
             try await coordinator.startRecording()
             audioStateManager.restoreMonitoringPipelineIfNeeded()
@@ -655,6 +676,7 @@ struct VideoEvidenceView: View {
     }
 
     private func persistVideoSegment(_ event: VideoSegmentFinishedEvent) {
+        let coordinates = coordinator.resolvedCoordinates(from: engine)
         let session = VideoEvidenceSession(
             fileName: event.fileURL.lastPathComponent,
             filePath: EvidenceFileResolver.makeRelativePath(from: event.fileURL),
@@ -662,8 +684,8 @@ struct VideoEvidenceView: View {
             endedAt: event.endedAt,
             peakDB: event.segmentIndex == 1 ? coordinator.peakDB : event.peakDB,
             averageDB: engine.averageDB,
-            latitude: coordinator.locationProvider.latitude,
-            longitude: coordinator.locationProvider.longitude,
+            latitude: coordinates.latitude,
+            longitude: coordinates.longitude,
             segmentGroupID: event.segmentGroupID,
             segmentIndex: event.segmentIndex
         )
