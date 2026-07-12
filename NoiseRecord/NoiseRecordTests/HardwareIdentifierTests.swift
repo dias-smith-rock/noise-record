@@ -17,4 +17,15 @@ final class HardwareIdentifierTests: XCTestCase {
     func testMarketingNameFallsBackToMachineIdentifier() {
         XCTAssertEqual(HardwareIdentifier.marketingName(for: "iPhone99,1"), "iPhone99,1")
     }
+
+    func testPDFDeviceMetadataDoesNotUseMicrophoneArrayWording() {
+        XCTAssertFalse(HardwareIdentifier.pdfDeviceMetadataLine.localizedCaseInsensitiveContains("Microphone Array"))
+        XCTAssertFalse(HardwareIdentifier.pdfCollectionPersonnelLine.localizedCaseInsensitiveContains("Microphone Array"))
+        XCTAssertTrue(HardwareIdentifier.pdfDeviceMetadataLine.contains("built-in microphone"))
+    }
+
+    func testPDFHardwareDescriptionUsesConsumerFallbackForUnknownDevice() {
+        let description = HardwareIdentifier.pdfHardwareDescription
+        XCTAssertFalse(description.localizedCaseInsensitiveContains("Omni-Directional"))
+    }
 }

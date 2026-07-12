@@ -417,7 +417,8 @@ struct DashboardView: View {
     private func handleStopMonitoringTapped() {
         if sleepCoordinator.isSleepMonitoring {
             Task {
-                await sleepCoordinator.endSession()
+                sleepCoordinator.noteEnvironmentSnapshot(currentEnvironmentSnapshot())
+                await sleepCoordinator.endSession(environment: currentEnvironmentSnapshot())
                 audioStateManager.noteMonitoringStopped()
                 refreshLatestSleepSession()
             }
@@ -529,10 +530,20 @@ struct DashboardView: View {
                 "mode": engine.isHighSensitivityMode ? "high_sensitivity" : "standard",
             ]
         )
-        let started = await sleepCoordinator.startSession(isHighSensitivity: engine.isHighSensitivityMode)
+        let started = await sleepCoordinator.startSession(
+            isHighSensitivity: engine.isHighSensitivityMode,
+            environment: currentEnvironmentSnapshot()
+        )
         if started {
             audioStateManager.noteMonitoringStarted()
         }
+    }
+
+    private func currentEnvironmentSnapshot() -> SleepEnvironmentSnapshot {
+        SleepEnvironmentSnapshot(
+            temperatureCelsius: environment.temperatureCelsius,
+            humidityPercent: environment.humidityPercent
+        )
     }
 
     private func scheduleLocationPermissionPromptIfNeeded() {

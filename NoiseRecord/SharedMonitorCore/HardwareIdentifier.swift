@@ -1,5 +1,9 @@
 import Foundation
 
+#if canImport(UIKit)
+import UIKit
+#endif
+
 enum HardwareIdentifier {
     private static let marketingNames: [String: String] = [
         // iPhone 12
@@ -58,5 +62,37 @@ enum HardwareIdentifier {
 
     static func marketingName(for machineIdentifier: String) -> String {
         marketingNames[machineIdentifier] ?? machineIdentifier
+    }
+
+    static var pdfHardwareDescription: String {
+        let name = marketingName
+        if marketingNames[machineIdentifier] != nil {
+            return name
+        }
+        return "Consumer iOS device (\(machineIdentifier))"
+    }
+
+    static var pdfDeviceMetadataLine: String {
+        var parts = [pdfHardwareDescription, "iOS \(systemVersion)", "built-in microphone"]
+        if let appVersion = appVersionString {
+            parts.append("Decibel Meter Pro \(appVersion)")
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    static var pdfCollectionPersonnelLine: String {
+        "Automated collection via Decibel Meter Pro on \(pdfHardwareDescription) (iOS \(systemVersion))"
+    }
+
+    private static var systemVersion: String {
+        #if canImport(UIKit)
+        UIDevice.current.systemVersion
+        #else
+        ProcessInfo.processInfo.operatingSystemVersionString
+        #endif
+    }
+
+    private static var appVersionString: String? {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
     }
 }

@@ -18,7 +18,6 @@ enum SleepNEMRReportMetadata {
     static let clientPlaceholder = "[委托方名称/地址 / Client Name & Address]"
     static let sitePlaceholder = "[项目具体地址 / Site Address]"
     static let firmPlaceholder = "[公司名称及资质 / Monitoring Firm & Credentials]"
-    static let weatherPlaceholder = "[Weather conditions not recorded / 未记录气象数据]"
     static let siteMapPlaceholder = "[Site map not included / 未附平面图]"
 
     static func build(
@@ -32,7 +31,11 @@ enum SleepNEMRReportMetadata {
             monitoringDate: session.startedAt
         )
         let siteAddress = locationSummary ?? sitePlaceholder
-        let monitoringFirm = "Decibel Meter Pro on \(HardwareIdentifier.marketingName) (consumer iOS device)"
+        let monitoringFirm = HardwareIdentifier.pdfDeviceMetadataLine
+        let environmentLine = SleepEnvironmentFormatter.pdfNEMRLine(
+            start: session.startEnvironmentSnapshot,
+            end: session.endEnvironmentSnapshot
+        )
 
         return ReportFields(
             reportNumber: reportNumber,
@@ -48,7 +51,7 @@ enum SleepNEMRReportMetadata {
                 monitoringDate: ForensicPDFLayout.formattedDate(session.startedAt),
                 siteAddress: siteAddress
             ),
-            instrumentationRows: instrumentationRows(for: session),
+            instrumentationRows: instrumentationRows(for: session, environmentLine: environmentLine),
             methodologyRows: methodologyRows(
                 session: session,
                 endedAt: endedAt,
@@ -72,7 +75,8 @@ enum SleepNEMRReportMetadata {
     }
 
     private static func instrumentationRows(
-        for session: SleepForensicPDFExporter.SleepNoiseSessionSnapshot
+        for session: SleepForensicPDFExporter.SleepNoiseSessionSnapshot,
+        environmentLine: String
     ) -> [(String, String)] {
         let weighting: String
         if session.isHighSensitivitySession {
@@ -95,12 +99,12 @@ enum SleepNEMRReportMetadata {
         }
 
         return [
-            ("Sound Level Meter / 声级计", "\(HardwareIdentifier.marketingName) running Decibel Meter Pro"),
+            ("Sound Level Meter / 声级计", "\(HardwareIdentifier.pdfHardwareDescription) · Decibel Meter Pro"),
             ("Weighting / 频率加权", weighting),
             ("Time Response / 时间响应", "Fast / equivalent continuous (Leq) integration"),
             ("Acoustic Calibrator / 声校准器", "Not used — consumer device calibration only / 未使用标准声校准器"),
             ("Calibration Record / 校准记录", calibrationText),
-            ("Weather / 环境条件", weatherPlaceholder),
+            ("Temperature / Humidity / 温度与湿度", environmentLine),
         ]
     }
 

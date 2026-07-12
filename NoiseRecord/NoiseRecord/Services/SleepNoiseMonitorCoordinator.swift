@@ -51,7 +51,10 @@ final class SleepNoiseMonitorCoordinator {
         activeSession?.sessionStatus == .active
     }
 
-    func startSession(isHighSensitivity: Bool) async -> Bool {
+    func startSession(
+        isHighSensitivity: Bool,
+        environment: SleepEnvironmentSnapshot? = nil
+    ) async -> Bool {
         guard let engine, let modelContext else { return false }
         guard activeSession == nil else { return false }
 
@@ -72,6 +75,8 @@ final class SleepNoiseMonitorCoordinator {
 
         let session = SleepNoiseSession()
         session.weightingMode = isHighSensitivity ? "highSensitivity" : "standard"
+        session.startTemperatureCelsius = environment?.temperatureCelsius
+        session.startHumidityPercent = environment?.humidityPercent
         modelContext.insert(session)
         try? modelContext.save()
 
@@ -112,9 +117,21 @@ final class SleepNoiseMonitorCoordinator {
         return engine.isMonitoring
     }
 
-    func endSession() async {
+    func noteEnvironmentSnapshot(_ snapshot: SleepEnvironmentSnapshot) {
+        guard let session = activeSession else { return }
+        session.endTemperatureCelsius = snapshot.temperatureCelsius
+        session.endHumidityPercent = snapshot.humidityPercent
+        try? modelContext?.save()
+    }
+
+    func endSession(environment: SleepEnvironmentSnapshot? = nil) async {
         guard let engine, let modelContext, let session = activeSession else { return }
         isSleepReportFlowActive = true
+
+        if let environment {
+            session.endTemperatureCelsius = environment.temperatureCelsius
+            session.endHumidityPercent = environment.humidityPercent
+        }
 
         let finalSnapshot = finalEngineSnapshot(from: engine)
         if finalSnapshot.leq > 0 {
@@ -176,7 +193,9 @@ final class SleepNoiseMonitorCoordinator {
         let summary = SleepReportBuilder.buildSummary(
             overallLeq: result.overallLeq,
             noiseFloor: result.noiseFloor,
-            anomalies: result.anomalies
+            anomalies: result.anomalies,
+            temperatureCelsius: session.endTemperatureCelsius ?? session.startTemperatureCelsius,
+            humidityPercent: session.endHumidityPercent ?? session.startHumidityPercent
         )
         session.reportSummary = summary
         session.isReportRead = false

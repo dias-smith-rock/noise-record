@@ -20,7 +20,11 @@ final class SleepNEMRStatisticsTests: XCTestCase {
             anomalyCount: 0,
             grade: "C",
             weightingMode: WeightingType.a.rawValue,
-            isHighSensitivitySession: false
+            isHighSensitivitySession: false,
+            startTemperatureCelsius: nil,
+            startHumidityPercent: nil,
+            endTemperatureCelsius: nil,
+            endHumidityPercent: nil
         )
     }
 

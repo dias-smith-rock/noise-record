@@ -21,6 +21,10 @@ final class SleepNoiseSession {
     var reportSummary: String?
     var isReportRead: Bool
     var weightingMode: String
+    var startTemperatureCelsius: Double?
+    var startHumidityPercent: Int?
+    var endTemperatureCelsius: Double?
+    var endHumidityPercent: Int?
 
     @Relationship(deleteRule: .cascade, inverse: \SleepAnomalyEvent.sleepSession)
     var anomalies: [SleepAnomalyEvent]
@@ -38,6 +42,10 @@ final class SleepNoiseSession {
         self.reportSummary = nil
         self.isReportRead = false
         self.weightingMode = ""
+        self.startTemperatureCelsius = nil
+        self.startHumidityPercent = nil
+        self.endTemperatureCelsius = nil
+        self.endHumidityPercent = nil
         self.anomalies = []
     }
 

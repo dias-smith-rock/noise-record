@@ -33,4 +33,28 @@ final class SleepReportBuilderTests: XCTestCase {
         XCTAssertTrue(summary.contains("32"))
         XCTAssertTrue(summary.contains("65"))
     }
+
+    func testSummaryIncludesEnvironmentWhenAvailable() {
+        let summary = SleepReportBuilder.buildSummary(
+            overallLeq: 32,
+            noiseFloor: 30,
+            anomalies: [],
+            temperatureCelsius: 22,
+            humidityPercent: 65
+        )
+
+        XCTAssertTrue(summary.contains("32"))
+        XCTAssertTrue(summary.contains("22°C"))
+        XCTAssertTrue(summary.contains("65% RH"))
+    }
+
+    func testSummaryOmitsEnvironmentWhenMissing() {
+        let summary = SleepReportBuilder.buildSummary(
+            overallLeq: 32,
+            noiseFloor: 30,
+            anomalies: []
+        )
+
+        XCTAssertFalse(summary.contains("RH"))
+    }
 }

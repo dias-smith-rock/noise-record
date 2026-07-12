@@ -739,6 +739,10 @@ nonisolated enum L10n {
         String(format: localized("sleep.report.summaryWithAnomaly"), overall, time, peak, impact)
     }
 
+    static func sleepReportSummaryEnvironment(_ base: String, _ environment: String) -> String {
+        String(format: localized("sleep.report.summaryEnvironment"), base, environment)
+    }
+
     static func sleepHistoryRowSummary(leq: String, floor: String, anomalies: Int) -> String {
         String(format: localized("sleep.history.rowSummary"), leq, floor, anomalies)
     }

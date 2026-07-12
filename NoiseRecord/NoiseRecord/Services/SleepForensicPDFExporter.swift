@@ -48,6 +48,24 @@ enum SleepForensicPDFExporter {
         let grade: String
         let weightingMode: String
         let isHighSensitivitySession: Bool
+        let startTemperatureCelsius: Double?
+        let startHumidityPercent: Int?
+        let endTemperatureCelsius: Double?
+        let endHumidityPercent: Int?
+
+        var startEnvironmentSnapshot: SleepEnvironmentSnapshot {
+            SleepEnvironmentSnapshot(
+                temperatureCelsius: startTemperatureCelsius,
+                humidityPercent: startHumidityPercent
+            )
+        }
+
+        var endEnvironmentSnapshot: SleepEnvironmentSnapshot {
+            SleepEnvironmentSnapshot(
+                temperatureCelsius: endTemperatureCelsius,
+                humidityPercent: endHumidityPercent
+            )
+        }
     }
 
     struct RecordingEvidenceSnapshot: Sendable {
@@ -68,7 +86,16 @@ enum SleepForensicPDFExporter {
 
         let endedAt = payload.session.endedAt ?? payload.session.startedAt
         let duration = max(endedAt.timeIntervalSince(payload.session.startedAt), 60)
-        let minDB = payload.chartPoints.map(\.decibels).min() ?? payload.session.noiseFloorDB
+        let minPoint = payload.chartPoints.min(by: { $0.decibels < $1.decibels })
+        let minDB = minPoint?.decibels ?? payload.session.noiseFloorDB
+        let peakPoint = payload.chartPoints.max(by: { $0.decibels < $1.decibels })
+        let peakTimestamp = peakPoint?.timestamp
+            ?? payload.incidents.max(by: { $0.peakDB < $1.peakDB })?.timestamp
+        let minTimestamp = minPoint?.timestamp
+        let environmentSummary = SleepEnvironmentFormatter.pdfEnglishSummary(
+            start: payload.session.startEnvironmentSnapshot,
+            end: payload.session.endEnvironmentSnapshot
+        )
         let nuisanceDuration = cumulativeDurationAboveLimit(
             points: payload.chartPoints,
             limit: ForensicLimits.whoNighttimeLimitDB
@@ -89,7 +116,8 @@ enum SleepForensicPDFExporter {
                 session: payload.session,
                 endedAt: endedAt,
                 duration: duration,
-                locationSummary: payload.locationSummary
+                locationSummary: payload.locationSummary,
+                environmentSummary: environmentSummary
             )
 
             cursorY = ForensicPDFLayout.ensureSpace(context: context, y: cursorY, required: 180)
@@ -99,7 +127,10 @@ enum SleepForensicPDFExporter {
                 session: payload.session,
                 duration: duration,
                 minDB: minDB,
-                incidentCount: payload.incidents.count
+                minTimestamp: minTimestamp,
+                peakTimestamp: peakTimestamp,
+                incidentCount: payload.incidents.count,
+                environmentSummary: environmentSummary
             )
 
             cursorY = ForensicPDFLayout.ensureSpace(context: context, y: cursorY, required: 120)
@@ -209,7 +240,11 @@ enum SleepForensicPDFExporter {
                 anomalyCount: session.anomalyCount,
                 grade: session.grade,
                 weightingMode: session.weightingMode,
-                isHighSensitivitySession: session.isHighSensitivitySession
+                isHighSensitivitySession: session.isHighSensitivitySession,
+                startTemperatureCelsius: session.startTemperatureCelsius,
+                startHumidityPercent: session.startHumidityPercent,
+                endTemperatureCelsius: session.endTemperatureCelsius,
+                endHumidityPercent: session.endHumidityPercent
             ),
             chartPoints: chartPoints,
             incidents: incidents,
@@ -255,7 +290,7 @@ enum SleepForensicPDFExporter {
             font: .systemFont(ofSize: 9, weight: .semibold)
         )
         cursor = ForensicPDFLayout.drawText(
-            "Data Collection Personnel: Automated Field Collection via Decibel Meter Pro, \(HardwareIdentifier.marketingName)",
+            "Data Collection Personnel: \(HardwareIdentifier.pdfCollectionPersonnelLine)",
             y: cursor,
             font: .systemFont(ofSize: 9)
         )
@@ -274,18 +309,20 @@ enum SleepForensicPDFExporter {
         session: SleepNoiseSessionSnapshot,
         endedAt: Date,
         duration: TimeInterval,
-        locationSummary: String?
+        locationSummary: String?,
+        environmentSummary: String?
     ) -> CGFloat {
         let monitoringWindow = """
         \(ForensicPDFLayout.formattedDateTime(session.startedAt)) — \(ForensicPDFLayout.formattedDateTime(endedAt)) (\(formattedHoursDuration(duration)) Continuous)
         """
+        let temperatureHumidity = environmentSummary ?? "Not recorded"
         let rows = [
             ["Monitoring Window", monitoringWindow],
-            ["Hardware Device", "\(HardwareIdentifier.marketingName), Internal Omni-Directional Microphone Array"],
+            ["Hardware Device", HardwareIdentifier.pdfDeviceMetadataLine],
             ["Acoustic Weighting Filter", weightingLabel(for: session)],
             ["Geographic Location / GPS", locationSummary ?? "Not captured during this session"],
             ["Estimated Noise Floor", String(format: "%.1f dB (Ambient conditions)", session.noiseFloorDB)],
-            ["Weather", "Not recorded during this session"],
+            ["Temperature / Humidity", temperatureHumidity],
         ]
         return ForensicPDFLayout.drawBorderedTable(
             context: context,
@@ -302,7 +339,10 @@ enum SleepForensicPDFExporter {
         session: SleepNoiseSessionSnapshot,
         duration: TimeInterval,
         minDB: Float,
-        incidentCount: Int
+        minTimestamp: Date?,
+        peakTimestamp: Date?,
+        incidentCount: Int,
+        environmentSummary: String?
     ) -> CGFloat {
         var cursor = ForensicPDFLayout.drawBodyParagraphs(
             y: y,
@@ -313,15 +353,24 @@ enum SleepForensicPDFExporter {
             ],
             fontSize: 9
         )
+
+        let peakTimeSuffix = peakTimestamp.map { " at \(ForensicPDFLayout.formattedTime($0))" } ?? ""
+        let minTimeSuffix = minTimestamp.map { " at \(ForensicPDFLayout.formattedTime($0))" } ?? ""
+
+        var items = [
+            "Average Noise Level (Leq): \(String(format: "%.1f", session.overallLeq)) dB (Target: <\(Int(ForensicLimits.whoNighttimeLimitDB)) dB Night)",
+            "Maximum Peak Level (Lpk): \(String(format: "%.1f", session.peakDB)) dB\(peakTimeSuffix)",
+            "Minimum Recorded Level (Lmin): \(String(format: "%.1f", minDB)) dB\(minTimeSuffix) (Target: <35 dB)",
+            "Ambient Background Floor: \(String(format: "%.1f", session.noiseFloorDB)) dB",
+            "Total Acoustic Events: \(incidentCount) distinct incident\(incidentCount == 1 ? "" : "s") detected",
+        ]
+        if let environmentSummary {
+            items.append("Ambient Temperature / Humidity: \(environmentSummary)")
+        }
+
         cursor = ForensicPDFLayout.drawBulletedList(
             y: cursor,
-            items: [
-                "Average Noise Level (Leq): \(String(format: "%.1f", session.overallLeq)) dB (Target: <\(Int(ForensicLimits.whoNighttimeLimitDB)) dB Night)",
-                "Maximum Peak Level (Lpk): \(String(format: "%.1f", session.peakDB)) dB",
-                "Minimum Recorded Level (Lmin): \(String(format: "%.1f", minDB)) dB (Target: <35 dB)",
-                "Ambient Background Floor: \(String(format: "%.1f", session.noiseFloorDB)) dB",
-                "Total Acoustic Events: \(incidentCount) distinct incident\(incidentCount == 1 ? "" : "s") detected",
-            ],
+            items: items,
             fontSize: 9
         )
         return cursor

@@ -98808,6 +98808,29 @@
         }
       }
     },
+    "sleep.report.summaryEnvironment" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ Ambient conditions: %2$@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ 环境：%2$@。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ 環境：%2$@。"
+          }
+        }
+      }
+    },
     "sleep.report.summaryWithAnomaly" : {
       "extractionState" : "manual",
       "localizations" : {

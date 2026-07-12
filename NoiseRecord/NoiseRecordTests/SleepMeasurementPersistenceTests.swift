@@ -64,4 +64,29 @@ final class SleepMeasurementPersistenceTests: XCTestCase {
         session.endedAt = endedAt
         return session
     }
+
+    func testEnvironmentFieldsPersistOnSleepSession() throws {
+        let session = makeCompletedSession(
+            startedAt: Date(),
+            endedAt: Date().addingTimeInterval(3600)
+        )
+        session.startTemperatureCelsius = 22.5
+        session.startHumidityPercent = 65
+        session.endTemperatureCelsius = 21.0
+        session.endHumidityPercent = 70
+
+        context.insert(session)
+        try context.save()
+
+        let sessionID = session.id
+        let descriptor = FetchDescriptor<SleepNoiseSession>(
+            predicate: #Predicate { $0.id == sessionID }
+        )
+        let fetched = try context.fetch(descriptor).first
+
+        XCTAssertEqual(fetched?.startTemperatureCelsius, 22.5)
+        XCTAssertEqual(fetched?.startHumidityPercent, 65)
+        XCTAssertEqual(fetched?.endTemperatureCelsius, 21.0)
+        XCTAssertEqual(fetched?.endHumidityPercent, 70)
+    }
 }

@@ -5,18 +5,30 @@ enum SleepReportBuilder {
         overallLeq: Float,
         noiseFloor: Float,
         anomalies: [SleepAnomalyCandidate],
+        temperatureCelsius: Double? = nil,
+        humidityPercent: Int? = nil,
         calendar: Calendar = .current
     ) -> String {
         let overall = String(format: "%.0f", overallLeq)
+        let base: String
 
-        guard let primary = anomalies.max(by: { $0.peakDB < $1.peakDB }) else {
-            return L10n.sleepReportSummaryQuiet(overall)
+        if let primary = anomalies.max(by: { $0.peakDB < $1.peakDB }) {
+            let time = formattedTime(primary.timestamp, calendar: calendar)
+            let peak = String(format: "%.0f", primary.peakDB)
+            let impact = impactText(for: primary.timestamp, calendar: calendar)
+            base = L10n.sleepReportSummaryWithAnomaly(overall, time, peak, impact)
+        } else {
+            base = L10n.sleepReportSummaryQuiet(overall)
         }
 
-        let time = formattedTime(primary.timestamp, calendar: calendar)
-        let peak = String(format: "%.0f", primary.peakDB)
-        let impact = impactText(for: primary.timestamp, calendar: calendar)
-        return L10n.sleepReportSummaryWithAnomaly(overall, time, peak, impact)
+        guard let environment = SleepEnvironmentFormatter.appSummaryClause(
+            temperatureCelsius: temperatureCelsius,
+            humidityPercent: humidityPercent
+        ) else {
+            return base
+        }
+
+        return L10n.sleepReportSummaryEnvironment(base, environment)
     }
 
     static func impactText(for timestamp: Date, calendar: Calendar = .current) -> String {

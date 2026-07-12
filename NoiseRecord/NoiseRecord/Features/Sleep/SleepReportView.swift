@@ -35,6 +35,10 @@ struct SleepReportView: View {
         .theme(for: themeMeasurementMode ?? measurementMode)
     }
 
+    private var isPDFPreviewBlurred: Bool {
+        SleepPDFPreviewAccessStore.shouldBlurPreview(isPremium: subscriptions.canAccessSleepExport)
+    }
+
     var body: some View {
         let _ = appearance.accentRefreshID
 
@@ -126,10 +130,15 @@ struct SleepReportView: View {
             guard let session else { return }
             refreshEmbeddedPDF(session, format: embeddedPDFFormat)
         }
+        .onDisappear {
+            guard !subscriptions.canAccessSleepExport else { return }
+            guard !SleepPDFPreviewAccessStore.hasConsumedGlobalFreePreview else { return }
+            SleepPDFPreviewAccessStore.markGlobalFreePreviewConsumed()
+        }
     }
 
     private var showsPDFUnlockBar: Bool {
-        session != nil && !subscriptions.canAccessSleepExport
+        session != nil && isPDFPreviewBlurred
     }
 
     private var pdfUnlockBar: some View {
@@ -289,7 +298,7 @@ struct SleepReportView: View {
                     PDFPagesStackView(
                         url: embeddedPDFURL,
                         reportFormat: embeddedPDFFormat,
-                        isPreviewBlurred: !subscriptions.canAccessSleepExport,
+                        isPreviewBlurred: isPDFPreviewBlurred,
                         loadFailed: $embeddedPDFLoadFailed,
                         currentPage: $embeddedPDFCurrentPage,
                         totalPages: $embeddedPDFTotalPages
@@ -491,6 +500,8 @@ private struct PDFPagesStackView: View {
     @State private var pageImages: [UIImage] = []
     @State private var pageClearTopRatios: [CGFloat] = []
     @State private var renderWidth: CGFloat = 0
+    @State private var zoomScale: CGFloat = 1
+    @State private var steadyZoomScale: CGFloat = 1
 
     var body: some View {
         VStack(spacing: 8) {
@@ -499,26 +510,18 @@ private struct PDFPagesStackView: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 120)
             } else {
-                ForEach(Array(pageImages.enumerated()), id: \.offset) { index, image in
-                    BlurredPDFPageImage(
-                        image: image,
-                        clearTopRatio: pageClearTopRatios.indices.contains(index)
-                            ? pageClearTopRatios[index]
-                            : 1
-                    )
-                    .frame(maxWidth: .infinity)
-                    .background(Color.white)
-                        .background {
-                            GeometryReader { geometry in
-                                let frame = geometry.frame(in: .global)
-                                let visible = frame.intersection(UIScreen.main.bounds)
-                                let area = max(0, visible.width) * max(0, visible.height)
-                                Color.clear.preference(
-                                    key: PageVisibilityPreference.self,
-                                    value: [PageVisibilityEntry(pageIndex: index, visibleArea: area)]
-                                )
-                            }
-                        }
+                ScrollView([.horizontal, .vertical], showsIndicators: false) {
+                    pageStack
+                        .scaleEffect(zoomScale, anchor: .top)
+                        .frame(width: renderWidth * zoomScale, alignment: .top)
+                }
+                .frame(maxWidth: .infinity)
+                .simultaneousGesture(magnificationGesture)
+                .onTapGesture(count: 2) {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        zoomScale = 1
+                        steadyZoomScale = 1
+                    }
                 }
             }
         }
@@ -540,8 +543,47 @@ private struct PDFPagesStackView: View {
             currentPage = best.pageIndex + 1
         }
         .task(id: "\(url.absoluteString)-\(renderWidth)-\(isPreviewBlurred)-\(reportFormat.rawValue)") {
+            zoomScale = 1
+            steadyZoomScale = 1
             await loadPages()
         }
+    }
+
+    private var pageStack: some View {
+        VStack(spacing: 8) {
+            ForEach(Array(pageImages.enumerated()), id: \.offset) { index, image in
+                BlurredPDFPageImage(
+                    image: image,
+                    clearTopRatio: pageClearTopRatios.indices.contains(index)
+                        ? pageClearTopRatios[index]
+                        : 1
+                )
+                .frame(maxWidth: .infinity)
+                .background(Color.white)
+                .background {
+                    GeometryReader { geometry in
+                        let frame = geometry.frame(in: .global)
+                        let visible = frame.intersection(UIScreen.main.bounds)
+                        let area = max(0, visible.width) * max(0, visible.height)
+                        Color.clear.preference(
+                            key: PageVisibilityPreference.self,
+                            value: [PageVisibilityEntry(pageIndex: index, visibleArea: area)]
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private var magnificationGesture: some Gesture {
+        MagnificationGesture()
+            .onChanged { value in
+                let proposed = steadyZoomScale * value
+                zoomScale = min(max(proposed, 1), 3)
+            }
+            .onEnded { _ in
+                steadyZoomScale = zoomScale
+            }
     }
 
     private func updateRenderWidth(_ width: CGFloat) {
