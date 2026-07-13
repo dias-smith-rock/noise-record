@@ -9,6 +9,7 @@ struct SleepMonitorHeaderMenu: View, Equatable {
     let onViewLatestReport: () -> Void
     let onViewHistory: () -> Void
     let onStartSleepMonitoring: () async -> Void
+    let onStopCurrentMonitoring: () -> Void
 
     @State private var isStarting = false
     @State private var pendingNavigation: PendingNavigation?
@@ -34,7 +35,7 @@ struct SleepMonitorHeaderMenu: View, Equatable {
         HStack(spacing: 8) {
             if isSleepMonitoring {
                 Menu {
-                    sleepHistoryAndReportMenuItems(includeStart: false)
+                    sleepHistoryAndReportMenuItems(includeStart: false, includeStop: true)
                 } label: {
                     TimelineView(.periodic(from: .now, by: 1)) { _ in
                         sleepCapsule(title: elapsedText, systemImage: "moon.stars.fill", prominent: true)
@@ -42,7 +43,7 @@ struct SleepMonitorHeaderMenu: View, Equatable {
                 }
             } else if isGeneralMonitoringActive {
                 Menu {
-                    sleepHistoryAndReportMenuItems(includeStart: false)
+                    sleepHistoryAndReportMenuItems(includeStart: false, includeStop: true)
                 } label: {
                     SleepHeaderGuideCapsule(theme: theme)
                         .onTapGesture {
@@ -51,7 +52,7 @@ struct SleepMonitorHeaderMenu: View, Equatable {
                 }
             } else {
                 Menu {
-                    sleepHistoryAndReportMenuItems(includeStart: true)
+                    sleepHistoryAndReportMenuItems(includeStart: true, includeStop: false)
                 } label: {
                     SleepHeaderGuideCapsule(theme: theme)
                         .onTapGesture {
@@ -76,7 +77,15 @@ struct SleepMonitorHeaderMenu: View, Equatable {
     }
 
     @ViewBuilder
-    private func sleepHistoryAndReportMenuItems(includeStart: Bool) -> some View {
+    private func sleepHistoryAndReportMenuItems(includeStart: Bool, includeStop: Bool) -> some View {
+        if includeStop {
+            Button(role: .destructive) {
+                onStopCurrentMonitoring()
+            } label: {
+                sleepMenuLabel(L10n.sleepMenuStopCurrentMonitoring, systemImage: "stop.circle.fill")
+            }
+        }
+
         if includeStart {
             Button {
                 Task { await startSleepMonitoring() }

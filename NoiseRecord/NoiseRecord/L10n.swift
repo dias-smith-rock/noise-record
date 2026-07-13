@@ -705,6 +705,7 @@ nonisolated enum L10n {
     static var sleepMonitorStart: String { localized("sleep.monitor.start") }
     static var sleepMonitorHeaderButton: String { localized("sleep.monitor.headerButton") }
     static var sleepMenuStart: String { localized("sleep.menu.start") }
+    static var sleepMenuStopCurrentMonitoring: String { localized("sleep.menu.stopCurrentMonitoring") }
     static var sleepMenuLatestReport: String { localized("sleep.menu.latestReport") }
     static var sleepMenuHistory: String { localized("sleep.menu.history") }
     static var sleepMenuNoReport: String { localized("sleep.menu.noReport") }

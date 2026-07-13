@@ -98132,6 +98132,29 @@
         }
       }
     },
+    "sleep.menu.stopCurrentMonitoring" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop Current Monitoring"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "停止当前监测"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "停止當前監測"
+          }
+        }
+      }
+    },
     "sleep.menu.noReport" : {
       "extractionState" : "manual",
       "localizations" : {

@@ -52,7 +52,8 @@ struct DashboardView: View {
                     measurementMode: measurementMode,
                     onViewLatestReport: openLatestMorningReport,
                     onViewHistory: openSleepHistory,
-                    onStartSleepMonitoring: startSleepMonitoringFromHeader
+                    onStartSleepMonitoring: startSleepMonitoringFromHeader,
+                    onStopCurrentMonitoring: handleStopMonitoringFromHeaderMenu
                 )
                 .equatable()
             }
@@ -412,6 +413,17 @@ struct DashboardView: View {
         case .idle: return "play.circle.fill"
         case .playing: return "speaker.wave.2.fill"
         }
+    }
+
+    private func handleStopMonitoringFromHeaderMenu() {
+        guard audioStateManager.appAudioState != .playing else { return }
+        AppTelemetry.logProductEvent(
+            "sleep_header_stop_tap",
+            parameters: [
+                "mode": sleepCoordinator.isSleepMonitoring ? "sleep" : "standard",
+            ]
+        )
+        handleStopMonitoringTapped()
     }
 
     private func handleStopMonitoringTapped() {
