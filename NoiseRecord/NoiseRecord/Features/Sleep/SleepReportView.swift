@@ -128,7 +128,7 @@ struct SleepReportView: View {
         }
         .task(id: session?.id) {
             guard let session else { return }
-            refreshEmbeddedPDF(session, format: embeddedPDFFormat)
+            await refreshEmbeddedPDF(session, format: embeddedPDFFormat)
         }
         .onDisappear {
             guard !subscriptions.canAccessSleepExport else { return }
@@ -413,7 +413,7 @@ struct SleepReportView: View {
         SharePresenter.present(items: [url])
     }
 
-    private func refreshEmbeddedPDF(_ session: SleepNoiseSession, format: SleepForensicReportFormat) {
+    private func refreshEmbeddedPDF(_ session: SleepNoiseSession, format: SleepForensicReportFormat) async {
         embeddedPDFFormat = format
         embeddedPDFLoadFailed = false
         embeddedPDFCurrentPage = 1
@@ -428,7 +428,7 @@ struct SleepReportView: View {
             predicate: #Predicate { $0.sleepSessionID == sleepID }
         )
         let recordings = (try? modelContext.fetch(recordingDescriptor)) ?? []
-        let payload = SleepForensicPDFExporter.makePayload(
+        let payload = await SleepForensicPDFExporter.makePayload(
             session: session,
             samples: samples,
             recordings: recordings
@@ -452,7 +452,9 @@ struct SleepReportView: View {
             return
         }
         pendingPDFSession = nil
-        refreshEmbeddedPDF(session, format: format)
+        Task {
+            await refreshEmbeddedPDF(session, format: format)
+        }
     }
 }
 

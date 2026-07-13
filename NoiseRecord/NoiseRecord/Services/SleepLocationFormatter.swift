@@ -13,19 +13,55 @@ struct SleepLocationSnapshot: Sendable, Equatable {
 enum SleepLocationFormatter {
     static func pdfEnglishSummary(
         start: SleepLocationSnapshot?,
-        end: SleepLocationSnapshot? = nil
+        end: SleepLocationSnapshot? = nil,
+        startPlaceName: String? = nil,
+        endPlaceName: String? = nil
     ) -> String? {
-        formattedRange(start: start, end: end)
+        formattedRange(
+            start: start,
+            end: end,
+            startPlaceName: startPlaceName,
+            endPlaceName: endPlaceName
+        )
+    }
+
+    @MainActor
+    static func resolvePDFEnglishSummary(
+        start: SleepLocationSnapshot?,
+        end: SleepLocationSnapshot? = nil
+    ) async -> String? {
+        async let startPlaceName = resolvePlaceName(for: start)
+        async let endPlaceName = resolvePlaceName(for: end)
+        return pdfEnglishSummary(
+            start: start,
+            end: end,
+            startPlaceName: await startPlaceName,
+            endPlaceName: await endPlaceName
+        )
     }
 
     static func pdfNEMRLine(
         start: SleepLocationSnapshot?,
-        end: SleepLocationSnapshot? = nil
+        end: SleepLocationSnapshot? = nil,
+        startPlaceName: String? = nil,
+        endPlaceName: String? = nil
     ) -> String {
-        guard let english = formattedRange(start: start, end: end) else {
+        guard let english = pdfEnglishSummary(
+            start: start,
+            end: end,
+            startPlaceName: startPlaceName,
+            endPlaceName: endPlaceName
+        ) else {
             return "Not recorded / 未记录"
         }
         return "\(english) / \(english)"
+    }
+
+    static func pdfNEMRLine(fromResolvedSummary summary: String?) -> String {
+        guard let summary, !summary.isEmpty else {
+            return "Not recorded / 未记录"
+        }
+        return "\(summary) / \(summary)"
     }
 
     static func formattedCoordinates(latitude: Double, longitude: Double) -> String {
@@ -40,12 +76,31 @@ enum SleepLocationFormatter {
         )
     }
 
+    @MainActor
+    private static func resolvePlaceName(for snapshot: SleepLocationSnapshot?) async -> String? {
+        guard let snapshot,
+              let latitude = snapshot.latitude,
+              let longitude = snapshot.longitude else {
+            return nil
+        }
+        return await EvidenceGeocoder.abbreviatedPlaceName(
+            latitude: latitude,
+            longitude: longitude
+        )
+    }
+
     private static func formattedRange(
         start: SleepLocationSnapshot?,
-        end: SleepLocationSnapshot?
+        end: SleepLocationSnapshot?,
+        startPlaceName: String?,
+        endPlaceName: String?
     ) -> String? {
-        let startText = start.flatMap(formattedSingle(snapshot:))
-        let endText = end.flatMap(formattedSingle(snapshot:))
+        let startText = start.flatMap {
+            formattedSingle(snapshot: $0, placeName: startPlaceName)
+        }
+        let endText = end.flatMap {
+            formattedSingle(snapshot: $0, placeName: endPlaceName)
+        }
 
         switch (startText, endText) {
         case let (start?, end?) where start != end:
@@ -59,11 +114,18 @@ enum SleepLocationFormatter {
         }
     }
 
-    private static func formattedSingle(snapshot: SleepLocationSnapshot) -> String? {
+    private static func formattedSingle(
+        snapshot: SleepLocationSnapshot,
+        placeName: String?
+    ) -> String? {
         guard let latitude = snapshot.latitude,
               let longitude = snapshot.longitude else {
             return nil
         }
-        return formattedCoordinates(latitude: latitude, longitude: longitude)
+        let coordinates = formattedCoordinates(latitude: latitude, longitude: longitude)
+        if let placeName, !placeName.isEmpty {
+            return "\(coordinates) — \(placeName)"
+        }
+        return coordinates
     }
 }

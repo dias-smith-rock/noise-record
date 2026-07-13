@@ -79,6 +79,8 @@ struct EvidenceLocationCard: View {
 }
 
 enum EvidenceGeocoder {
+    private static var abbreviationCache: [String: String] = [:]
+
     static func resolveAddress(
         latitude: Double,
         longitude: Double
@@ -115,6 +117,59 @@ enum EvidenceGeocoder {
         } catch {
             return (formatCoordinate(latitude: latitude, longitude: longitude), nil)
         }
+    }
+
+    static func abbreviatedPlaceName(latitude: Double, longitude: Double) async -> String? {
+        let key = cacheKey(latitude: latitude, longitude: longitude)
+        if let cached = abbreviationCache[key] {
+            return cached
+        }
+
+        let location = CLLocation(latitude: latitude, longitude: longitude)
+        let geocoder = CLGeocoder()
+
+        do {
+            let placemarks = try await geocoder.reverseGeocodeLocation(location)
+            guard let placemark = placemarks.first,
+                  let abbreviated = abbreviatedPlaceName(from: placemark) else {
+                return nil
+            }
+            abbreviationCache[key] = abbreviated
+            return abbreviated
+        } catch {
+            return nil
+        }
+    }
+
+    static func abbreviatedPlaceName(from placemark: CLPlacemark) -> String? {
+        let candidates = [
+            placemark.subLocality,
+            placemark.locality,
+            placemark.administrativeArea,
+        ]
+        .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+        .filter { !$0.isEmpty }
+
+        var unique: [String] = []
+        for candidate in candidates {
+            if unique.last != candidate {
+                unique.append(candidate)
+            }
+        }
+
+        if unique.count >= 2 {
+            return "\(unique[unique.count - 2]), \(unique[unique.count - 1])"
+        }
+        if let single = unique.first {
+            return single
+        }
+
+        let name = placemark.name?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return name?.isEmpty == false ? name : nil
+    }
+
+    private static func cacheKey(latitude: Double, longitude: Double) -> String {
+        String(format: "%.4f,%.4f", latitude, longitude)
     }
 
     private static func formatCoordinate(latitude: Double, longitude: Double) -> String {

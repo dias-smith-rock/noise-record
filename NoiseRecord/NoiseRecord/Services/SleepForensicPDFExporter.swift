@@ -101,7 +101,7 @@ enum SleepForensicPDFExporter {
         let renderer = UIGraphicsPDFRenderer(bounds: CGRect(origin: .zero, size: ForensicPDFLayout.Constants.pageSize))
 
         let endedAt = payload.session.endedAt ?? payload.session.startedAt
-        let duration = max(endedAt.timeIntervalSince(payload.session.startedAt), 60)
+        let duration = max(0, endedAt.timeIntervalSince(payload.session.startedAt))
         let minPoint = payload.chartPoints.min(by: { $0.decibels < $1.decibels })
         let minDB = minPoint?.decibels ?? payload.session.noiseFloorDB
         let peakPoint = payload.chartPoints.max(by: { $0.decibels < $1.decibels })
@@ -112,10 +112,7 @@ enum SleepForensicPDFExporter {
             start: payload.session.startEnvironmentSnapshot,
             end: payload.session.endEnvironmentSnapshot
         )
-        let gpsSummary = SleepLocationFormatter.pdfEnglishSummary(
-            start: payload.session.startLocationSnapshot,
-            end: payload.session.endLocationSnapshot
-        )
+        let gpsSummary = payload.locationSummary
         let nuisanceDuration = cumulativeDurationAboveLimit(
             points: payload.chartPoints,
             limit: ForensicLimits.whoNighttimeLimitDB
@@ -207,7 +204,7 @@ enum SleepForensicPDFExporter {
         session: SleepNoiseSession,
         samples: [MeasurementSample],
         recordings: [RecordingSession]
-    ) -> ExportPayload {
+    ) async -> ExportPayload {
         let realPoints = samples.map { sample in
             ChartPoint(
                 timestamp: sample.timestamp,
@@ -248,7 +245,7 @@ enum SleepForensicPDFExporter {
                 )
             }
 
-        let locationSummary = resolvedLocationSummary(session: session, recordings: recordings)
+        let locationSummary = await resolvedLocationSummary(session: session, recordings: recordings)
 
         return ExportPayload(
             session: SleepNoiseSessionSnapshot(
@@ -338,7 +335,7 @@ enum SleepForensicPDFExporter {
         environmentSummary: String?
     ) -> CGFloat {
         let monitoringWindow = """
-        \(ForensicPDFLayout.formattedDateTime(session.startedAt)) — \(ForensicPDFLayout.formattedDateTime(endedAt)) (\(formattedHoursDuration(duration)) Continuous)
+        \(ForensicPDFLayout.formattedDateTime(session.startedAt)) — \(ForensicPDFLayout.formattedDateTime(endedAt)) (\(ForensicPDFLayout.formattedDuration(duration)) continuous)
         """
         let temperatureHumidity = environmentSummary ?? "Not recorded"
         let rows = [
@@ -509,11 +506,6 @@ enum SleepForensicPDFExporter {
         return digest.map { String(format: "%02x", $0) }.joined()
     }
 
-    private static func formattedHoursDuration(_ interval: TimeInterval) -> String {
-        let hours = max(1, Int((interval / 3600).rounded()))
-        return hours == 1 ? "1 hour" : "\(hours) hours"
-    }
-
     private static func weightingLabel(for session: SleepNoiseSessionSnapshot) -> String {
         if session.isHighSensitivitySession {
             return "dBZ (Zero-Weighted), Fast / High Sensitivity Mode"
@@ -527,7 +519,7 @@ enum SleepForensicPDFExporter {
     private static func resolvedLocationSummary(
         session: SleepNoiseSession,
         recordings: [RecordingSession]
-    ) -> String? {
+    ) async -> String? {
         let start = SleepLocationSnapshot(
             latitude: session.startLatitude,
             longitude: session.startLongitude
@@ -536,19 +528,26 @@ enum SleepForensicPDFExporter {
             latitude: session.endLatitude,
             longitude: session.endLongitude
         )
-        if let sessionSummary = SleepLocationFormatter.pdfEnglishSummary(start: start, end: end) {
+        if let sessionSummary = await SleepLocationFormatter.resolvePDFEnglishSummary(
+            start: start,
+            end: end
+        ) {
             return sessionSummary
         }
-        return formattedLocation(from: recordings)
+        return await formattedLocation(from: recordings)
     }
 
-    private static func formattedLocation(from recordings: [RecordingSession]) -> String? {
+    private static func formattedLocation(from recordings: [RecordingSession]) async -> String? {
         guard let recording = recordings.first(where: { $0.latitude != nil && $0.longitude != nil }),
               let lat = recording.latitude,
               let lon = recording.longitude else {
             return nil
         }
-        return "\(SleepLocationFormatter.formattedCoordinates(latitude: lat, longitude: lon)) (Device GPS at capture)"
+        let coordinates = SleepLocationFormatter.formattedCoordinates(latitude: lat, longitude: lon)
+        if let placeName = await EvidenceGeocoder.abbreviatedPlaceName(latitude: lat, longitude: lon) {
+            return "\(coordinates) — \(placeName) (Device GPS at capture)"
+        }
+        return "\(coordinates) (Device GPS at capture)"
     }
 
     private static func cumulativeDurationAboveLimit(points: [ChartPoint], limit: Float) -> TimeInterval {

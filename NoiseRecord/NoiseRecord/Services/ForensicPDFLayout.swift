@@ -585,7 +585,7 @@ enum ForensicPDFLayout {
     }
 
     static func formattedDuration(_ interval: TimeInterval) -> String {
-        let totalSeconds = max(0, Int(interval.rounded()))
+        let totalSeconds = max(0, Int(interval))
         let hours = totalSeconds / 3600
         let minutes = (totalSeconds % 3600) / 60
         let seconds = totalSeconds % 60

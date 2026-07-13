@@ -36,10 +36,7 @@ enum SleepNEMRReportMetadata {
             start: session.startEnvironmentSnapshot,
             end: session.endEnvironmentSnapshot
         )
-        let gpsLine = SleepLocationFormatter.pdfNEMRLine(
-            start: session.startLocationSnapshot,
-            end: session.endLocationSnapshot
-        )
+        let gpsLine = SleepLocationFormatter.pdfNEMRLine(fromResolvedSummary: locationSummary)
 
         return ReportFields(
             reportNumber: reportNumber,
@@ -130,7 +127,7 @@ enum SleepNEMRReportMetadata {
             ),
             (
                 "Measurement Duration / 测量时长",
-                "\(ForensicPDFLayout.formattedDuration(max(endedAt.timeIntervalSince(session.startedAt), 60))) continuous monitoring"
+                "\(ForensicPDFLayout.formattedDuration(max(0, endedAt.timeIntervalSince(session.startedAt)))) continuous monitoring"
             ),
             (
                 "Sampling Interval / 数据记录间隔",
