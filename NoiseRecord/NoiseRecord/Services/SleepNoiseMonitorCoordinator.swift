@@ -130,9 +130,15 @@ final class SleepNoiseMonitorCoordinator {
         try? modelContext?.save()
     }
 
-    func endSession(environment: SleepEnvironmentSnapshot? = nil) async {
+    func endSession(
+        environment: SleepEnvironmentSnapshot? = nil,
+        presentReportImmediately: Bool = true,
+        persistPendingReportID: Bool = true
+    ) async {
         guard let engine, let modelContext, let session = activeSession else { return }
-        isSleepReportFlowActive = true
+        if presentReportImmediately {
+            isSleepReportFlowActive = true
+        }
 
         if let environment {
             session.endTemperatureCelsius = environment.temperatureCelsius
@@ -230,16 +236,20 @@ final class SleepNoiseMonitorCoordinator {
 
         try? modelContext.save()
 
-        SleepMonitorSettingsStore.pendingReportSessionID = session.id
+        if persistPendingReportID {
+            SleepMonitorSettingsStore.pendingReportSessionID = session.id
+        }
         latestReportSessionID = session.id
-        showReportSheet = true
+        if presentReportImmediately {
+            showReportSheet = true
+            AppTelemetry.logProductEvent(
+                "sleep_report_open",
+                parameters: ["source": "post_session"]
+            )
+        }
         AppTelemetry.logProductEvent(
             "sleep_session_ended",
             parameters: ["anomaly_count": String(session.anomalyCount)]
-        )
-        AppTelemetry.logProductEvent(
-            "sleep_report_open",
-            parameters: ["source": "post_session"]
         )
         activeSession = nil
         isHighSensitivitySession = false
@@ -333,9 +343,9 @@ final class SleepNoiseMonitorCoordinator {
         showHistorySheet = true
     }
 
-    func presentPendingReportIfNeeded() {
+    func presentPendingReportIfNeeded(source: String = "post_session") {
         guard let pending = SleepMonitorSettingsStore.pendingReportSessionID else { return }
-        presentReport(sessionID: pending, source: "post_session")
+        presentReport(sessionID: pending, source: source)
     }
 
     func dismissReportSheet() {

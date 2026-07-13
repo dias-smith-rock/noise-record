@@ -73,6 +73,8 @@ private struct FilesTabSummary: Equatable {
 struct RecordingListView: View {
     @Bindable var engine: NoiseMonitorEngine
     @Bindable var audioStateManager: AudioStateManager
+    @Bindable var sleepCoordinator: SleepNoiseMonitorCoordinator
+    let environmentSnapshot: () -> SleepEnvironmentSnapshot
     let isTabActive: Bool
     @Binding var pendingOpenRecordingID: UUID?
     @Query(sort: \RecordingSession.startedAt, order: .reverse) private var sessions: [RecordingSession]
@@ -102,12 +104,25 @@ struct RecordingListView: View {
     @State private var toastMessage: String?
     @State private var showPhotoPermissionDenied = false
     @State private var saveToPhotosErrorMessage: String?
+    @State private var showPlaybackInterruptionConfirm = false
+    @State private var pendingInterruptionKind: PlaybackMonitoringInterruptionKind = .none
+    @State private var pendingVideoForPlayback: VideoEvidenceSession?
+    @State private var videoSleepReportReadyToast: String?
     private var measurementMode: AcousticMeasurementMode {
         AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
     }
 
     private var theme: ModeVisualTheme {
         .theme(for: measurementMode)
+    }
+
+    private var playbackGate: PlaybackMonitoringGate {
+        PlaybackMonitoringGate(
+            engine: engine,
+            sleepCoordinator: sleepCoordinator,
+            audioStateManager: audioStateManager,
+            environmentSnapshot: environmentSnapshot
+        )
     }
 
     private var filesEmptyAudioMessage: String {
@@ -186,7 +201,8 @@ struct RecordingListView: View {
                let session = sessions.first(where: { $0.id == id }) {
                 MediaEvidenceDetailView(
                     kind: .audio(session),
-                    audioStateManager: audioStateManager
+                    audioStateManager: audioStateManager,
+                    playbackGate: playbackGate
                 )
             }
         }
@@ -203,10 +219,9 @@ struct RecordingListView: View {
                 SyncedVideoPlayerView(
                     url: session.fileURL,
                     title: session.fileName,
+                    initialToastMessage: videoSleepReportReadyToast,
                     onDismiss: { dismissPresentedVideo() },
-                    onPlaybackFinished: {
-                        audioStateManager.handlePlaybackFinished()
-                    }
+                    onPlaybackFinished: { finishVideoPlayback() }
                 )
             }
         }
@@ -257,6 +272,17 @@ struct RecordingListView: View {
             Button(L10n.ok, role: .cancel) { playbackErrorMessage = nil }
         } message: {
             Text(playbackErrorMessage ?? "")
+        }
+        .alert(playbackInterruptionTitle, isPresented: $showPlaybackInterruptionConfirm) {
+            Button(L10n.filesPlaybackContinue, role: .destructive) {
+                Task { await confirmPendingVideoPlayback() }
+            }
+            Button(L10n.cancel, role: .cancel) {
+                playbackGate.logConfirmationCancelled(mediaKind: .video)
+                pendingVideoForPlayback = nil
+            }
+        } message: {
+            Text(playbackInterruptionMessage)
         }
         .alert(L10n.errorTitle, isPresented: Binding(
             get: { renameErrorMessage != nil },
@@ -532,7 +558,32 @@ struct RecordingListView: View {
         }
     }
 
-    // MARK: - Detail navigation
+    private var playbackInterruptionTitle: String {
+        switch pendingInterruptionKind {
+        case .sleep:
+            L10n.filesPlaybackEndSleepTitle
+        case .standard:
+            L10n.filesPlaybackStopMonitoringTitle
+        case .none:
+            ""
+        }
+    }
+
+    private var playbackInterruptionMessage: String {
+        switch pendingInterruptionKind {
+        case .sleep:
+            L10n.filesPlaybackEndSleepMessage
+        case .standard:
+            L10n.filesPlaybackStopMonitoringMessage
+        case .none:
+            ""
+        }
+    }
+
+    private func finishVideoPlayback() {
+        guard audioStateManager.appAudioState == .playing else { return }
+        audioStateManager.handlePlaybackFinished()
+    }
 
     private func openAudioDetail(_ session: RecordingSession) {
         guard !isSelectionMode else {
@@ -571,10 +622,40 @@ struct RecordingListView: View {
             playbackErrorMessage = L10n.filesVideoNotFound(session.fileName)
             return
         }
-        session.isNew = false
-        try? modelContext.save()
+
+        let interruption = playbackGate.interruptionKind()
+        if interruption == .none {
+            Task { await startVideoPlayback(session) }
+            return
+        }
+
+        pendingVideoForPlayback = session
+        pendingInterruptionKind = interruption
+        playbackGate.logConfirmationShown(mediaKind: .video)
+        showPlaybackInterruptionConfirm = true
+    }
+
+    private func confirmPendingVideoPlayback() async {
+        guard let session = pendingVideoForPlayback else { return }
+        pendingVideoForPlayback = nil
+        await startVideoPlayback(session, userConfirmed: true)
+    }
+
+    private func startVideoPlayback(
+        _ session: VideoEvidenceSession,
+        userConfirmed: Bool = false
+    ) async {
         do {
-            try audioStateManager.prepareAndStartPlayback()
+            if userConfirmed {
+                let endedSleepSession = try await playbackGate.prepareForPlayback(mediaKind: .video)
+                if endedSleepSession {
+                    videoSleepReportReadyToast = L10n.filesPlaybackSleepReportReadyToast
+                }
+            } else {
+                try audioStateManager.prepareAndStartPlayback()
+            }
+            session.isNew = false
+            try? modelContext.save()
             lastDetailFileURL = session.fileURL
             presentedVideoSession = session
         } catch {
@@ -584,7 +665,8 @@ struct RecordingListView: View {
 
     private func dismissPresentedVideo() {
         invalidateWaveformCacheForLastDetailIfNeeded()
-        audioStateManager.handlePlaybackFinished()
+        finishVideoPlayback()
+        videoSleepReportReadyToast = nil
         presentedVideoSession = nil
     }
 

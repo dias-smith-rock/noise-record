@@ -18,6 +18,7 @@ struct MediaEvidenceDetailView: View {
 
     let kind: MediaKind
     @Bindable var audioStateManager: AudioStateManager
+    let playbackGate: PlaybackMonitoringGate
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.appLanguageRevision) private var appLanguageRevision
@@ -30,6 +31,9 @@ struct MediaEvidenceDetailView: View {
     @State private var displaySubtitle: String?
     @State private var playbackError: String?
     @State private var waveformReferenceLimitDB = NoiseReferenceLimits.residentialNightDB
+    @State private var showPlaybackInterruptionConfirm = false
+    @State private var pendingInterruptionKind: PlaybackMonitoringInterruptionKind = .none
+    @State private var toastMessage: String?
 
     private var measurementMode: AcousticMeasurementMode {
         AcousticMeasurementMode(isHighSensitivity: DeviceCalibrationStore.isHighSensitivityMode)
@@ -131,7 +135,9 @@ struct MediaEvidenceDetailView: View {
         .onAppear(perform: bootstrap)
         .onDisappear {
             model.cleanup()
-            audioStateManager.handlePlaybackFinished()
+            if audioStateManager.appAudioState == .playing {
+                audioStateManager.handlePlaybackFinished()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: NoiseReferenceLimits.didChangeNotification)) { _ in
             waveformReferenceLimitDB = NoiseReferenceLimits.residentialNightDB
@@ -143,6 +149,39 @@ struct MediaEvidenceDetailView: View {
             Button(L10n.ok, role: .cancel) { playbackError = nil }
         } message: {
             Text(playbackError ?? "")
+        }
+        .alert(playbackInterruptionTitle, isPresented: $showPlaybackInterruptionConfirm) {
+            Button(L10n.filesPlaybackContinue, role: .destructive) {
+                Task { await startPlaybackAfterConfirmation() }
+            }
+            Button(L10n.cancel, role: .cancel) {
+                playbackGate.logConfirmationCancelled(mediaKind: .audio)
+            }
+        } message: {
+            Text(playbackInterruptionMessage)
+        }
+        .proToast(message: $toastMessage)
+    }
+
+    private var playbackInterruptionTitle: String {
+        switch pendingInterruptionKind {
+        case .sleep:
+            L10n.filesPlaybackEndSleepTitle
+        case .standard:
+            L10n.filesPlaybackStopMonitoringTitle
+        case .none:
+            ""
+        }
+    }
+
+    private var playbackInterruptionMessage: String {
+        switch pendingInterruptionKind {
+        case .sleep:
+            L10n.filesPlaybackEndSleepMessage
+        case .standard:
+            L10n.filesPlaybackStopMonitoringMessage
+        case .none:
+            ""
         }
     }
 
@@ -229,7 +268,11 @@ struct MediaEvidenceDetailView: View {
             }
 
             Button {
-                model.togglePlayback()
+                if model.isPlaying {
+                    model.togglePlayback()
+                } else {
+                    attemptPlayback()
+                }
             } label: {
                 Label(
                     model.isPlaying ? L10n.mediaDetailPause : L10n.mediaDetailPlay,
@@ -437,7 +480,6 @@ struct MediaEvidenceDetailView: View {
         }
 
         do {
-            try audioStateManager.prepareAndStartPlayback()
             try model.configurePlayback(
                 url: fileURL,
                 isVideo: isVideo,
@@ -450,6 +492,38 @@ struct MediaEvidenceDetailView: View {
 
         Task {
             await model.loadTimeline(from: fileURL, isVideo: isVideo)
+        }
+    }
+
+    private func attemptPlayback() {
+        let kind = playbackGate.interruptionKind()
+        guard kind != .none else {
+            Task { await startPlaybackImmediately() }
+            return
+        }
+        pendingInterruptionKind = kind
+        playbackGate.logConfirmationShown(mediaKind: .audio)
+        showPlaybackInterruptionConfirm = true
+    }
+
+    private func startPlaybackAfterConfirmation() async {
+        do {
+            let endedSleepSession = try await playbackGate.prepareForPlayback(mediaKind: .audio)
+            if endedSleepSession {
+                toastMessage = L10n.filesPlaybackSleepReportReadyToast
+            }
+            model.play()
+        } catch {
+            playbackError = error.localizedDescription
+        }
+    }
+
+    private func startPlaybackImmediately() async {
+        do {
+            try audioStateManager.prepareAndStartPlayback()
+            model.play()
+        } catch {
+            playbackError = error.localizedDescription
         }
     }
 

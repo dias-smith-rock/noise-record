@@ -5,6 +5,7 @@ import SwiftUI
 struct SyncedVideoPlayerView: View {
     let url: URL
     let title: String
+    var initialToastMessage: String? = nil
     let onDismiss: () -> Void
     let onPlaybackFinished: () -> Void
 
@@ -75,7 +76,12 @@ struct SyncedVideoPlayerView: View {
                     .disabled(isSavingToPhotos)
                 }
             }
-            .onAppear(perform: startPlayback)
+            .onAppear {
+                if let initialToastMessage {
+                    toastMessage = initialToastMessage
+                }
+                startPlayback()
+            }
             .onDisappear(perform: stopPlayback)
             .task(id: url) {
                 await loadTimeline()

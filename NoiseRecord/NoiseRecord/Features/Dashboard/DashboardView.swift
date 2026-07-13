@@ -390,11 +390,13 @@ struct DashboardView: View {
     }
 
     private var isMonitorFABShowingStop: Bool {
-        sleepCoordinator.isSleepMonitoring || audioStateManager.appAudioState == .monitoring
+        if audioStateManager.appAudioState == .playing { return false }
+        if sleepCoordinator.isSleepMonitoring { return engine.isMonitoring }
+        return audioStateManager.appAudioState == .monitoring
     }
 
     private var monitorActionTitle: String {
-        if sleepCoordinator.isSleepMonitoring {
+        if sleepCoordinator.isSleepMonitoring && engine.isMonitoring {
             return L10n.sleepEndSession
         }
         switch audioStateManager.appAudioState {

@@ -353,6 +353,13 @@ struct ContentView: View {
             RecordingListView(
                 engine: engine,
                 audioStateManager: audioStateManager,
+                sleepCoordinator: sleepCoordinator,
+                environmentSnapshot: {
+                    SleepEnvironmentSnapshot(
+                        latitude: engine.evidenceLatitude,
+                        longitude: engine.evidenceLongitude
+                    )
+                },
                 isTabActive: selectedTab == .files,
                 pendingOpenRecordingID: $pendingEvidenceRecordingID
             )

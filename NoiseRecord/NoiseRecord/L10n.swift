@@ -220,6 +220,15 @@ nonisolated enum L10n {
     static var filesRenamePlaceholder: String { localized("files.rename.field.placeholder") }
     static var filesRenameMessage: String { localized("files.rename.alert.message") }
     static var filesPlaybackErrorTitle: String { localized("files.playback.error.title") }
+    static var filesPlaybackStopMonitoringTitle: String { localized("files.playback.stopMonitoring.title") }
+    static var filesPlaybackStopMonitoringMessage: String { localized("files.playback.stopMonitoring.message") }
+    static var filesPlaybackEndSleepTitle: String { localized("files.playback.endSleep.title") }
+    static var filesPlaybackEndSleepMessage: String { localized("files.playback.endSleep.message") }
+    static var filesPlaybackContinue: String { localized("files.playback.continue") }
+
+    static var filesPlaybackSleepReportReadyToast: String {
+        formatted("files.playback.sleepReportReadyToast", sleepReportTitle)
+    }
 
     static func filesSelectedCount(_ count: Int) -> String {
         String(format: localized("files.selection.count"), count)
