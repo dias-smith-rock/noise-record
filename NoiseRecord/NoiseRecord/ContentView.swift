@@ -255,7 +255,12 @@ struct ContentView: View {
                 if !wasMonitoring {
                     MonitoringFunnelTracker.noteMonitoringStarted()
                 }
+            } else if wasMonitoring {
+                audioStateManager.noteMonitoringStopped()
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .fullscreenAdDidDismiss)) { _ in
+            audioStateManager.recoverAfterFullscreenAdDismiss()
         }
         .appReviewPrompt(isPresented: $showAppReviewPrompt)
         .onChange(of: engine.sessionStopPromptID) { _, promptID in
@@ -311,7 +316,11 @@ struct ContentView: View {
                 engine: engine,
                 audioStateManager: audioStateManager,
                 sleepCoordinator: sleepCoordinator,
-                isTabActive: selectedTab == .monitor
+                isTabActive: selectedTab == .monitor,
+                onOpenVideoEvidence: {
+                    AdSceneLifecycle.recordFirstInteraction(source: "dashboard_video_evidence")
+                    selectedTab = .video
+                }
             )
         }
         .tag(MainTab.monitor)

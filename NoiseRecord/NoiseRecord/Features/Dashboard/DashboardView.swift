@@ -10,6 +10,7 @@ struct DashboardView: View {
     @Bindable var sleepCoordinator: SleepNoiseMonitorCoordinator
     @Bindable private var appearance = AppAppearanceSettings.shared
     let isTabActive: Bool
+    var onOpenVideoEvidence: (() -> Void)?
     @Environment(\.modelContext) private var modelContext
     @State private var shareReport: SilenceRatingReport?
     @State private var showReportSheet = false
@@ -284,9 +285,7 @@ struct DashboardView: View {
                 .frame(height: 180)
             }
 
-            EngineModeSwitchView(engine: engine)
-                .disabled(sleepCoordinator.isSleepMonitoring)
-                .opacity(sleepCoordinator.isSleepMonitoring ? 0.45 : 1)
+            ModeStatusBadgeView(mode: measurementMode)
 
             NoiseLevelGauge(
                 db: engine.currentDB,
@@ -358,6 +357,10 @@ struct DashboardView: View {
                 onOpenReport: openLatestMorningReportFromDashboard,
                 onOpenHistory: openSleepHistoryFromDashboard
             )
+
+            VideoEvidenceEntrySection(theme: theme) {
+                onOpenVideoEvidence?()
+            }
 
             Text(footerNote)
                 .font(.caption2)

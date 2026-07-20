@@ -372,12 +372,10 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 8) {
             ProSectionHeader(title: L10n.settingsCalibrationHeader, theme: theme)
 
+            EngineModeSwitchView(engine: engine)
+
             ProCard(theme: theme) {
                 VStack(spacing: 0) {
-                    SettingsValueRow(title: L10n.settingsCurrentMode, value: measurementMode.userFacingTitle)
-                    SettingsDivider(theme: theme)
-                    SettingsValueRow(title: L10n.settingsTechnicalBadge, value: measurementMode.technicalBadge)
-                    SettingsDivider(theme: theme)
                     SettingsValueRow(title: L10n.settingsDeviceModel, value: HardwareIdentifier.marketingName)
                     SettingsDivider(theme: theme)
                     SettingsValueRow(

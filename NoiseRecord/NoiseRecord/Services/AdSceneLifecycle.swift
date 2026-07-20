@@ -7,6 +7,8 @@ extension Notification.Name {
     static let launchAutoStartMonitoring = Notification.Name("launchAutoStartMonitoring")
     /// 新手任务：首次监测满 10 秒，应自动保存监测报告到 Files。
     static let onboardingMeasureReportDue = Notification.Name("onboardingMeasureReportDue")
+    /// 全屏广告（开屏 / 插屏）关闭或展示失败后，用于恢复监测音频管道。
+    static let fullscreenAdDidDismiss = Notification.Name("fullscreenAdDidDismiss")
 }
 
 /// Drives cold/hot-start ad presentation via SwiftUI scene lifecycle.

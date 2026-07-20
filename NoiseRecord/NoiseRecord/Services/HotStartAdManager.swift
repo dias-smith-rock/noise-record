@@ -78,6 +78,17 @@ final class HotStartAdManager: NSObject {
             AppTelemetry.logAdLifecycle(channel: "hot", step: "show_skipped_first_install_day")
             return
         }
+        guard AdSessionPolicy.shouldPresentFullscreenAd() else {
+            pendingShowAfterLoad = false
+            AppTelemetry.logAdLifecycle(
+                channel: "hot",
+                step: "show_skipped_cooldown",
+                metadata: [
+                    "remaining_sec": String(Int(AdSessionPolicy.remainingFullscreenCooldownSeconds())),
+                ]
+            )
+            return
+        }
 
         if isShowingAd {
             AppTelemetry.logAdLifecycle(channel: "hot", step: "show_skipped_already_showing")
@@ -163,6 +174,7 @@ extension HotStartAdManager: FullScreenContentDelegate {
         AppTelemetry.logAdLifecycle(channel: "hot", step: "dismissed")
         clearAd()
         loadAd()
+        NotificationCenter.default.post(name: .fullscreenAdDidDismiss, object: nil)
     }
 
     func ad(
@@ -176,5 +188,6 @@ extension HotStartAdManager: FullScreenContentDelegate {
         )
         clearAd()
         loadAd()
+        NotificationCenter.default.post(name: .fullscreenAdDidDismiss, object: nil)
     }
 }

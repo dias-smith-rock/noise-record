@@ -70,6 +70,42 @@ final class AdSessionPolicyTests: XCTestCase {
         XCTAssertEqual(AdSessionPolicy.retryDelayMs(for: 0), 300)
         XCTAssertEqual(AdSessionPolicy.retryDelayMs(for: 1), 600)
     }
+
+    func testFullscreenAdCooldownBlocksWithinTwoMinutes() {
+        AdSessionPolicy.resetFullscreenCooldownForTesting()
+        XCTAssertTrue(AdSessionPolicy.shouldPresentFullscreenAd())
+
+        let presentedAt = Date(timeIntervalSince1970: 1_000_000)
+        AdSessionPolicy.notePresentationSucceeded(channel: "cold", at: presentedAt)
+
+        XCTAssertFalse(
+            AdSessionPolicy.shouldPresentFullscreenAd(
+                now: presentedAt.addingTimeInterval(60)
+            )
+        )
+        XCTAssertTrue(
+            AdSessionPolicy.shouldPresentFullscreenAd(
+                now: presentedAt.addingTimeInterval(120)
+            )
+        )
+        XCTAssertEqual(
+            AdSessionPolicy.remainingFullscreenCooldownSeconds(
+                now: presentedAt.addingTimeInterval(30)
+            ),
+            90,
+            accuracy: 0.001
+        )
+    }
+
+    func testFullscreenAdCooldownIsSharedAcrossChannels() {
+        AdSessionPolicy.resetFullscreenCooldownForTesting()
+        AdSessionPolicy.notePresentationSucceeded(channel: "cold", at: Date(timeIntervalSince1970: 2_000_000))
+        XCTAssertFalse(
+            AdSessionPolicy.shouldPresentFullscreenAd(
+                now: Date(timeIntervalSince1970: 2_000_000 + 30)
+            )
+        )
+    }
 }
 
 final class AppOnboardingStoreTests: XCTestCase {

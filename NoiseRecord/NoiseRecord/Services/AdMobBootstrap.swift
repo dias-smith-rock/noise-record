@@ -82,8 +82,15 @@ enum AdMobBootstrap {
         LaunchPerformance.mark(.launchAdMobStartRequested)
         AppTelemetry.logAdLifecycle(channel: "bootstrap", step: "admob_start_requested")
 
+        // Default ads to muted so fullscreen video does not interrupt monitoring / device audio.
+        MobileAds.shared.isApplicationMuted = true
+        MobileAds.shared.applicationVolume = 0
+
         MobileAds.shared.start { status in
             Task { @MainActor in
+                // Re-assert mute after SDK init in case adapters reset audio state.
+                MobileAds.shared.isApplicationMuted = true
+                MobileAds.shared.applicationVolume = 0
                 LaunchPerformance.mark(.launchAdMobStartCompleted)
                 AppTelemetry.logAdLifecycle(
                     channel: "bootstrap",

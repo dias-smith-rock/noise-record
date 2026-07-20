@@ -20,10 +20,15 @@ nonisolated enum AdMobConfig {
     }
 
     static let appOpenAdTimeout: TimeInterval = 4 * 60 * 60
+    /// Fullscreen ads (app-open + interstitial) share one cooldown window.
+    static let fullscreenAdCooldownSeconds: TimeInterval = 120
     static let presentationRetryDelayMs = 300
     static let maxPresentationRetryDelayMs = 1_200
     static let maxPresentationRetries = 2
     static let maxCommercialFailReportsPerSession = 2
     /// Delay after scene active / didBecomeActive before UMP (and ATT) presentation.
     static let consentPresentationDelaySeconds: TimeInterval = 1.0
+    /// Delay after fullscreen ad dismiss before recovering the monitoring pipeline.
+    static let monitoringRecoveryAfterAdDismissDelayMs = 250
+    static let monitoringRecoveryAfterAdDismissRetryDelayMs = 500
 }

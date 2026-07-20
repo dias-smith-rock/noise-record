@@ -97,15 +97,66 @@ final class AudioStateManager {
     func restoreMonitoringPipelineIfNeeded() {
         guard appAudioState == .monitoring, engine.isMonitoring else { return }
         engine.restoreMonitoringAfterExternalSession()
+        if !engine.isAudioEngineRunning {
+            engine.abandonFailedMonitoringPipeline()
+            appAudioState = .idle
+        }
+    }
+
+    /// 全屏广告关闭后恢复监测管道（延迟 + 一次重试，避免与 AdMob 释放会话竞态）。
+    func recoverAfterFullscreenAdDismiss() {
+        guard appAudioState == .monitoring else { return }
+
+        Task { @MainActor in
+            let delays = [
+                AdMobConfig.monitoringRecoveryAfterAdDismissDelayMs,
+                AdMobConfig.monitoringRecoveryAfterAdDismissRetryDelayMs,
+            ]
+            for (index, delayMs) in delays.enumerated() {
+                try? await Task.sleep(for: .milliseconds(delayMs))
+                guard appAudioState == .monitoring else { return }
+
+                if !engine.isMonitoring {
+                    // Intent says monitoring but engine flag was cleared — restart cleanly.
+                    do {
+                        try reconfigureMeasurementSession()
+                        await engine.requestPermissionAndStart()
+                    } catch {
+                        appAudioState = .idle
+                        return
+                    }
+                    if engine.isMonitoring, engine.isAudioEngineRunning {
+                        appAudioState = .monitoring
+                        return
+                    }
+                    appAudioState = .idle
+                    return
+                }
+
+                engine.restoreMonitoringAfterExternalSession()
+                if engine.isMonitoring, engine.isAudioEngineRunning {
+                    appAudioState = .monitoring
+                    AppTelemetry.logProductEvent(
+                        "monitoring_recovered_after_ad",
+                        parameters: ["attempt": String(index + 1)]
+                    )
+                    return
+                }
+            }
+
+            guard appAudioState == .monitoring else { return }
+            engine.abandonFailedMonitoringPipeline()
+            appAudioState = .idle
+            AppTelemetry.logProductEvent("monitoring_abandon_after_ad")
+        }
     }
 
     // MARK: - Private
 
     /// 重新配置为测量模式：线性 PCM、关闭系统语音处理，保证 dB 计算准确。
     private func reconfigureMeasurementSession() throws {
-        try BackgroundAudioSession.activateForMeasurement(
-            backgroundEnabled: engine.backgroundMonitoringEnabled,
-            skipSessionActivation: false
+        try BackgroundAudioSession.forceActivateMeasurementAfterExternalInterruption(
+            backgroundEnabled: engine.backgroundMonitoringEnabled
         )
     }
 }

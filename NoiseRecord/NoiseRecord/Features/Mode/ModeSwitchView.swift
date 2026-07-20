@@ -116,6 +116,62 @@ struct ModeSwitchView: View {
     }
 }
 
+/// Read-only current-mode chip for Monitor home (no switch control).
+struct ModeStatusBadgeView: View {
+    let mode: AcousticMeasurementMode
+
+    @State private var showModeInfoSheet = false
+
+    private var theme: ModeVisualTheme { .theme(for: mode) }
+
+    var body: some View {
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(L10n.modeSwitchTitle)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                HStack(spacing: 6) {
+                    Text(mode.userFacingTitle)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(theme.accent)
+                    Text(mode.technicalBadge)
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 2)
+                        .background(theme.badgeBackground)
+                        .clipShape(Capsule())
+                }
+            }
+
+            Spacer(minLength: 8)
+
+            Button {
+                showModeInfoSheet = true
+            } label: {
+                Image(systemName: "info.circle")
+                    .font(.body.weight(.medium))
+                    .foregroundStyle(theme.accent)
+                    .frame(width: 32, height: 32)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(L10n.modeSwitchAccessibility)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(theme.cardTint)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .strokeBorder(theme.surfaceBorder, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .sheet(isPresented: $showModeInfoSheet) {
+            MeasurementModesInfoSheet()
+        }
+    }
+}
+
 /// Bridges `NoiseMonitorEngine.isHighSensitivityMode` to `ModeSwitchView`.
 struct EngineModeSwitchView: View {
     @Bindable var engine: NoiseMonitorEngine

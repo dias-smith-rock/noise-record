@@ -109,7 +109,7 @@ final class NoiseMonitorEngine {
     var onSleepAnomalyClipFinished: ((RecordingFinishedEvent) -> Void)?
     var onSleepMetricsRefresh: ((Float, Float, Float) -> Void)?
 
-    private let audioEngine = AVAudioEngine()
+    private var audioEngine = AVAudioEngine()
     private let processingQueue = DispatchQueue(label: "com.noiseapp.processing", qos: .userInteractive)
     private var weightingFilter: AudioWeightingFilter?
     private var fftAnalyzer: FFTAnalyzer?
@@ -338,8 +338,18 @@ final class NoiseMonitorEngine {
         guard !isMonitoring else { return }
         errorMessage = nil
 
+        safeRemoveInputTap()
+        drainProcessingQueue()
+        if audioEngine.isRunning {
+            audioEngine.stop()
+        }
+        audioEngine.reset()
+        audioEngine = AVAudioEngine()
+
         do {
-            try reconfigureAudioSessionForCurrentState()
+            try BackgroundAudioSession.forceActivateMeasurementAfterExternalInterruption(
+                backgroundEnabled: backgroundMonitoringEnabled
+            )
         } catch {
             setUserError(AudioSessionError.wrap(error).localizedDescription, context: "audio_session_config")
             return
@@ -348,7 +358,13 @@ final class NoiseMonitorEngine {
         resetStatistics()
         refreshCalibrationOffset()
         configureVoiceRecordingLimits()
-        setupAudioPipeline()
+        do {
+            try setupAudioPipeline()
+        } catch {
+            teardownFailedEngineStart()
+            setUserError(AudioSessionError.wrap(error).localizedDescription, context: "audio_pipeline_setup")
+            return
+        }
 
         do {
             audioEngine.prepare()
@@ -371,6 +387,7 @@ final class NoiseMonitorEngine {
                 )
             }
         } catch {
+            teardownFailedEngineStart()
             setUserError(L10n.errorEngineStartFailed(error.localizedDescription), context: "engine_start")
         }
     }
@@ -417,6 +434,7 @@ final class NoiseMonitorEngine {
         defer { isProcessingMonitoringStop = false }
         audioEngine.inputNode.removeTap(onBus: 0)
         audioEngine.stop()
+        audioEngine.reset()
         locationProvider.stopUpdating()
         let finishedEvents = voiceRecorder.endSession(
             peakDB: maxDB,
@@ -713,36 +731,81 @@ final class NoiseMonitorEngine {
         drainProcessingQueue()
         ModeSwitchPerformance.end(.removeTap, removeTapSignpost)
 
-        setupAudioPipeline()
+        do {
+            try setupAudioPipeline()
+        } catch {
+            setUserError(
+                AudioSessionError.wrap(error).localizedDescription,
+                context: "mode_switch_pipeline"
+            )
+            ModeSwitchPerformance.mark(.restartPipelineEnd)
+            return
+        }
         ModeSwitchPerformance.mark(.restartPipelineEnd)
     }
 
-    /// Restores the mic pipeline after another feature (e.g. camera preview) used the audio session.
+    /// Restores the mic pipeline after another feature (e.g. camera preview / fullscreen ad) used the audio session.
     func restoreMonitoringAfterExternalSession() {
         guard isMonitoring else { return }
-        recoverMonitoringPipeline(showErrorOnFailure: false)
+        recoverMonitoringPipeline(showErrorOnFailure: false, forceSessionReactivation: true)
+    }
+
+    /// Returns whether the AVAudioEngine graph is currently running.
+    var isAudioEngineRunning: Bool {
+        audioEngine.isRunning
+    }
+
+    /// Clears a stuck "monitoring" intent after the pipeline failed to recover (e.g. post-ad -10868).
+    func abandonFailedMonitoringPipeline() {
+        guard isMonitoring else { return }
+        safeRemoveInputTap()
+        drainProcessingQueue()
+        if audioEngine.isRunning {
+            audioEngine.stop()
+        }
+        audioEngine.reset()
+        locationProvider.stopUpdating()
+        noiseClassifier?.stop()
+        isMonitoring = false
+        recordingState = .idle
+        AppTelemetry.setMonitoringActive(false)
+        Task {
+            await LiveActivityManager.shared.endLiveActivity()
+        }
     }
 
     @discardableResult
-    private func reconfigureAudioSessionForCurrentState() throws -> Bool {
-        try BackgroundAudioSession.activateForMeasurement(
-            backgroundEnabled: backgroundMonitoringEnabled,
-            skipSessionActivation: audioEngine.isRunning
-        )
+    private func reconfigureAudioSessionForCurrentState(forceActivation: Bool = false) throws -> Bool {
+        if forceActivation {
+            try BackgroundAudioSession.forceActivateMeasurementAfterExternalInterruption(
+                backgroundEnabled: backgroundMonitoringEnabled
+            )
+        } else {
+            try BackgroundAudioSession.activateForMeasurement(
+                backgroundEnabled: backgroundMonitoringEnabled,
+                skipSessionActivation: audioEngine.isRunning
+            )
+        }
         return true
     }
 
     private func keepAliveInBackgroundIfNeeded() {
         guard backgroundMonitoringEnabled, isMonitoring else { return }
-        recoverMonitoringPipeline(showErrorOnFailure: false)
+        recoverMonitoringPipeline(showErrorOnFailure: false, forceSessionReactivation: false)
     }
 
     private func resumeMonitoringIfNeededAfterForeground() {
         guard isMonitoring else { return }
-        recoverMonitoringPipeline(showErrorOnFailure: true)
+        recoverMonitoringPipeline(showErrorOnFailure: true, forceSessionReactivation: true)
+        if isMonitoring, !audioEngine.isRunning {
+            abandonFailedMonitoringPipeline()
+        }
     }
 
-    private func recoverMonitoringPipeline(showErrorOnFailure: Bool) {
+    private func recoverMonitoringPipeline(
+        showErrorOnFailure: Bool,
+        forceSessionReactivation: Bool
+    ) {
         do {
             safeRemoveInputTap()
             drainProcessingQueue()
@@ -750,9 +813,11 @@ final class NoiseMonitorEngine {
                 audioEngine.stop()
             }
             audioEngine.reset()
+            // Recreate the engine so input-node formats match the post-ad hardware rate.
+            audioEngine = AVAudioEngine()
 
-            try reconfigureAudioSessionForCurrentState()
-            setupAudioPipeline()
+            try reconfigureAudioSessionForCurrentState(forceActivation: forceSessionReactivation)
+            try setupAudioPipeline()
             audioEngine.prepare()
             try audioEngine.start()
         } catch {
@@ -762,6 +827,15 @@ final class NoiseMonitorEngine {
                 context: "pipeline_recovery"
             )
         }
+    }
+
+    private func teardownFailedEngineStart() {
+        safeRemoveInputTap()
+        if audioEngine.isRunning {
+            audioEngine.stop()
+        }
+        audioEngine.reset()
+        isMonitoring = false
     }
 
     private func installAudioSessionObservers() {
@@ -795,15 +869,25 @@ final class NoiseMonitorEngine {
         case .began:
             voiceRecorder.emergencyFinalizeForLifecycleEvent()
             onVideoEmergencyFinalize?()
+            if isMonitoring {
+                safeRemoveInputTap()
+                drainProcessingQueue()
+                if audioEngine.isRunning {
+                    audioEngine.stop()
+                }
+                audioEngine.reset()
+                audioEngine = AVAudioEngine()
+            }
         case .ended:
-            guard BackgroundAudioSession.shouldResumeAfterInterruption(notification) else { return }
+            // Ads often end interruptions without `.shouldResume`; still recover if we intend to monitor.
+            guard isMonitoring else { return }
             resumeMonitoringIfNeededAfterForeground()
         @unknown default:
             break
         }
     }
 
-    private func setupAudioPipeline() {
+    private func setupAudioPipeline() throws {
         let trace = ModeSwitchPerformance.shouldTracePipelineSetup()
         let setupSignpost = trace ? ModeSwitchPerformance.begin(.setupPipelineTotal) : nil
         if trace {
@@ -816,11 +900,13 @@ final class NoiseMonitorEngine {
             }
         }
 
+        // Touching / preparing the input node after session activation refreshes HW formats.
+        // Skipping this after ads leaves a stale graph that aborts in installTap.
+        audioEngine.prepare()
         let inputNode = audioEngine.inputNode
-        let sampleRate = measurementSampleRate(for: inputNode)
-        let tapFormat = resolvedInputTapFormat(for: inputNode)
+        let tapFormat = try resolvedInputTapFormat(for: inputNode)
+        let sampleRate = tapFormat.sampleRate
         let classifierFormat = tapFormat
-            ?? AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1)
         let weighting = effectiveWeighting
 
         weightingFilter = ModeSwitchPerformance.measure(.weightingFilter, when: trace) {
@@ -853,16 +939,15 @@ final class NoiseMonitorEngine {
                     self?.aiClassificationErrorMessage = L10n.errorAiClassificationFailed
                 }
             }
-            if let classifierFormat {
-                ModeSwitchPerformance.measure(.noiseClassifierSetup, when: trace) {
-                    classifier.setup(format: classifierFormat)
-                }
+            ModeSwitchPerformance.measure(.noiseClassifierSetup, when: trace) {
+                classifier.setup(format: classifierFormat)
             }
             noiseClassifier = classifier
         }
 
         safeRemoveInputTap()
         ModeSwitchPerformance.measure(.installTap, when: trace) {
+            // Must match hardware input sample rate or AVAudioEngine aborts the process.
             inputNode.installTap(
                 onBus: 0,
                 bufferSize: SPLCalculator.tapBufferSize,
@@ -879,46 +964,31 @@ final class NoiseMonitorEngine {
         audioEngine.inputNode.removeTap(onBus: 0)
     }
 
-    private func measurementSampleRate(for inputNode: AVAudioInputNode) -> Double {
-        let sessionRate = AVAudioSession.sharedInstance().sampleRate
-        if sessionRate > 0 { return sessionRate }
-
-        let inputRate = inputNode.inputFormat(forBus: 0).sampleRate
-        if inputRate > 0 { return inputRate }
-
-        let outputRate = inputNode.outputFormat(forBus: 0).sampleRate
-        if outputRate > 0 { return outputRate }
-
-        return 44_100
-    }
-
-    /// Returns a tap format that matches the input node output bus, or `nil` to use the native bus format.
-    private func resolvedInputTapFormat(for inputNode: AVAudioInputNode) -> AVAudioFormat? {
-        let outputFormat = inputNode.outputFormat(forBus: 0)
-        guard outputFormat.sampleRate > 0, outputFormat.channelCount > 0 else {
-            AppTelemetry.log("audio_tap_format_fallback session_rate=\(AVAudioSession.sharedInstance().sampleRate)")
-            return nil
+    /// Hardware input format for bus 0. `installTap` requires this sample rate exactly.
+    private func resolvedInputTapFormat(for inputNode: AVAudioInputNode) throws -> AVAudioFormat {
+        let hardwareFormat = inputNode.inputFormat(forBus: 0)
+        if hardwareFormat.sampleRate > 0, hardwareFormat.channelCount > 0 {
+            return hardwareFormat
         }
 
-        let sessionRate = AVAudioSession.sharedInstance().sampleRate
-        if sessionRate > 0, abs(outputFormat.sampleRate - sessionRate) > 1 {
-            // Stale graph formats (often 48 kHz) mismatch the active session after interruption/recovery.
+        // Fallback: some devices expose a valid output bus before input bus settles.
+        let outputFormat = inputNode.outputFormat(forBus: 0)
+        if outputFormat.sampleRate > 0, outputFormat.channelCount > 0 {
+            let sessionRate = AVAudioSession.sharedInstance().sampleRate
+            if sessionRate <= 0 || abs(outputFormat.sampleRate - sessionRate) <= 1 {
+                return outputFormat
+            }
             AppTelemetry.log(
                 "audio_tap_format_mismatch bus_rate=\(outputFormat.sampleRate) session_rate=\(sessionRate)"
             )
-            return nil
         }
 
-        guard let exactFormat = AVAudioFormat(
-            commonFormat: outputFormat.commonFormat,
-            sampleRate: outputFormat.sampleRate,
-            channels: outputFormat.channelCount,
-            interleaved: outputFormat.isInterleaved
-        ) else {
-            return nil
-        }
-
-        return exactFormat
+        AppTelemetry.log(
+            "audio_tap_format_invalid hw_rate=\(hardwareFormat.sampleRate) out_rate=\(outputFormat.sampleRate)"
+        )
+        throw AudioSessionError.configurationFailed(
+            "Invalid audio input format (sampleRate=\(hardwareFormat.sampleRate))"
+        )
     }
 
     private func processBuffer(_ buffer: AVAudioPCMBuffer, time: AVAudioTime) {

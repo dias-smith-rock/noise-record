@@ -5,11 +5,27 @@ nonisolated enum AdSessionPolicy {
     private static let lock = NSLock()
     private static var sessionFailCounts: [String: Int] = [:]
     private static var sessionRetryCounts: [String: Int] = [:]
+    private static var lastFullscreenPresentationAt: Date?
 
     static func resetSessionCounters() {
         lock.withLock {
             sessionFailCounts.removeAll()
             sessionRetryCounts.removeAll()
+            lastFullscreenPresentationAt = nil
+        }
+    }
+
+    /// Test helper: clear cooldown without wiping fail/retry counters.
+    static func resetFullscreenCooldownForTesting() {
+        lock.withLock {
+            lastFullscreenPresentationAt = nil
+        }
+    }
+
+    /// Test helper: seed last presentation time for cooldown checks.
+    static func setLastFullscreenPresentationForTesting(_ date: Date?) {
+        lock.withLock {
+            lastFullscreenPresentationAt = date
         }
     }
 
@@ -19,6 +35,25 @@ nonisolated enum AdSessionPolicy {
 
     static func shouldAttemptAdLoadOrShow() -> Bool {
         allowsAdsToday
+    }
+
+    /// Shared cooldown for cold app-open and hot interstitial fullscreen ads.
+    static func shouldPresentFullscreenAd(
+        now: Date = Date(),
+        cooldown: TimeInterval = AdMobConfig.fullscreenAdCooldownSeconds
+    ) -> Bool {
+        lock.withLock {
+            guard let last = lastFullscreenPresentationAt else { return true }
+            return now.timeIntervalSince(last) >= cooldown
+        }
+    }
+
+    static func remainingFullscreenCooldownSeconds(now: Date = Date()) -> TimeInterval {
+        lock.withLock {
+            guard let last = lastFullscreenPresentationAt else { return 0 }
+            let elapsed = now.timeIntervalSince(last)
+            return max(0, AdMobConfig.fullscreenAdCooldownSeconds - elapsed)
+        }
     }
 
     /// Returns whether a commercial `ad_fail` analytics event should be emitted.
@@ -48,9 +83,10 @@ nonisolated enum AdSessionPolicy {
         }
     }
 
-    static func notePresentationSucceeded(channel: String) {
+    static func notePresentationSucceeded(channel: String, at date: Date = Date()) {
         lock.withLock {
             sessionRetryCounts[channel] = 0
+            lastFullscreenPresentationAt = date
         }
     }
 }

@@ -32,6 +32,23 @@ enum BackgroundAudioSession {
         try session.setActive(true, options: .notifyOthersOnDeactivation)
     }
 
+    /// Re-locks measurement mode after ads / camera / other apps release the shared session.
+    static func forceActivateMeasurementAfterExternalInterruption(backgroundEnabled: Bool) throws {
+        try AudioSessionManager.configureForMeasurement(backgroundEnabled: backgroundEnabled)
+
+        let session = AVAudioSession.sharedInstance()
+        // Prefer the hardware's current rate when available; forcing 44.1 kHz after ads
+        // often leaves a stale AVAudioEngine graph that crashes installTap.
+        let hardwareRate = session.sampleRate
+        if hardwareRate > 0 {
+            try session.setPreferredSampleRate(hardwareRate)
+        } else {
+            try session.setPreferredSampleRate(44_100)
+        }
+        try session.setPreferredIOBufferDuration(0.005)
+        try session.setActive(true, options: .notifyOthersOnDeactivation)
+    }
+
     static func interruptionType(in notification: Notification) -> AVAudioSession.InterruptionType? {
         guard let raw = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt else {
             return nil

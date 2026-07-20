@@ -80,6 +80,17 @@ final class AppOpenAdManager: NSObject {
             AppTelemetry.logAdLifecycle(channel: "cold", step: "show_skipped_first_install_day")
             return
         }
+        guard AdSessionPolicy.shouldPresentFullscreenAd() else {
+            pendingShowAfterLoad = false
+            AppTelemetry.logAdLifecycle(
+                channel: "cold",
+                step: "show_skipped_cooldown",
+                metadata: [
+                    "remaining_sec": String(Int(AdSessionPolicy.remainingFullscreenCooldownSeconds())),
+                ]
+            )
+            return
+        }
 
         if isShowingAd {
             AppTelemetry.logAdLifecycle(channel: "cold", step: "show_skipped_already_showing")
@@ -200,6 +211,7 @@ extension AppOpenAdManager: FullScreenContentDelegate {
         AppTelemetry.logAdLifecycle(channel: "cold", step: "dismissed")
         clearAd()
         loadAd()
+        NotificationCenter.default.post(name: .fullscreenAdDidDismiss, object: nil)
     }
 
     func ad(
@@ -213,5 +225,6 @@ extension AppOpenAdManager: FullScreenContentDelegate {
         )
         clearAd()
         loadAd()
+        NotificationCenter.default.post(name: .fullscreenAdDidDismiss, object: nil)
     }
 }

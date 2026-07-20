@@ -101,6 +101,10 @@ nonisolated enum L10n {
     static var dashboardResumeMonitoring: String { localized("dashboard.idle.resume") }
     static var dashboardFooterHighSensitivity: String { localized("dashboard.footer.highSensitivity") }
     static var dashboardFooterStandard: String { localized("dashboard.footer.standard") }
+    static var dashboardVideoEvidenceTitle: String { localized("dashboard.videoEvidence.title") }
+    static var dashboardVideoEvidenceSubtitle: String { localized("dashboard.videoEvidence.subtitle") }
+    static var dashboardVideoEvidenceActionTitle: String { localized("dashboard.videoEvidence.actionTitle") }
+    static var dashboardVideoEvidenceActionBody: String { localized("dashboard.videoEvidence.actionBody") }
     static var dashboardStopPromptTitle: String { localized("dashboard.stopPrompt.title") }
     static var dashboardStopPromptSave: String { localized("dashboard.stopPrompt.keep") }
     static var dashboardStopPromptDiscard: String { localized("dashboard.stopPrompt.discard") }
