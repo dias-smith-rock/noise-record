@@ -900,9 +900,9 @@ final class NoiseMonitorEngine {
             }
         }
 
-        // Touching / preparing the input node after session activation refreshes HW formats.
-        // Skipping this after ads leaves a stale graph that aborts in installTap.
-        audioEngine.prepare()
+        // Access inputNode before prepare()/start(). A fresh AVAudioEngine crashes in
+        // prepare() with "inputNode != nullptr || outputNode != nullptr" if neither
+        // node has been materialized yet.
         let inputNode = audioEngine.inputNode
         let tapFormat = try resolvedInputTapFormat(for: inputNode)
         let sampleRate = tapFormat.sampleRate
