@@ -233,6 +233,7 @@ struct VideoEvidenceView: View {
             }
         }
         .observesAppLanguage()
+        .debugView("tab.video")
         .onAppear {
             VideoTabPerformance.mark(.viewAppear)
         }

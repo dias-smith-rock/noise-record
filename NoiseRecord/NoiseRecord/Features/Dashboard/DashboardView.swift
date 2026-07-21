@@ -66,6 +66,7 @@ struct DashboardView: View {
             }
         }
         .observesAppLanguage()
+        .debugView("tab.monitor")
         .onAppear {
             LaunchPerformance.mark(.launchFirstInteractive)
             environment.startUpdating()
@@ -233,6 +234,10 @@ struct DashboardView: View {
                 mode: measurementMode,
                 onClose: { isFullScreenPresented = false }
             )
+            .debugView("monitor.fullscreen_led")
+            .debugPresentation("monitor.fullscreen_led") {
+                isFullScreenPresented = false
+            }
         }
         .onChange(of: isFullScreenPresented) { _, isPresented in
             if isPresented {
@@ -272,6 +277,22 @@ struct DashboardView: View {
                 AppTaskOnboardingBanner(theme: theme) {
                     dismissAppOnboarding(method: "skip_banner")
                 }
+            }
+
+            VideoEvidenceEntrySection(theme: theme) {
+                onOpenVideoEvidence?()
+            }
+            .debugAction("open_video_evidence") {
+                onOpenVideoEvidence?()
+            }
+            .debugAction("monitor.open_sleep_history") {
+                openSleepHistory(source: "debug_action")
+            }
+            .debugAction("monitor.open_fullscreen") {
+                isFullScreenPresented = true
+            }
+            .debugAction("monitor.open_latest_report") {
+                openLatestMorningReport(source: "debug_action")
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -357,10 +378,6 @@ struct DashboardView: View {
                 onOpenReport: openLatestMorningReportFromDashboard,
                 onOpenHistory: openSleepHistoryFromDashboard
             )
-
-            VideoEvidenceEntrySection(theme: theme) {
-                onOpenVideoEvidence?()
-            }
 
             Text(footerNote)
                 .font(.caption2)

@@ -14,6 +14,12 @@ struct NoiseRecordApp: App {
         LaunchPerformance.mark(.launchFirebaseConfigure)
         _ = SubscriptionManager.shared
 
+        #if DEBUG
+        print("[AppDebugKit] NoiseRecordApp.init → starting debug server")
+        NSLog("[AppDebugKit] NoiseRecordApp.init → starting debug server")
+        AppDebugServer.shared.start()
+        #endif
+
         let signpostID = PerformanceSignpost.begin(.launchSwiftDataInit)
         defer { PerformanceSignpost.end(.launchSwiftDataInit, signpostID) }
 

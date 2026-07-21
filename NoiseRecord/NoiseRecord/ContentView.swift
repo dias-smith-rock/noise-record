@@ -113,7 +113,54 @@ struct ContentView: View {
                 syncAppReviewFilesCount()
                 AppOnboardingStore.noteFilesTabVisited()
             }
+            #if DEBUG
+            AppDebugSessionState.shared.setTab(analyticsTabName(for: tab), viewID: "tab.\(analyticsTabName(for: tab))")
+            #endif
         }
+        #if DEBUG
+        .onAppear {
+            AppDebugSessionState.shared.setTab("monitor", viewID: "tab.monitor")
+            AppDebugSessionState.shared.returnToRoot = {
+                if sleepCoordinator.showReportSheet {
+                    sleepCoordinator.dismissReportSheet()
+                }
+                if sleepCoordinator.showHistorySheet {
+                    sleepCoordinator.dismissHistorySheet()
+                }
+                if PaywallPresenter.shared.isPresented {
+                    PaywallPresenter.shared.resolve(purchased: false)
+                }
+                suppressNextTabSelectionAd = true
+                selectedTab = .monitor
+                AppDebugSessionState.shared.setTab("monitor", viewID: "tab.monitor")
+            }
+        }
+        .debugAction("tab.monitor") {
+            suppressNextTabSelectionAd = true
+            mountedTabs.insert(.monitor)
+            selectedTab = .monitor
+        }
+        .debugAction("tab.voice") {
+            suppressNextTabSelectionAd = true
+            mountedTabs.insert(.voice)
+            selectedTab = .voice
+        }
+        .debugAction("tab.video") {
+            suppressNextTabSelectionAd = true
+            mountedTabs.insert(.video)
+            selectedTab = .video
+        }
+        .debugAction("tab.files") {
+            suppressNextTabSelectionAd = true
+            mountedTabs.insert(.files)
+            selectedTab = .files
+        }
+        .debugAction("tab.settings") {
+            suppressNextTabSelectionAd = true
+            mountedTabs.insert(.settings)
+            selectedTab = .settings
+        }
+        #endif
         .onChange(of: appearance.languageRefreshID) { _, _ in
             TabBarAppearanceUpdater.applyTabTitles()
             refreshMonitorTabIconIfNeeded()
@@ -165,6 +212,10 @@ struct ContentView: View {
                     sleepCoordinator.markReportRead(for: sessionID)
                     sleepCoordinator.dismissReportSheet()
                 }
+                .debugView("monitor.sleep_report")
+                .debugPresentation("monitor.sleep_report") {
+                    sleepCoordinator.dismissReportSheet()
+                }
             }
         }
         .sheet(isPresented: Binding(
@@ -172,6 +223,10 @@ struct ContentView: View {
             set: { if !$0 { sleepCoordinator.dismissHistorySheet() } }
         )) {
             sleepHistorySheet
+                .debugView("monitor.sleep_history")
+                .debugPresentation("monitor.sleep_history") {
+                    sleepCoordinator.dismissHistorySheet()
+                }
         }
         .task(id: engine.isMonitoring) {
             guard engine.isMonitoring else {

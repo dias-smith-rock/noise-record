@@ -82,6 +82,13 @@ struct PaywallView: View {
             .toolbarBackground(.hidden, for: .navigationBar)
         }
         .preferredColorScheme(.dark)
+        .debugView("paywall")
+        .debugPresentation("paywall") {
+            closePaywall(purchased: false)
+        }
+        .debugAction("dismiss_paywall") {
+            closePaywall(purchased: false)
+        }
         .task {
             await subscriptions.refreshIntroductoryOfferEligibility()
         }

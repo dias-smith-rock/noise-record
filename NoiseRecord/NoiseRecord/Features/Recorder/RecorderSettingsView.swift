@@ -77,6 +77,7 @@ struct RecorderSettingsView: View {
             }
         }
         .observesAppLanguage()
+        .debugView("tab.voice")
         .proTabBackground(theme: theme)
         .proTabNavigationChrome()
         .onAppear { refreshCachedMetrics() }

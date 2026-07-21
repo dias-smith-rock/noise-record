@@ -194,6 +194,18 @@ struct RecordingListView: View {
             }
         }
         .observesAppLanguage()
+        .debugView("tab.files")
+        .debugAction("files.show_audio") {
+            selectedTab = .audio
+        }
+        .debugAction("files.show_video") {
+            selectedTab = .video
+        }
+        .debugAction("files.open_first_audio") {
+            guard let session = sortedAudioSessions.first else { return }
+            selectedTab = .audio
+            detailRoute = .audio(session.id)
+        }
         .proTabBackground(theme: theme)
         .proTabNavigationChrome()
         .navigationDestination(item: $detailRoute) { route in
@@ -204,6 +216,10 @@ struct RecordingListView: View {
                     audioStateManager: audioStateManager,
                     playbackGate: playbackGate
                 )
+                .debugView("files.audio_detail")
+                .debugPresentation("files.audio_detail") {
+                    detailRoute = nil
+                }
             }
         }
         .onChange(of: detailRoute) { _, route in

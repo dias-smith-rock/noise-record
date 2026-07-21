@@ -31,6 +31,8 @@ struct SettingsView: View {
     @State private var wakeReminderTime = SleepMonitorSettingsStore.defaultWakeDate
     @State private var locationAuthorizationStatus = CLLocationManager().authorizationStatus
     @State private var showLocationAccessGuide = false
+    @State private var showLanguageDebugSheet = false
+    @State private var showAccentDebugSheet = false
 
     private var measurementMode: AcousticMeasurementMode {
         AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
@@ -102,6 +104,44 @@ struct SettingsView: View {
             .id(appearance.languageRefreshID)
         }
         .observesAppLanguage()
+        .debugView("tab.settings")
+        .debugAction("settings.open_paywall") {
+            PaywallPresenter.shared.present(context: .settings)
+        }
+        .debugAction("settings.open_language") {
+            showLanguageDebugSheet = true
+        }
+        .debugAction("settings.open_accent") {
+            showAccentDebugSheet = true
+        }
+        .sheet(isPresented: $showLanguageDebugSheet) {
+            NavigationStack {
+                LanguagePickerView(appearance: appearance)
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button(L10n.close) { showLanguageDebugSheet = false }
+                        }
+                    }
+            }
+            .debugView("settings.language")
+            .debugPresentation("settings.language") {
+                showLanguageDebugSheet = false
+            }
+        }
+        .sheet(isPresented: $showAccentDebugSheet) {
+            NavigationStack {
+                AccentColorSettingsView(appearance: appearance)
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button(L10n.close) { showAccentDebugSheet = false }
+                        }
+                    }
+            }
+            .debugView("settings.accent")
+            .debugPresentation("settings.accent") {
+                showAccentDebugSheet = false
+            }
+        }
         .proTabBackground(theme: theme)
         .proTabNavigationChrome()
         .onAppear {
