@@ -5,6 +5,13 @@ enum EvidenceMediaFolder: String {
     case videoEvidence = "VideoEvidence"
 }
 
+/// Short titles for evidence lists/details (strip path extension; keep on-disk names intact).
+enum EvidenceDisplayNaming {
+    static func listTitle(from fileName: String) -> String {
+        (fileName as NSString).deletingPathExtension
+    }
+}
+
 enum EvidenceFileResolver {
     static var documentsDirectory: URL {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]

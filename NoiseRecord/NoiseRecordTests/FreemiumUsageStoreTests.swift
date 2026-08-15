@@ -34,12 +34,38 @@ final class FreemiumUsageStoreTests: XCTestCase {
         XCTAssertEqual(store.remainingVideoRecordingsToday(isPremium: false), 1)
     }
 
+    func testFirstClipGetsLongerAllowance() {
+        XCTAssertEqual(
+            store.allowedVideoSaveDuration(isPremium: false),
+            FreemiumUsageStore.freeVideoFirstClipMaxDuration
+        )
+        store.markFirstClipBonusConsumedIfNeeded()
+        XCTAssertEqual(
+            store.allowedVideoSaveDuration(isPremium: false),
+            FreemiumUsageStore.freeVideoStandardMaxDuration
+        )
+        XCTAssertTrue(store.hasUsedFirstClipBonus())
+    }
+
+    func testPremiumAllowedDurationIsUnlimited() {
+        XCTAssertEqual(
+            store.allowedVideoSaveDuration(isPremium: true),
+            .greatestFiniteMagnitude
+        )
+    }
+
     #if DEBUG
     func testResetClearsUsage() {
         store.recordVideoSessionStarted()
+        store.markFirstClipBonusConsumedIfNeeded()
         XCTAssertFalse(store.canStartVideoRecording(isPremium: false))
         store.resetVideoUsageForTesting()
         XCTAssertTrue(store.canStartVideoRecording(isPremium: false))
+        XCTAssertFalse(store.hasUsedFirstClipBonus())
+        XCTAssertEqual(
+            store.allowedVideoSaveDuration(isPremium: false),
+            FreemiumUsageStore.freeVideoFirstClipMaxDuration
+        )
     }
     #endif
 }

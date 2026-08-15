@@ -279,22 +279,6 @@ struct DashboardView: View {
                 }
             }
 
-            VideoEvidenceEntrySection(theme: theme) {
-                onOpenVideoEvidence?()
-            }
-            .debugAction("open_video_evidence") {
-                onOpenVideoEvidence?()
-            }
-            .debugAction("monitor.open_sleep_history") {
-                openSleepHistory(source: "debug_action")
-            }
-            .debugAction("monitor.open_fullscreen") {
-                isFullScreenPresented = true
-            }
-            .debugAction("monitor.open_latest_report") {
-                openLatestMorningReport(source: "debug_action")
-            }
-
             VStack(alignment: .leading, spacing: 8) {
                 Text(L10n.dashboardSpectrum)
                     .font(.headline)
@@ -319,6 +303,22 @@ struct DashboardView: View {
                     isFullScreenPresented = true
                 }
             )
+
+            VideoEvidenceEntrySection(theme: theme) {
+                onOpenVideoEvidence?()
+            }
+            .debugAction("open_video_evidence") {
+                onOpenVideoEvidence?()
+            }
+            .debugAction("monitor.open_sleep_history") {
+                openSleepHistory(source: "debug_action")
+            }
+            .debugAction("monitor.open_fullscreen") {
+                isFullScreenPresented = true
+            }
+            .debugAction("monitor.open_latest_report") {
+                openLatestMorningReport(source: "debug_action")
+            }
 
             HStack(spacing: 12) {
                 StatCard(title: L10n.dashboardMax, value: engine.maxDB, theme: theme)

@@ -1,8 +1,12 @@
 import UIKit
 
 enum TabBarAppearanceUpdater {
-    private static let monitorTabIndex = 0
-    private static let filesTabIndex = 3
+    /// Tab order: Video → Monitor → Files → Voice → Settings
+    private static let videoTabIndex = 0
+    private static let monitorTabIndex = 1
+    private static let filesTabIndex = 2
+    private static let voiceTabIndex = 3
+    private static let settingsTabIndex = 4
     private static let filesBadgeSize: CGFloat = 8
     private static let filesIconCanvasSize = CGSize(width: 27, height: 27)
 
@@ -26,13 +30,13 @@ enum TabBarAppearanceUpdater {
     @MainActor
     static func applyTabTitles() {
         guard let items = tabBarItems(),
-              items.count > filesTabIndex else { return }
+              items.count > settingsTabIndex else { return }
 
+        items[videoTabIndex].title = L10n.tabVideo
         items[monitorTabIndex].title = L10n.tabMonitor
-        items[1].title = L10n.tabVoice
-        items[2].title = L10n.tabVideo
         items[filesTabIndex].title = L10n.tabFiles
-        items[4].title = L10n.tabSettings
+        items[voiceTabIndex].title = L10n.tabVoice
+        items[settingsTabIndex].title = L10n.tabSettings
         reapplyFilesBadgeIfNeeded()
     }
 

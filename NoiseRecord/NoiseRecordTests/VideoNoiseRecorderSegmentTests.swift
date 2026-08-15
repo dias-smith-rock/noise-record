@@ -5,21 +5,21 @@ final class VideoNoiseRecorderSegmentTests: XCTestCase {
     func testSegmentFileNameFirstPartOmitsSuffix() {
         XCTAssertEqual(
             VideoNoiseRecorder.makeSegmentFileName(timestamp: "20260410_153045", segmentIndex: 1),
-            "evidence_20260410_153045.mp4"
+            "V_20260410_153045.mp4"
         )
     }
 
     func testSegmentFileNameSecondPartUsesPartSuffix() {
         XCTAssertEqual(
             VideoNoiseRecorder.makeSegmentFileName(timestamp: "20260410_153045", segmentIndex: 2),
-            "evidence_20260410_153045_part2.mp4"
+            "V_20260410_153045_part2.mp4"
         )
     }
 
     func testSegmentPartURLUsesPartExtension() {
         let url = VideoNoiseRecorder.makeSegmentPartURL(timestamp: "20260410_153045", segmentIndex: 1)
         XCTAssertTrue(url.lastPathComponent.hasSuffix(".mp4.part"))
-        XCTAssertEqual(url.lastPathComponent, "evidence_20260410_153045.mp4.part")
+        XCTAssertEqual(url.lastPathComponent, "V_20260410_153045.mp4.part")
     }
 }
 

@@ -27,6 +27,18 @@ struct RecorderSettingsView: View {
 
             ScrollView {
                 VStack(spacing: 20) {
+                    ProCard(theme: theme) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label(L10n.recorderScenarioHintTitle, systemImage: "waveform.badge.mic")
+                                .font(.subheadline.bold())
+                                .foregroundStyle(theme.accent)
+                            Text(L10n.recorderScenarioHintBody)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+
                     statusHero
 
                     sessionRecordingCard

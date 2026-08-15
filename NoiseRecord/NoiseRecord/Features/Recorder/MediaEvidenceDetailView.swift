@@ -464,12 +464,12 @@ struct MediaEvidenceDetailView: View {
         switch kind {
         case .audio(let session):
             notes = session.notes
-            displayTitle = session.fileName
+            displayTitle = EvidenceDisplayNaming.listTitle(from: session.fileName)
             markAsRead(session)
             resolveDisplayAddressIfNeeded()
         case .video(let session):
             notes = session.notes
-            displayTitle = session.fileName
+            displayTitle = EvidenceDisplayNaming.listTitle(from: session.fileName)
             markAsRead(session)
             resolveDisplayAddressIfNeeded()
         }

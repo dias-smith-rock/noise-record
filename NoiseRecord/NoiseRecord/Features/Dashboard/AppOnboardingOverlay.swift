@@ -9,17 +9,17 @@ struct AppOnboardingOverlay: View {
     private var steps: [OnboardingStep] {
         [
             OnboardingStep(
-                systemImage: "gauge.with.dots.needle.67percent",
+                systemImage: "video.fill",
                 title: L10n.appOnboardingStepMeasureTitle,
                 body: L10n.appOnboardingStepMeasureBody
             ),
             OnboardingStep(
-                systemImage: "moon.stars.fill",
+                systemImage: "gauge.with.dots.needle.67percent",
                 title: L10n.appOnboardingStepSleepTitle,
                 body: L10n.appOnboardingStepSleepBody
             ),
             OnboardingStep(
-                systemImage: "doc.richtext",
+                systemImage: "square.and.arrow.up",
                 title: L10n.appOnboardingStepExportTitle,
                 body: L10n.appOnboardingStepExportBody
             ),

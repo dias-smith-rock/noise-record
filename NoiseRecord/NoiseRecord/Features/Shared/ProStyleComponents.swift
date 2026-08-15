@@ -207,6 +207,8 @@ struct ProEmptyState: View {
     let message: String
     let systemImage: String
     var theme: ModeVisualTheme
+    var actionTitle: String? = nil
+    var action: (() -> Void)? = nil
 
     var body: some View {
         VStack(spacing: 16) {
@@ -219,6 +221,18 @@ struct ProEmptyState: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
+
+            if let actionTitle, let action {
+                Button(action: action) {
+                    Text(actionTitle)
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(theme.accent)
+                .padding(.top, 4)
+            }
         }
         .frame(maxWidth: .infinity)
         .padding(28)

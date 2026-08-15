@@ -1,7 +1,8 @@
 import UIKit
 
 enum TabBarMonitorIconUpdater {
-    private static let monitorTabIndex = 0
+    /// Matches ContentView order: Video(0) → Monitor(1) → …
+    private static let monitorTabIndex = 1
 
     private static var idleIcon: UIImage? {
         UIImage(systemName: "waveform")?.withRenderingMode(.alwaysTemplate)

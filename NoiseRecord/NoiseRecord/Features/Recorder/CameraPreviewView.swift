@@ -26,6 +26,7 @@ struct CameraPreviewView: UIViewRepresentable {
             target: context.coordinator,
             action: #selector(Coordinator.handlePinch(_:))
         )
+        pinch.delegate = context.coordinator
         view.addGestureRecognizer(pinch)
 
         let doubleTap = UITapGestureRecognizer(
@@ -49,7 +50,7 @@ struct CameraPreviewView: UIViewRepresentable {
         }
     }
 
-    final class Coordinator: NSObject {
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
         var isFrontCamera: () -> Bool
         var currentZoom: () -> CGFloat
         var onZoomChange: (CGFloat) -> Void
@@ -69,7 +70,7 @@ struct CameraPreviewView: UIViewRepresentable {
             switch gesture.state {
             case .began:
                 pinchStartZoom = currentZoom()
-            case .changed:
+            case .changed, .ended:
                 onZoomChange(pinchStartZoom * gesture.scale)
             default:
                 break
@@ -78,7 +79,29 @@ struct CameraPreviewView: UIViewRepresentable {
 
         @objc func handleDoubleTap(_ gesture: UITapGestureRecognizer) {
             let zoom = currentZoom()
-            onZoomChange(zoom > 1.05 ? 1.0 : 2.0)
+            if zoom > 1.05 {
+                onZoomChange(1.0)
+            } else if zoom < 0.85 {
+                onZoomChange(1.0)
+            } else {
+                onZoomChange(2.0)
+            }
+        }
+
+        func gestureRecognizer(
+            _ gestureRecognizer: UIGestureRecognizer,
+            shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+        ) -> Bool {
+            true
+        }
+
+        func gestureRecognizer(
+            _ gestureRecognizer: UIGestureRecognizer,
+            shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer
+        ) -> Bool {
+            // Keep pinch zoom from losing to parent scroll pans.
+            gestureRecognizer is UIPinchGestureRecognizer
+                && otherGestureRecognizer is UIPanGestureRecognizer
         }
     }
 }

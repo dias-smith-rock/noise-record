@@ -146,6 +146,8 @@ nonisolated enum L10n {
     // MARK: - Recorder settings
 
     static var recorderTitle: String { localized("recorderSettings.title") }
+    static var recorderScenarioHintTitle: String { localized("recorder.scenarioHint.title") }
+    static var recorderScenarioHintBody: String { localized("recorder.scenarioHint.body") }
     static var recorderVoiceTitle: String { localized("recorderSettings.voiceActivated.title") }
     static var recorderVoiceSubtitle: String { localized("recorderSettings.voiceActivated.subtitle") }
     static var recorderBackgroundTitle: String { localized("recorderSettings.backgroundMonitoring.title") }
@@ -187,6 +189,30 @@ nonisolated enum L10n {
     static var videoWatermarkTitle: String { localized("video.tips.watermarkTitle") }
     static var videoWatermarkBody: String { localized("video.tips.watermarkBody") }
     static var videoMonitoringStartFailed: String { localized("video.error.monitoringStartFailed") }
+    static var videoShareEvidence: String { localized("video.shareEvidence") }
+    static var videoSaveSuccessHint: String { localized("video.saveSuccessHint") }
+    static var videoShootingTip: String { localized("video.shootingTip") }
+    static var videoPreviewRecording: String { localized("video.previewRecording") }
+    static var videoPreviewShort: String { localized("video.previewShort") }
+    static var videoRecordAgain: String { localized("video.recordAgain") }
+    static var videoTrimmingProgress: String { localized("video.trimmingProgress") }
+    static var videoTrimFailedKeptFullClip: String { localized("video.trimFailedKeptFullClip") }
+
+    static func videoSaveSuccessSummary(duration: String, peak: Float) -> String {
+        String(format: localized("video.saveSuccessSummary"), duration, peak)
+    }
+
+    static func videoPeakDB(_ peak: Float) -> String {
+        String(format: localized("video.peakDB"), peak)
+    }
+
+    static func videoFreeRemainingSeconds(_ seconds: Int) -> String {
+        String(format: localized("video.freeRemainingSeconds"), seconds)
+    }
+
+    static func videoTrimmedSavedHint(seconds: Int) -> String {
+        String(format: localized("video.trimmedSavedHint"), seconds)
+    }
 
     static func videoFreeQuotaHint(remaining: Int, maxDuration: Int) -> String {
         String(format: localized("video.freeQuotaHint"), remaining, maxDuration)
@@ -218,6 +244,7 @@ nonisolated enum L10n {
     static var filesBadgeNew: String { localized("files.badge.new") }
     static var filesEmptyVideoTitle: String { localized("files.empty.video.title") }
     static var filesEmptyVideoMessage: String { localized("files.empty.video.message") }
+    static var filesEmptyVideoCTA: String { localized("files.empty.video.cta") }
     static var filesEmptyAudioTitle: String { localized("files.empty.audio.title") }
     static var filesEmptyAudioMessage: String { localized("files.empty.audio.message") }
     static var filesRenameTitle: String { localized("files.rename.alert.title") }
@@ -625,7 +652,10 @@ nonisolated enum L10n {
     }
 
     static var videoRecBadge: String { localized("REC") }
-    static var videoPreviewRecording: String { localized("video.previewRecording") }
+
+    static func videoRecordingDurationLabel(_ formattedDuration: String) -> String {
+        String(format: localized("video.recordingDuration"), formattedDuration)
+    }
 
     static func videoPlaybackSyncedNoise(_ decibel: Float, weighting: String) -> String {
         String(format: localized("video.playback.syncedNoise"), decibel, weighting)

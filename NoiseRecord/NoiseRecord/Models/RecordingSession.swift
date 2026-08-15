@@ -102,12 +102,19 @@ final class RecordingSession {
     }
 
     /// Parses `yyyyMMdd_HHmmss` from recording file names such as
-    /// `F_20260701_180612.m4a`, `S_20260701_180613.m4a`, or legacy `*_session.m4a` / `*_55dB.m4a`.
+    /// `F_20260701_180612.m4a`, `S_20260701_180613.m4a`, `V_20260701_180612.mp4`,
+    /// or legacy `evidence_*` / `*_session.m4a` / `*_55dB.m4a`.
     static func parseStartDate(from fileName: String) -> Date? {
         let stem = (fileName as NSString).deletingPathExtension
         let token: String
-        if stem.hasPrefix("F_") || stem.hasPrefix("S_") {
+        if stem.hasPrefix("F_") || stem.hasPrefix("S_") || stem.hasPrefix("V_") {
             let offset = 2
+            guard stem.count >= offset + 15 else { return nil }
+            let start = stem.index(stem.startIndex, offsetBy: offset)
+            let end = stem.index(start, offsetBy: 15)
+            token = String(stem[start..<end])
+        } else if stem.hasPrefix("evidence_") {
+            let offset = "evidence_".count
             guard stem.count >= offset + 15 else { return nil }
             let start = stem.index(stem.startIndex, offsetBy: offset)
             let end = stem.index(start, offsetBy: 15)

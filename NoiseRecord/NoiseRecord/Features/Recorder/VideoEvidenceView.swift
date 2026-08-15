@@ -1,5 +1,6 @@
 import AVFoundation
 import AVKit
+import Combine
 import CoreLocation
 import SwiftData
 import SwiftUI
@@ -202,14 +203,22 @@ struct VideoEvidenceView: View {
     @State private var player: AVPlayer?
     @State private var isPreparingRecording = false
     @State private var savedVideoURL: URL?
+    @State private var lastSavedDuration: TimeInterval = 0
+    @State private var lastSavedPeakDB: Float = 0
     @State private var presentedVideoURL: URL?
     @State private var presentedVideoTitle: String?
     @State private var previewZoomFactor: CGFloat = 1.0
+    @State private var zoomRequestID = 0
     @State private var showCameraPermissionDenied = false
     @State private var showLocationPermissionDenied = false
     @State private var didPromptLocationDenied = false
     @State private var lastNoiseSync = Date.distantPast
     @State private var pendingVideoSegments: [VideoSegmentFinishedEvent] = []
+    @State private var isSavingTrimmedClip = false
+    @State private var saveBannerMessage: String?
+    @State private var recordingTick = Date()
+    @State private var isStoppingRecording = false
+    private let recordingClock = Timer.publish(every: 0.25, on: .main, in: .common).autoconnect()
 
     private var measurementMode: AcousticMeasurementMode {
         AcousticMeasurementMode(isHighSensitivity: engine.isHighSensitivityMode)
@@ -223,9 +232,13 @@ struct VideoEvidenceView: View {
         VStack(spacing: 0) {
             ProTabHeader(title: L10n.videoTitle, theme: theme)
 
+            // Keep the camera preview outside ScrollView so pinch-out is not stolen.
+            previewSection
+                .padding(.horizontal)
+                .padding(.top, 8)
+
             ScrollView {
                 VStack(spacing: 20) {
-                    previewSection
                     controlSection
                     tipsSection
                 }
@@ -256,12 +269,32 @@ struct VideoEvidenceView: View {
                 VideoTabPerformance.mark(.syncNoiseDone)
                 audioStateManager.restoreMonitoringPipelineIfNeeded()
                 VideoTabPerformance.mark(.restoreMonitoringDone)
+                previewZoomFactor = coordinator.recorder.currentZoomFactor
                 VideoTabPerformance.mark(.taskActiveComplete)
             } else {
                 VideoTabPerformance.mark(.taskInactiveBegin)
                 coordinator.teardown()
                 audioStateManager.restoreMonitoringPipelineIfNeeded()
                 VideoTabPerformance.mark(.taskInactiveComplete)
+            }
+        }
+        .onReceive(recordingClock) { now in
+            guard coordinator.isRecording else { return }
+            recordingTick = now
+            autoStopFreeRecordingIfNeeded()
+        }
+        .onChange(of: coordinator.cameraPosition) { _, _ in
+            previewZoomFactor = coordinator.recorder.currentZoomFactor
+        }
+        .onChange(of: coordinator.isPreviewReady) { _, ready in
+            if ready {
+                previewZoomFactor = coordinator.recorder.currentZoomFactor
+            }
+        }
+        .onChange(of: coordinator.isRecording) { wasRecording, isRecording in
+            // Error / unexpected stop path — normal stop already cleans up in finalize.
+            if wasRecording, !isRecording, !isStoppingRecording, !isPreparingRecording {
+                stopMonitoringAfterVideoEvidence()
             }
         }
         .onChange(of: engine.currentDB) { _, _ in
@@ -327,7 +360,7 @@ struct VideoEvidenceView: View {
             if let url = presentedVideoURL {
                 SyncedVideoPlayerView(
                     url: url,
-                    title: presentedVideoTitle ?? url.lastPathComponent,
+                    title: presentedVideoTitle ?? EvidenceDisplayNaming.listTitle(from: url.lastPathComponent),
                     onDismiss: {
                         clearPresentedVideo()
                     },
@@ -344,11 +377,9 @@ struct VideoEvidenceView: View {
             CameraPreviewView(
                 session: coordinator.recorder.captureSessionForPreview,
                 isFrontCamera: { coordinator.cameraPosition == .front },
-                currentZoom: { previewZoomFactor },
+                currentZoom: { coordinator.recorder.currentZoomFactor },
                 onZoomChange: { factor in
-                    coordinator.recorder.setZoomFactor(factor) { applied in
-                        previewZoomFactor = applied
-                    }
+                    applyPreviewZoom(factor)
                 }
             )
             .frame(height: 420)
@@ -379,8 +410,8 @@ struct VideoEvidenceView: View {
 
                 if !coordinator.isRecording {
                     Button {
+                        zoomRequestID += 1
                         coordinator.switchCamera()
-                        previewZoomFactor = 1.0
                     } label: {
                         Image(systemName: "arrow.triangle.2.circlepath.camera")
                             .font(.body.weight(.semibold))
@@ -396,7 +427,7 @@ struct VideoEvidenceView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .padding(12)
 
-            if previewZoomFactor > 1.05, !coordinator.isRecording {
+            if abs(previewZoomFactor - 1.0) > 0.05, !coordinator.isRecording {
                 Text(String(format: "%.1fx", previewZoomFactor))
                     .font(.caption.bold())
                     .foregroundStyle(.white)
@@ -411,7 +442,7 @@ struct VideoEvidenceView: View {
 
             if coordinator.isRecording {
                 VStack(alignment: .trailing, spacing: 6) {
-                    if previewZoomFactor > 1.05 {
+                    if abs(previewZoomFactor - 1.0) > 0.05 {
                         Text(String(format: "%.1fx", previewZoomFactor))
                             .font(.caption.bold())
                             .foregroundStyle(.white)
@@ -429,6 +460,26 @@ struct VideoEvidenceView: View {
                         .padding(.vertical, 6)
                         .background(.black.opacity(0.55))
                         .clipShape(Capsule())
+
+                    Text(L10n.videoPeakDB(coordinator.peakDB))
+                        .font(.caption2.bold())
+                        .monospacedDigit()
+                        .foregroundStyle(.white.opacity(0.95))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(.black.opacity(0.55))
+                        .clipShape(Capsule())
+
+                    if !subscriptions.isPremiumUser {
+                        Text(L10n.videoFreeRemainingSeconds(recordingRemainingSeconds))
+                            .font(.caption2.bold())
+                            .monospacedDigit()
+                            .foregroundStyle(recordingRemainingSeconds <= 5 ? .orange : .white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(.black.opacity(0.55))
+                            .clipShape(Capsule())
+                    }
                 }
                 .padding(12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
@@ -503,78 +554,189 @@ struct VideoEvidenceView: View {
 
     private var controlSection: some View {
         VStack(spacing: 12) {
-            if !engine.isMonitoring || !engine.isHighSensitivityMode {
-                Text(L10n.videoAutoMonitoringHint)
+            if coordinator.isRecording {
+                recordingHints
+            }
+
+            if isSavingTrimmedClip {
+                ProgressView(L10n.videoTrimmingProgress)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+            }
+
+            if let saveBannerMessage, savedVideoURL == nil {
+                Text(saveBannerMessage)
+                    .font(.caption)
+                    .foregroundStyle(theme.accent)
                     .multilineTextAlignment(.center)
             }
 
-            if !subscriptions.isPremiumUser {
-                let remaining = FreemiumUsageStore.shared.remainingVideoRecordingsToday(isPremium: false)
-                Text(L10n.videoFreeQuotaHint(remaining: remaining, maxDuration: Int(FreemiumUsageStore.freeVideoMaxDuration)))
+            if let savedVideoURL, !coordinator.isRecording {
+                saveSuccessPanel(for: savedVideoURL)
+            } else {
+                recordPrimaryButton
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var recordingHints: some View {
+        if !subscriptions.isPremiumUser {
+            let remaining = FreemiumUsageStore.shared.remainingVideoRecordingsToday(isPremium: false)
+            let maxDuration = Int(
+                FreemiumUsageStore.shared.allowedVideoSaveDuration(isPremium: false).rounded(.down)
+            )
+            Text(L10n.videoFreeQuotaHint(remaining: remaining, maxDuration: maxDuration))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+    }
+
+    private func saveSuccessPanel(for url: URL) -> some View {
+        VStack(spacing: 12) {
+            VStack(spacing: 4) {
+                Label(
+                    L10n.videoSaveSuccessSummary(
+                        duration: DurationFormatting.hms(from: lastSavedDuration),
+                        peak: lastSavedPeakDB
+                    ),
+                    systemImage: "checkmark.circle.fill"
+                )
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(theme.accent)
+                .multilineTextAlignment(.center)
+
+                Text(L10n.videoSaveSuccessHint)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-            }
 
-            if let savedVideoURL {
-                VStack(spacing: 8) {
-                    Label(L10n.videoSaved(savedVideoURL.lastPathComponent), systemImage: "checkmark.circle.fill")
-                        .font(.caption)
-                        .foregroundStyle(theme.accent)
+                if let saveBannerMessage {
+                    Text(saveBannerMessage)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
-                    Button(L10n.videoPreviewRecording) {
-                        AppTelemetry.logProductEvent("video_preview_open_tap")
-                        Task {
-                            do {
-                                try audioStateManager.prepareAndStartPlayback()
-                                presentedVideoURL = savedVideoURL
-                                presentedVideoTitle = savedVideoURL.lastPathComponent
-                            } catch {
-                                coordinator.errorMessage = error.localizedDescription
-                            }
-                        }
-                    }
-                    .buttonStyle(.bordered)
                 }
             }
 
             Button {
-                if coordinator.isRecording {
-                    coordinator.stopRecording { result in
-                        Task { @MainActor in
-                            handleRecordingFinished(result)
-                        }
-                    }
-                } else {
-                    AppTelemetry.logProductEvent("video_record_tap")
-                    Task { await startEvidenceRecording() }
-                }
-            } label: {
-                Label(
-                    coordinator.isRecording ? L10n.videoStopAndSave : L10n.videoStartRecording,
-                    systemImage: coordinator.isRecording ? "stop.circle.fill" : "video.circle.fill"
+                AppTelemetry.logProductEvent(
+                    "video_share_tap",
+                    parameters: ["source": "save_success"]
                 )
-                .font(.headline)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
+                SharePresenter.present(items: [url])
+            } label: {
+                Label(L10n.videoShareEvidence, systemImage: "square.and.arrow.up")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
             }
             .buttonStyle(.borderedProminent)
-            .tint(coordinator.isRecording ? .red : theme.accent)
-            .disabled(!coordinator.isSessionReady || !coordinator.isPreviewReady || isPreparingRecording)
+            .tint(theme.accent)
+
+            HStack(spacing: 12) {
+                Button {
+                    AppTelemetry.logProductEvent("video_preview_open_tap")
+                    Task {
+                        do {
+                            try audioStateManager.prepareAndStartPlayback()
+                            presentedVideoURL = url
+                            presentedVideoTitle = EvidenceDisplayNaming.listTitle(from: url.lastPathComponent)
+                        } catch {
+                            coordinator.errorMessage = error.localizedDescription
+                        }
+                    }
+                } label: {
+                    Text(L10n.videoPreviewShort)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                }
+                .buttonStyle(.bordered)
+
+                Button {
+                    AppTelemetry.logProductEvent("video_record_tap", parameters: ["source": "save_success_again"])
+                    Task { await startEvidenceRecording() }
+                } label: {
+                    Text(L10n.videoRecordAgain)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                }
+                .buttonStyle(.bordered)
+                .disabled(
+                    !coordinator.isSessionReady
+                        || !coordinator.isPreviewReady
+                        || isPreparingRecording
+                        || isStoppingRecording
+                        || isSavingTrimmedClip
+                )
+            }
         }
     }
 
+    private var recordPrimaryButton: some View {
+        Button {
+            if coordinator.isRecording {
+                requestStopRecording()
+            } else {
+                AppTelemetry.logProductEvent("video_record_tap")
+                Task { await startEvidenceRecording() }
+            }
+        } label: {
+            Group {
+                if coordinator.isRecording {
+                    let elapsedLabel = DurationFormatting.hms(from: recordingElapsedSeconds)
+                    Label {
+                        HStack(spacing: 8) {
+                            Text(L10n.videoStopAndSave)
+                            Text("·")
+                                .opacity(0.7)
+                            Text(elapsedLabel)
+                                .monospacedDigit()
+                        }
+                    } icon: {
+                        Image(systemName: "stop.circle.fill")
+                    }
+                    .accessibilityLabel(
+                        "\(L10n.videoStopAndSave), \(L10n.videoRecordingDurationLabel(elapsedLabel))"
+                    )
+                } else {
+                    Label(
+                        L10n.videoStartRecording,
+                        systemImage: "video.circle.fill"
+                    )
+                }
+            }
+            .font(.headline)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(coordinator.isRecording ? .red : theme.accent)
+        .disabled(
+            !coordinator.isSessionReady
+                || !coordinator.isPreviewReady
+                || isPreparingRecording
+                || isStoppingRecording
+                || isSavingTrimmedClip
+        )
+    }
+
     private var tipsSection: some View {
-        ProCard(theme: theme) {
-            VStack(alignment: .leading, spacing: 8) {
-                Label(L10n.videoWatermarkTitle, systemImage: "checkmark.seal.fill")
-                    .font(.subheadline.bold())
-                    .foregroundStyle(theme.accent)
-                Text(L10n.videoWatermarkBody)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 12) {
+            Text(L10n.videoShootingTip)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            ProCard(theme: theme) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label(L10n.videoWatermarkTitle, systemImage: "checkmark.seal.fill")
+                        .font(.subheadline.bold())
+                        .foregroundStyle(theme.accent)
+                    Text(L10n.videoWatermarkBody)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
     }
@@ -583,6 +745,10 @@ struct VideoEvidenceView: View {
         guard coordinator.isSessionReady, coordinator.isPreviewReady, !coordinator.isRecording else { return }
         isPreparingRecording = true
         savedVideoURL = nil
+        lastSavedDuration = 0
+        lastSavedPeakDB = 0
+        saveBannerMessage = nil
+        isStoppingRecording = false
         defer { isPreparingRecording = false }
 
         let ready = await engine.ensureMonitoringForVideoEvidence()
@@ -591,6 +757,7 @@ struct VideoEvidenceView: View {
             return
         }
 
+        audioStateManager.noteMonitoringStarted()
         coordinator.syncNoise(from: engine)
         coordinator.syncLocation(from: engine)
         do {
@@ -598,46 +765,132 @@ struct VideoEvidenceView: View {
             audioStateManager.restoreMonitoringPipelineIfNeeded()
             AppTelemetry.logVideoRecordingStart()
         } catch {
+            stopMonitoringAfterVideoEvidence()
             coordinator.errorMessage = error.localizedDescription
         }
     }
 
-    private func handleRecordingFinished(_ result: Result<URL, Error>) {
-        engine.endTemporaryHighSensitivityForVideoIfNeeded()
-        audioStateManager.restoreMonitoringPipelineIfNeeded()
+    private func applyPreviewZoom(_ factor: CGFloat) {
+        // Keep UI responsive while session-queue applies the real device clamp (may be ~0.5×).
+        let minZoom = coordinator.recorder.minZoomFactor
+        let maxZoom = coordinator.recorder.maxZoomFactor
+        let provisional = max(minZoom, min(factor, maxZoom))
+        zoomRequestID += 1
+        let requestID = zoomRequestID
+        previewZoomFactor = provisional
+        coordinator.recorder.setZoomFactor(provisional) { applied in
+            guard requestID == zoomRequestID else { return }
+            previewZoomFactor = applied
+        }
+    }
+
+    private func requestStopRecording(reason: String = "manual") {
+        guard coordinator.isRecording, !isStoppingRecording else { return }
+        isStoppingRecording = true
+        coordinator.stopRecording { result in
+            Task { @MainActor in
+                await finalizeStoppedRecording(result, reason: reason)
+                isStoppingRecording = false
+            }
+        }
+    }
+
+    private var recordingElapsedSeconds: TimeInterval {
+        _ = recordingTick
+        guard let startedAt = coordinator.recordingStartedAt else { return 0 }
+        return max(0, Date().timeIntervalSince(startedAt))
+    }
+
+    private var recordingRemainingSeconds: Int {
+        let limit = FreemiumUsageStore.shared.allowedVideoSaveDuration(
+            isPremium: subscriptions.isPremiumUser
+        )
+        guard limit.isFinite else { return 0 }
+        return max(0, Int((limit - recordingElapsedSeconds).rounded(.down)))
+    }
+
+    private func autoStopFreeRecordingIfNeeded() {
+        guard coordinator.isRecording, !subscriptions.isPremiumUser, !isStoppingRecording else { return }
+        let limit = FreemiumUsageStore.shared.allowedVideoSaveDuration(isPremium: false)
+        guard recordingElapsedSeconds >= limit else { return }
+        requestStopRecording(reason: "free_limit")
+    }
+
+    private func finalizeStoppedRecording(_ result: Result<URL, Error>, reason: String) async {
+        stopMonitoringAfterVideoEvidence()
         switch result {
         case .success(let url):
-            finishVideoSave(fileURL: url)
+            await finishVideoSave(fileURL: url, stopReason: reason)
         case .failure(let error):
             discardPendingVideoSegments()
             coordinator.errorMessage = error.localizedDescription
         }
     }
 
-    private func finishVideoSave(fileURL: URL) {
+    /// Video evidence owns the temporary monitoring session — stop it with the recording.
+    private func stopMonitoringAfterVideoEvidence() {
+        engine.endTemporaryHighSensitivityForVideoIfNeeded()
+        if engine.isMonitoring {
+            engine.stopMonitoring(presentSessionSavePrompt: false)
+        }
+        audioStateManager.noteMonitoringStopped()
+    }
+
+    private func finishVideoSave(fileURL: URL, stopReason: String) async {
+        saveBannerMessage = nil
+        let allowed = FreemiumUsageStore.shared.allowedVideoSaveDuration(
+            isPremium: subscriptions.isPremiumUser
+        )
         let duration = videoRecordingDuration()
-        if !subscriptions.isPremiumUser && duration > FreemiumUsageStore.freeVideoMaxDuration {
-            AppTelemetry.logProductEvent(
-                "freemium_limit_hit",
-                parameters: ["limit_type": "video_duration"]
-            )
-            PaywallPresenter.shared.present(context: .videoDurationLimit) { purchased in
-                if purchased {
-                    commitPendingVideoSegments()
-                    savedVideoURL = fileURL
-                    noteVideoEvidenceSavedForReview()
-                } else {
-                    discardPendingVideoSegments()
+        var didTrim = false
+        var hitFreeLimit = stopReason == "free_limit"
+        var outputURL = fileURL
+
+        if !subscriptions.isPremiumUser, allowed.isFinite, duration > allowed + 0.15 {
+            isSavingTrimmedClip = true
+            defer { isSavingTrimmedClip = false }
+            do {
+                let result = try await VideoEvidenceTrimmer.trimIfNeeded(
+                    fileURL: fileURL,
+                    maxDuration: allowed
+                )
+                didTrim = result.didTrim
+                if didTrim {
+                    outputURL = result.url
+                    hitFreeLimit = true
+                    AppTelemetry.logProductEvent(
+                        "video_trim_applied",
+                        parameters: [
+                            "limit_seconds": String(Int(allowed)),
+                            "original_seconds": String(Int(duration.rounded())),
+                        ]
+                    )
+                    saveBannerMessage = L10n.videoTrimmedSavedHint(seconds: Int(allowed))
                 }
-                pendingVideoSegments = []
-                coordinator.recordingStartedAt = nil
+            } catch {
+                AppTelemetry.logProductEvent(
+                    "video_trim_failed",
+                    parameters: ["message": error.localizedDescription]
+                )
+                saveBannerMessage = L10n.videoTrimFailedKeptFullClip
             }
-        } else {
-            commitPendingVideoSegments()
-            savedVideoURL = fileURL
-            noteVideoEvidenceSavedForReview()
-            pendingVideoSegments = []
-            coordinator.recordingStartedAt = nil
+        } else if hitFreeLimit, allowed.isFinite {
+            saveBannerMessage = L10n.videoTrimmedSavedHint(seconds: Int(allowed))
+        }
+
+        commitPendingVideoSegments()
+        if !subscriptions.isPremiumUser {
+            FreemiumUsageStore.shared.markFirstClipBonusConsumedIfNeeded()
+        }
+        lastSavedDuration = didTrim && allowed.isFinite ? allowed : duration
+        lastSavedPeakDB = coordinator.peakDB
+        savedVideoURL = outputURL
+        noteVideoEvidenceSavedForReview()
+        pendingVideoSegments = []
+        coordinator.recordingStartedAt = nil
+
+        if hitFreeLimit, !subscriptions.isPremiumUser {
+            PaywallPresenter.shared.present(context: .videoDurationLimit)
         }
     }
 

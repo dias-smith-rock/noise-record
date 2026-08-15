@@ -50,7 +50,35 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
     private var audioOutput: AVCaptureAudioDataOutput?
     private var videoDevice: AVCaptureDevice?
     private var currentCameraPosition: AVCaptureDevice.Position = .back
-    private let maxUserZoomFactor: CGFloat = 5.0
+    private let maxUserDisplayZoomFactor: CGFloat = 5.0
+    private let zoomStateLock = NSLock()
+    /// Converts device `videoZoomFactor` → Camera-app style display zoom (0.5 / 1 / 2…).
+    /// Dual-wide / triple cameras typically use `2` (device 1 = 0.5×, device 2 = 1×).
+    private var zoomDisplayDivisor: CGFloat = 1.0
+    private var _currentZoomFactor: CGFloat = 1.0
+    private var _minZoomFactor: CGFloat = 1.0
+    private var _maxZoomFactor: CGFloat = 5.0
+
+    /// Camera-app style zoom (0.5× / 1× / …). Safe to read from the main thread.
+    var currentZoomFactor: CGFloat {
+        zoomStateLock.lock()
+        defer { zoomStateLock.unlock() }
+        return _currentZoomFactor
+    }
+
+    /// Minimum display zoom (0.5× when ultra-wide is available).
+    var minZoomFactor: CGFloat {
+        zoomStateLock.lock()
+        defer { zoomStateLock.unlock() }
+        return _minZoomFactor
+    }
+
+    /// Maximum display zoom for evidence capture.
+    var maxZoomFactor: CGFloat {
+        zoomStateLock.lock()
+        defer { zoomStateLock.unlock() }
+        return _maxZoomFactor
+    }
 
     private var isPreviewConfigured = false
     private var recordingOutputsAttached = false
@@ -165,7 +193,8 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
     func setZoomFactor(_ factor: CGFloat, completion: ((CGFloat) -> Void)? = nil) {
         sessionQueue.async { [weak self] in
             guard let self else { return }
-            let applied = self.applyZoomLocked(factor)
+            // UI / pinch use Camera-app display zoom (0.5×, 1×, …).
+            let applied = self.applyDisplayZoomLocked(factor)
             if let completion {
                 DispatchQueue.main.async {
                     completion(applied)
@@ -193,7 +222,8 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
                     self.captureSession.removeInput(videoInput)
                 }
                 try self.addVideoInputLocked(position: newPosition)
-                _ = self.applyZoomLocked(1.0)
+                // Reset to optical 1× (display) when switching cameras.
+                _ = self.applyDisplayZoomLocked(1.0)
                 self.configureVideoConnectionLocked()
 
                 DispatchQueue.main.async {
@@ -207,21 +237,89 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         }
     }
 
-    private func applyZoomLocked(_ factor: CGFloat) -> CGFloat {
-        guard let device = videoDevice else { return 1.0 }
-        let maxZoom = min(device.maxAvailableVideoZoomFactor, maxUserZoomFactor)
-        let clamped = max(device.minAvailableVideoZoomFactor, min(factor, maxZoom))
+    /// Applies Camera-app style display zoom and returns the clamped display value.
+    @discardableResult
+    private func applyDisplayZoomLocked(_ displayFactor: CGFloat) -> CGFloat {
+        let deviceFactor = deviceZoom(fromDisplay: displayFactor)
+        let appliedDevice = applyDeviceZoomLocked(deviceFactor)
+        return displayZoom(fromDevice: appliedDevice)
+    }
+
+    @discardableResult
+    private func applyDeviceZoomLocked(_ deviceFactor: CGFloat) -> CGFloat {
+        guard let device = videoDevice else {
+            zoomDisplayDivisor = 1.0
+            setZoomRange(min: 1.0, max: maxUserDisplayZoomFactor, current: 1.0)
+            return 1.0
+        }
+
+        refreshZoomGeometryLocked(for: device)
+        let minDevice = device.minAvailableVideoZoomFactor
+        let maxDevice = min(
+            device.maxAvailableVideoZoomFactor,
+            maxUserDisplayZoomFactor * zoomDisplayDivisor
+        )
+        let clampedDevice = max(minDevice, min(deviceFactor, maxDevice))
         do {
             try device.lockForConfiguration()
             if device.isRampingVideoZoom {
                 device.cancelVideoZoomRamp()
             }
-            device.videoZoomFactor = clamped
+            device.videoZoomFactor = clampedDevice
             device.unlockForConfiguration()
-            return clamped
         } catch {
-            return device.videoZoomFactor
+            let fallback = device.videoZoomFactor
+            publishZoomState(
+                minDevice: minDevice,
+                maxDevice: maxDevice,
+                currentDevice: fallback
+            )
+            return fallback
         }
+
+        publishZoomState(
+            minDevice: minDevice,
+            maxDevice: maxDevice,
+            currentDevice: clampedDevice
+        )
+        return clampedDevice
+    }
+
+    private func refreshZoomGeometryLocked(for device: AVCaptureDevice) {
+        if #available(iOS 18.0, *), device.displayVideoZoomFactorMultiplier > 0 {
+            zoomDisplayDivisor = 1.0 / device.displayVideoZoomFactorMultiplier
+            return
+        }
+        if let first = device.virtualDeviceSwitchOverVideoZoomFactors.first {
+            let value = CGFloat(truncating: first)
+            zoomDisplayDivisor = value > 0 ? value : 1.0
+        } else {
+            zoomDisplayDivisor = 1.0
+        }
+    }
+
+    private func displayZoom(fromDevice deviceZoom: CGFloat) -> CGFloat {
+        deviceZoom / max(zoomDisplayDivisor, 0.0001)
+    }
+
+    private func deviceZoom(fromDisplay displayZoom: CGFloat) -> CGFloat {
+        displayZoom * max(zoomDisplayDivisor, 0.0001)
+    }
+
+    private func publishZoomState(minDevice: CGFloat, maxDevice: CGFloat, currentDevice: CGFloat) {
+        setZoomRange(
+            min: displayZoom(fromDevice: minDevice),
+            max: displayZoom(fromDevice: maxDevice),
+            current: displayZoom(fromDevice: currentDevice)
+        )
+    }
+
+    private func setZoomRange(min: CGFloat, max: CGFloat, current: CGFloat) {
+        zoomStateLock.lock()
+        _minZoomFactor = min
+        _maxZoomFactor = max
+        _currentZoomFactor = current
+        zoomStateLock.unlock()
     }
 
     private func setupPreviewSessionLocked() throws {
@@ -243,7 +341,7 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
     }
 
     private func addVideoInputLocked(position: AVCaptureDevice.Position) throws {
-        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position) else {
+        guard let device = preferredVideoDevice(for: position) else {
             throw VideoNoiseRecorderError.cameraUnavailable
         }
         let input = try AVCaptureDeviceInput(device: device)
@@ -252,6 +350,37 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         videoInput = input
         videoDevice = device
         currentCameraPosition = position
+
+        refreshZoomGeometryLocked(for: device)
+        // Default to Camera-app 1× (wide). On dual-wide this is device zoom 2.0; pinch can go to 0.5×.
+        _ = applyDisplayZoomLocked(1.0)
+    }
+
+    /// Prefer dual-wide / triple virtual devices so display zoom can reach ultra-wide 0.5×.
+    private func preferredVideoDevice(for position: AVCaptureDevice.Position) -> AVCaptureDevice? {
+        let deviceTypes: [AVCaptureDevice.DeviceType]
+        switch position {
+        case .front:
+            deviceTypes = [
+                .builtInTrueDepthCamera,
+                .builtInWideAngleCamera,
+            ]
+        default:
+            // DualWide before Dual: Dual (wide+tele) has no ultra-wide / 0.5×.
+            deviceTypes = [
+                .builtInTripleCamera,
+                .builtInDualWideCamera,
+                .builtInDualCamera,
+                .builtInWideAngleCamera,
+            ]
+        }
+
+        for deviceType in deviceTypes {
+            if let device = AVCaptureDevice.default(deviceType, for: .video, position: position) {
+                return device
+            }
+        }
+        return nil
     }
 
     private func attachRecordingOutputsLocked() throws {
@@ -361,8 +490,8 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
 
     static func makeSegmentFileName(timestamp: String, segmentIndex: Int) -> String {
         let base = segmentIndex <= 1
-            ? "evidence_\(timestamp)"
-            : "evidence_\(timestamp)_part\(segmentIndex)"
+            ? "V_\(timestamp)"
+            : "V_\(timestamp)_part\(segmentIndex)"
         return "\(base).mp4"
     }
 
@@ -754,8 +883,74 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
             at: CGPoint(x: cardRect.minX + 20 * scale, y: cardRect.minY + 78 * scale),
             withAttributes: metaAttributes
         )
+
+        drawNoiseWaveformStrip(
+            canvasWidth: CGFloat(width),
+            canvasHeight: CGFloat(height),
+            scale: scale
+        )
         UIGraphicsPopContext()
         context.restoreGState()
+    }
+
+    private func drawNoiseWaveformStrip(
+        canvasWidth: CGFloat,
+        canvasHeight: CGFloat,
+        scale: CGFloat
+    ) {
+        let samples = Array(noiseTimelineSamples.suffix(120))
+        guard samples.count >= 2 else { return }
+
+        let margin: CGFloat = 40 * scale
+        let stripHeight = 120 * scale
+        let stripRect = CGRect(
+            x: margin,
+            y: canvasHeight - margin - stripHeight,
+            width: canvasWidth - margin * 2,
+            height: stripHeight
+        )
+
+        let background = UIBezierPath(roundedRect: stripRect, cornerRadius: 14 * scale)
+        UIColor.black.withAlphaComponent(0.55).setFill()
+        background.fill()
+
+        let plotInset = 16 * scale
+        let plotRect = stripRect.insetBy(dx: plotInset, dy: plotInset)
+        guard plotRect.width > 8, plotRect.height > 8 else { return }
+
+        let minDB: Float = 20
+        let maxDB: Float = 100
+        let path = UIBezierPath()
+        for (index, sample) in samples.enumerated() {
+            let xRatio = CGFloat(index) / CGFloat(samples.count - 1)
+            let clamped = min(max(sample.decibel, minDB), maxDB)
+            let yRatio = CGFloat((clamped - minDB) / (maxDB - minDB))
+            let point = CGPoint(
+                x: plotRect.minX + plotRect.width * xRatio,
+                y: plotRect.maxY - plotRect.height * yRatio
+            )
+            if index == 0 {
+                path.move(to: point)
+            } else {
+                path.addLine(to: point)
+            }
+        }
+
+        UIColor.systemOrange.setStroke()
+        path.lineWidth = max(2.5 * scale, 2)
+        path.lineJoinStyle = .round
+        path.lineCapStyle = .round
+        path.stroke()
+
+        let label = "dB"
+        let labelAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 18 * scale, weight: .semibold),
+            .foregroundColor: UIColor.white.withAlphaComponent(0.85),
+        ]
+        (label as NSString).draw(
+            at: CGPoint(x: stripRect.minX + 14 * scale, y: stripRect.minY + 10 * scale),
+            withAttributes: labelAttributes
+        )
     }
 
     private func drawDecibelBadge(scale: CGFloat, margin: CGFloat, canvasWidth: CGFloat) {

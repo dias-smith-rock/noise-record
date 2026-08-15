@@ -77,12 +77,13 @@ struct RecordingListView: View {
     let environmentSnapshot: () -> SleepEnvironmentSnapshot
     let isTabActive: Bool
     @Binding var pendingOpenRecordingID: UUID?
+    var onOpenVideoEvidence: (() -> Void)? = nil
     @Query(sort: \RecordingSession.startedAt, order: .reverse) private var sessions: [RecordingSession]
     @Query(sort: \VideoEvidenceSession.startedAt, order: .reverse) private var videoSessions: [VideoEvidenceSession]
     @Environment(\.modelContext) private var modelContext
     @Environment(\.appLanguageRevision) private var appLanguageRevision
 
-    @State private var selectedTab: RecordingListTab = .audio
+    @State private var selectedTab: RecordingListTab = .video
     @State private var sortOption: RecordingSortOption = .dateDescending
     @State private var isSelectionMode = false
     @State private var selectedAudioIDs: Set<UUID> = []
@@ -234,7 +235,7 @@ struct RecordingListView: View {
             if let session = presentedVideoSession {
                 SyncedVideoPlayerView(
                     url: session.fileURL,
-                    title: session.fileName,
+                    title: EvidenceDisplayNaming.listTitle(from: session.fileName),
                     initialToastMessage: videoSleepReportReadyToast,
                     onDismiss: { dismissPresentedVideo() },
                     onPlaybackFinished: { finishVideoPlayback() }
@@ -428,13 +429,15 @@ struct RecordingListView: View {
                 title: L10n.filesEmptyVideoTitle,
                 message: filesEmptyVideoMessage,
                 systemImage: "video.slash",
-                theme: theme
+                theme: theme,
+                actionTitle: onOpenVideoEvidence == nil ? nil : L10n.filesEmptyVideoCTA,
+                action: onOpenVideoEvidence
             )
         } else {
             LazyVStack(spacing: 12) {
                 ForEach(sortedVideoSessions) { video in
                     MediaListCard(
-                        fileName: video.fileName,
+                        fileName: EvidenceDisplayNaming.listTitle(from: video.fileName),
                         isNew: video.isNew,
                         subtitle: nil,
                         detailLine: video.startedAt.formatted(date: .abbreviated, time: .shortened),
@@ -473,7 +476,7 @@ struct RecordingListView: View {
             LazyVStack(spacing: 12) {
                 ForEach(sortedAudioSessions) { session in
                     MediaListCard(
-                        fileName: session.fileName,
+                        fileName: EvidenceDisplayNaming.listTitle(from: session.fileName),
                         isNew: session.isNew,
                         subtitle: nil,
                         detailLine: session.recordingStartDate.formatted(date: .abbreviated, time: .shortened),

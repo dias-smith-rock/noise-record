@@ -9,8 +9,13 @@ final class MonitorSettingsStoreTests: XCTestCase {
         super.tearDown()
     }
 
-    func testAutoStartMonitoringDefaultsToTrueWhenUnset() {
+    func testAutoStartMonitoringDefaultsToFalseWhenUnset() {
         UserDefaults.standard.removeObject(forKey: autoStartKey)
+        XCTAssertFalse(MonitorSettingsStore.autoStartMonitoringOnLaunch)
+    }
+
+    func testAutoStartMonitoringCanBeEnabled() {
+        MonitorSettingsStore.autoStartMonitoringOnLaunch = true
         XCTAssertTrue(MonitorSettingsStore.autoStartMonitoringOnLaunch)
     }
 

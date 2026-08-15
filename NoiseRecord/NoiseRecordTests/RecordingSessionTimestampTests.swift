@@ -48,6 +48,21 @@ final class RecordingSessionTimestampTests: XCTestCase {
         XCTAssertEqual(components.second, 12)
     }
 
+    func testParseStartDateFromVideoEvidenceFileName() {
+        let date = RecordingSession.parseStartDate(from: "V_20260701_180612.mp4")
+        XCTAssertNotNil(date)
+
+        let components = Calendar.current.dateComponents([.hour, .minute, .second], from: date!)
+        XCTAssertEqual(components.hour, 18)
+        XCTAssertEqual(components.minute, 6)
+        XCTAssertEqual(components.second, 12)
+    }
+
+    func testParseStartDateFromLegacyEvidencePrefix() {
+        let date = RecordingSession.parseStartDate(from: "evidence_20260701_180612.mp4")
+        XCTAssertNotNil(date)
+    }
+
     func testRecordingStartDatePrefersFileNameForFirstSegment() {
         let parsed = RecordingSession.parseStartDate(from: "S_20260701_180613.m4a")!
         let session = RecordingSession(

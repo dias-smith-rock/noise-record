@@ -1,52 +1,46 @@
 import SwiftUI
 
+/// Compact Monitor → Evidence shortcut (not a hero CTA).
 struct VideoEvidenceEntrySection: View {
     let theme: ModeVisualTheme
     let onOpen: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(L10n.dashboardVideoEvidenceTitle)
-                .font(.headline)
+        Button {
+            AppTelemetry.logProductEvent("dashboard_video_evidence_tap")
+            onOpen()
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "video.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(theme.accent)
 
-            Text(L10n.dashboardVideoEvidenceSubtitle)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            ProCard(theme: theme) {
-                Button {
-                    AppTelemetry.logProductEvent("dashboard_video_evidence_tap")
-                    onOpen()
-                } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: "video.fill")
-                            .font(.body.weight(.semibold))
-                            .foregroundStyle(theme.accent)
-                            .frame(width: 28)
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(L10n.dashboardVideoEvidenceActionTitle)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.primary)
-                            Text(L10n.dashboardVideoEvidenceActionBody)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.leading)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-
-                        Spacer(minLength: 0)
-
-                        Image(systemName: "chevron.right")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.tertiary)
-                    }
-                    .padding(.vertical, 10)
-                    .contentShape(Rectangle())
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L10n.dashboardVideoEvidenceActionTitle)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                    Text(L10n.dashboardVideoEvidenceActionBody)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
-                .buttonStyle(.plain)
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(theme.cardTint)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(theme.surfaceBorder, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel(L10n.dashboardVideoEvidenceActionTitle)
     }
 }

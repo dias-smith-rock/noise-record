@@ -14,8 +14,8 @@ struct ContentView: View {
     @State private var audioStateManager: AudioStateManager
     @State private var sleepCoordinator = SleepNoiseMonitorCoordinator()
     @State private var videoCoordinator = VideoEvidenceCoordinator()
-    @State private var selectedTab: MainTab = .monitor
-    @State private var mountedTabs: Set<MainTab> = [.monitor]
+    @State private var selectedTab: MainTab = .video
+    @State private var mountedTabs: Set<MainTab> = [.video]
     @State private var showAppReviewPrompt = false
     @State private var showMicPermissionIntro = false
     @State private var suppressNextTabSelectionAd = false
@@ -49,10 +49,10 @@ struct ContentView: View {
         let locale = AppLocalization.resolvedLocale(for: appearance.preferredLanguage)
 
         TabView(selection: $selectedTab) {
-            monitorTab
-            voiceTab
             videoTab
+            monitorTab
             filesTab
+            voiceTab
             settingsTab
         }
         .environment(\.locale, locale)
@@ -119,7 +119,7 @@ struct ContentView: View {
         }
         #if DEBUG
         .onAppear {
-            AppDebugSessionState.shared.setTab("monitor", viewID: "tab.monitor")
+            AppDebugSessionState.shared.setTab("video", viewID: "tab.video")
             AppDebugSessionState.shared.returnToRoot = {
                 if sleepCoordinator.showReportSheet {
                     sleepCoordinator.dismissReportSheet()
@@ -131,8 +131,8 @@ struct ContentView: View {
                     PaywallPresenter.shared.resolve(purchased: false)
                 }
                 suppressNextTabSelectionAd = true
-                selectedTab = .monitor
-                AppDebugSessionState.shared.setTab("monitor", viewID: "tab.monitor")
+                selectedTab = .video
+                AppDebugSessionState.shared.setTab("video", viewID: "tab.video")
             }
         }
         .debugAction("tab.monitor") {
@@ -425,7 +425,11 @@ struct ContentView: View {
                     )
                 },
                 isTabActive: selectedTab == .files,
-                pendingOpenRecordingID: $pendingEvidenceRecordingID
+                pendingOpenRecordingID: $pendingEvidenceRecordingID,
+                onOpenVideoEvidence: {
+                    AdSceneLifecycle.recordFirstInteraction(source: "files_empty_video_cta")
+                    selectedTab = .video
+                }
             )
         }
         .tag(MainTab.files)

@@ -1,15 +1,22 @@
 import Foundation
 
-/// 免费层用量追踪（视频每日次数等）。
+/// 免费层用量追踪（视频每日次数、首条加长试用等）。
 final class FreemiumUsageStore: @unchecked Sendable {
     static let shared = FreemiumUsageStore()
 
     static let freeVideoDailyLimit = 1
-    static let freeVideoMaxDuration: TimeInterval = 10
+    /// Lifetime first free clip — long enough to feel like shareable proof.
+    static let freeVideoFirstClipMaxDuration: TimeInterval = 45
+    /// Subsequent free clips.
+    static let freeVideoStandardMaxDuration: TimeInterval = 30
+
+    /// Backward-compatible alias for UI that still reads a single constant.
+    static var freeVideoMaxDuration: TimeInterval { freeVideoStandardMaxDuration }
 
     private let defaults: UserDefaults
     private let dayKey = "freemium.videoUsageDay"
     private let countKey = "freemium.videoUsageCount"
+    private let firstClipBonusUsedKey = "freemium.videoFirstClipBonusUsed"
     private let lock = NSLock()
 
     init(defaults: UserDefaults = .standard) {
@@ -33,6 +40,23 @@ final class FreemiumUsageStore: @unchecked Sendable {
         return max(0, Self.freeVideoDailyLimit - used)
     }
 
+    /// Max seconds the next free save may keep. Premium is unlimited.
+    func allowedVideoSaveDuration(isPremium: Bool) -> TimeInterval {
+        guard !isPremium else { return .greatestFiniteMagnitude }
+        lock.lock()
+        defer { lock.unlock() }
+        if defaults.bool(forKey: firstClipBonusUsedKey) {
+            return Self.freeVideoStandardMaxDuration
+        }
+        return Self.freeVideoFirstClipMaxDuration
+    }
+
+    func hasUsedFirstClipBonus() -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return defaults.bool(forKey: firstClipBonusUsedKey)
+    }
+
     func recordVideoSessionStarted() {
         lock.lock()
         defer { lock.unlock() }
@@ -41,12 +65,21 @@ final class FreemiumUsageStore: @unchecked Sendable {
         defaults.set(next, forKey: countKey)
     }
 
+    /// Call after a free clip is successfully saved (including trimmed saves).
+    func markFirstClipBonusConsumedIfNeeded() {
+        lock.lock()
+        defer { lock.unlock() }
+        guard !defaults.bool(forKey: firstClipBonusUsedKey) else { return }
+        defaults.set(true, forKey: firstClipBonusUsedKey)
+    }
+
     #if DEBUG
     func resetVideoUsageForTesting() {
         lock.lock()
         defer { lock.unlock() }
         defaults.removeObject(forKey: dayKey)
         defaults.removeObject(forKey: countKey)
+        defaults.removeObject(forKey: firstClipBonusUsedKey)
     }
     #endif
 
