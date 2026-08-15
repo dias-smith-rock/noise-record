@@ -4,7 +4,7 @@ import SwiftUI
 struct ContentView: View {
     private enum MainTab: Hashable {
         case monitor
-        case voice
+        case sleep
         case video
         case files
         case settings
@@ -52,7 +52,7 @@ struct ContentView: View {
             videoTab
             monitorTab
             filesTab
-            voiceTab
+            sleepTab
             settingsTab
         }
         .environment(\.locale, locale)
@@ -140,10 +140,10 @@ struct ContentView: View {
             mountedTabs.insert(.monitor)
             selectedTab = .monitor
         }
-        .debugAction("tab.voice") {
+        .debugAction("tab.sleep") {
             suppressNextTabSelectionAd = true
-            mountedTabs.insert(.voice)
-            selectedTab = .voice
+            mountedTabs.insert(.sleep)
+            selectedTab = .sleep
         }
         .debugAction("tab.video") {
             suppressNextTabSelectionAd = true
@@ -187,7 +187,8 @@ struct ContentView: View {
                 )
                 sleepCoordinator.presentReport(sessionID: sessionID, source: "deeplink")
                 suppressNextTabSelectionAd = true
-                selectedTab = .monitor
+                mountedTabs.insert(.sleep)
+                selectedTab = .sleep
                 return
             }
             guard url.host == LiveActivityDeepLink.monitorHost else { return }
@@ -385,13 +386,23 @@ struct ContentView: View {
     }
 
     @ViewBuilder
-    private var voiceTab: some View {
-        tabRoot(for: .voice) {
-            RecorderSettingsView(engine: engine, isTabActive: selectedTab == .voice)
+    private var sleepTab: some View {
+        tabRoot(for: .sleep) {
+            SleepTabView(
+                engine: engine,
+                audioStateManager: audioStateManager,
+                sleepCoordinator: sleepCoordinator,
+                isTabActive: selectedTab == .sleep,
+                onOpenLive: {
+                    suppressNextTabSelectionAd = true
+                    mountedTabs.insert(.monitor)
+                    selectedTab = .monitor
+                }
+            )
         }
-        .tag(MainTab.voice)
+        .tag(MainTab.sleep)
         .tabItem {
-            Label(L10n.tabVoice, systemImage: "record.circle")
+            Label(L10n.tabSleep, systemImage: "moon.stars.fill")
         }
     }
 
@@ -577,7 +588,7 @@ struct ContentView: View {
     private func analyticsTabName(for tab: MainTab) -> String {
         switch tab {
         case .monitor: "monitor"
-        case .voice: "voice"
+        case .sleep: "sleep"
         case .video: "video"
         case .files: "files"
         case .settings: "settings"
@@ -612,8 +623,8 @@ struct ContentView: View {
         guard let action = SleepNotificationRouter.consumePendingAction() else { return }
 
         suppressNextTabSelectionAd = true
-        mountedTabs.insert(.monitor)
-        selectedTab = .monitor
+        mountedTabs.insert(.sleep)
+        selectedTab = .sleep
 
         switch action {
         case .openTodayReport:

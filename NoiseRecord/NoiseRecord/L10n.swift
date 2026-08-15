@@ -52,7 +52,7 @@ nonisolated enum L10n {
     // MARK: - Tabs
 
     static var tabMonitor: String { localized("tab.monitor") }
-    static var tabVoice: String { localized("tab.voice") }
+    static var tabSleep: String { localized("tab.sleep") }
     static var tabVideo: String { localized("tab.video") }
     static var tabFiles: String { localized("tab.files") }
     static var tabSettings: String { localized("tab.settings") }
@@ -293,6 +293,7 @@ nonisolated enum L10n {
     static var settingsAutoStartMonitoringTitle: String { localized("settings.autoStartMonitoring.title") }
     static var settingsAutoStartMonitoringSubtitle: String { localized("settings.autoStartMonitoring.subtitle") }
     static var settingsAutoStartMonitoringFooter: String { localized("settings.autoStartMonitoring.footer") }
+    static var settingsAutoRecordFooter: String { localized("settings.autoRecord.footer") }
     static var settingsLocationAccess: String { localized("settings.locationAccess") }
     static var settingsLocationAccessFooter: String { localized("settings.locationAccess.footer") }
     static var settingsLocationAccessStatusAllowed: String { localized("settings.locationAccess.status.allowed") }
@@ -743,6 +744,7 @@ nonisolated enum L10n {
 
     static var sleepMonitorTitle: String { localized("sleep.monitor.title") }
     static var sleepMonitorSubtitle: String { localized("sleep.monitor.subtitle") }
+    static var sleepTabFooter: String { localized("sleep.tab.footer") }
     static var sleepMonitorPowerHint: String { localized("sleep.monitor.powerHint") }
     static var sleepMonitorModeHint: String { localized("sleep.monitor.modeHint") }
     static var sleepMonitorStart: String { localized("sleep.monitor.start") }

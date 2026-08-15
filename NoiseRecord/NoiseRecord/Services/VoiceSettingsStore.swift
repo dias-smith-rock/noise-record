@@ -1,6 +1,6 @@
 import Foundation
 
-/// Persisted Voice tab settings (thresholds, toggles, AI filter labels).
+/// Persisted auto-record settings (thresholds, toggles, AI filter labels).
 nonisolated enum VoiceSettingsStore {
     private static let highThresholdKey = "settings.highThreshold"
     private static let lowThresholdKey = "settings.lowThreshold"

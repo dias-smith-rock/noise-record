@@ -44,20 +44,7 @@ struct DashboardView: View {
         let _ = appearance.temperatureUnitPreference
 
         VStack(spacing: 0) {
-            ProTabHeader(title: L10n.dashboardTitle, theme: theme) {
-                SleepMonitorHeaderMenu(
-                    isSleepMonitoring: sleepCoordinator.isSleepMonitoring,
-                    isGeneralMonitoringActive: engine.isMonitoring && !sleepCoordinator.isSleepMonitoring,
-                    sleepMonitoringStartedAt: sleepCoordinator.activeSession?.startedAt,
-                    latestCompletedSessionID: latestCompletedSessionID,
-                    measurementMode: measurementMode,
-                    onViewLatestReport: openLatestMorningReport,
-                    onViewHistory: openSleepHistory,
-                    onStartSleepMonitoring: startSleepMonitoringFromHeader,
-                    onStopCurrentMonitoring: handleStopMonitoringFromHeaderMenu
-                )
-                .equatable()
-            }
+            ProTabHeader(title: L10n.dashboardTitle, theme: theme)
 
             ScrollView {
                 if isTabActive {
@@ -366,18 +353,6 @@ struct DashboardView: View {
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
-
-            OvernightMonitoringSection(
-                theme: theme,
-                isSleepMonitoring: sleepCoordinator.isSleepMonitoring,
-                canStartOvernight: !sleepCoordinator.isSleepMonitoring
-                    && !(engine.isMonitoring && !sleepCoordinator.isSleepMonitoring),
-                sleepMonitoringStartedAt: sleepCoordinator.activeSession?.startedAt,
-                hasLatestReport: latestCompletedSessionID != nil,
-                onStart: startSleepMonitoringFromHeader,
-                onOpenReport: openLatestMorningReportFromDashboard,
-                onOpenHistory: openSleepHistoryFromDashboard
-            )
 
             Text(footerNote)
                 .font(.caption2)

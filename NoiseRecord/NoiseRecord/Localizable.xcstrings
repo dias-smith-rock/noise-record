@@ -19133,7 +19133,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enable voice-activated recording on the Auto tab."
+            "value": "Enable voice-activated recording in Settings → Auto record."
           }
         },
         "es": {
@@ -19211,7 +19211,7 @@
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aktiver stemmeaktivert opptak på Voice-fanen."
+            "value": "Enable voice-activated recording in Settings → Auto record."
           }
         },
         "nl": {
@@ -19283,13 +19283,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "在「自动」页开启声控录音。"
+            "value": "在「设置 → 自动录制」中开启声控录音。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "在「自動」頁開啟聲控錄音。"
+            "value": "在「設定 → 自動錄製」中開啟聲控錄音。"
           }
         }
       }
@@ -65134,19 +65134,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Auto-record audio when sound crosses your threshold. For on-site proof, use the Evidence tab to record video."
+            "value": "Auto-record audio when sound crosses your threshold. Configure it here; for on-site proof, use the Evidence tab to record video."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "声音超过阈值时自动录音频。现场取证请用「取证」页录视频。"
+            "value": "声音超过阈值时自动录音频。在此设置；现场取证请用「取证」页录视频。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "聲音超過閾值時自動錄音訊。現場取證請用「取證」頁錄影片。"
+            "value": "聲音超過閾值時自動錄音訊。在此設定；現場取證請用「取證」頁錄影片。"
           }
         }
       }
@@ -107007,6 +107007,633 @@
           "stringUnit": {
             "state": "translated",
             "value": "再錄一條"
+          }
+        }
+      }
+    },
+    "tab.sleep": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "النوم"
+          }
+        },
+        "bg": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сън"
+          }
+        },
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spánek"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Søvn"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schlaf"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ύπνος"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sleep"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sueño"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uni"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sommeil"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "שינה"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "नींद"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "San"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alvás"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tidur"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonno"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "睡眠"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "수면"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tidur"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Søvn"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slaap"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sono"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Somn"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сон"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spánok"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sömn"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "การนอน"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uyku"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сон"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ngủ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "睡眠"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "睡眠"
+          }
+        }
+      }
+    },
+    "sleep.tab.footer": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "bg": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight monitoring builds a morning noise report. Use Live for daytime levels; voice-activated audio is in Settings."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "整夜监测会生成次日晨报。白天读数用「监测」；声控自动录音在「设置」里。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "整夜監測會生成次日晨報。白天讀數用「監測」；聲控自動錄音在「設定」裡。"
+          }
+        }
+      }
+    },
+    "settings.autoRecord.footer": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "bg": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice-activated recording captures audio when sound crosses your threshold. Start Live monitoring to enable it."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "声控录音会在超过阈值时自动抓取音频。需先在「监测」页开始监测后才会生效。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "聲控錄音會在超過閾值時自動抓取音訊。需先在「監測」頁開始監測後才會生效。"
           }
         }
       }

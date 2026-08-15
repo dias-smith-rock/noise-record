@@ -280,6 +280,16 @@ struct SettingsView: View {
 
             ProCard(theme: theme) {
                 VStack(spacing: 0) {
+                    SettingsNavigationRow(title: L10n.recorderTitle) {
+                        RecorderSettingsView(
+                            engine: engine,
+                            isTabActive: isTabActive,
+                            embedsInNavigation: true
+                        )
+                    }
+
+                    SettingsDivider(theme: theme)
+
                     ProToggleRow(
                         title: L10n.settingsAutoStartMonitoringTitle,
                         subtitle: L10n.settingsAutoStartMonitoringSubtitle,
@@ -355,6 +365,7 @@ struct SettingsView: View {
 
     private var monitoringSectionFooterTexts: [String] {
         var texts = [
+            L10n.settingsAutoRecordFooter,
             L10n.settingsAutoStartMonitoringFooter,
             L10n.settingsLocationAccessFooter
         ]

@@ -3,6 +3,8 @@ import SwiftUI
 struct RecorderSettingsView: View {
     @Bindable var engine: NoiseMonitorEngine
     let isTabActive: Bool
+    /// When embedded under Settings navigation, hide the tab chrome header.
+    var embedsInNavigation: Bool = false
     @Environment(\.appLanguageRevision) private var appLanguageRevision
     @State private var showAiClassificationError = false
     @State private var cachedCurrentDB: Float = 0
@@ -23,7 +25,9 @@ struct RecorderSettingsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ProTabHeader(title: L10n.recorderTitle, theme: theme)
+            if !embedsInNavigation {
+                ProTabHeader(title: L10n.recorderTitle, theme: theme)
+            }
 
             ScrollView {
                 VStack(spacing: 20) {
@@ -70,7 +74,7 @@ struct RecorderSettingsView: View {
                         subtitle: L10n.recorderBackgroundSubtitle,
                         isOn: $engine.backgroundMonitoringEnabled,
                         theme: theme,
-                        icon: "moon.fill"
+                        icon: "iphone.and.arrow.forward"
                     )
                     .onChange(of: engine.backgroundMonitoringEnabled) { _, _ in
                         engine.persistSettings()
@@ -89,9 +93,12 @@ struct RecorderSettingsView: View {
             }
         }
         .observesAppLanguage()
-        .debugView("tab.voice")
-        .proTabBackground(theme: theme)
-        .proTabNavigationChrome()
+        .debugView(embedsInNavigation ? "settings.auto_record" : "tab.sleep")
+        .modifier(RecorderSettingsChromeModifier(
+            embedsInNavigation: embedsInNavigation,
+            title: L10n.recorderTitle,
+            theme: theme
+        ))
         .onAppear { refreshCachedMetrics() }
         .onChange(of: isTabActive) { _, active in
             if active { refreshCachedMetrics() }
@@ -368,5 +375,24 @@ private struct FlowLayout: Layout {
         }
 
         return (CGSize(width: maxWidth, height: y + rowHeight), frames)
+    }
+}
+
+private struct RecorderSettingsChromeModifier: ViewModifier {
+    let embedsInNavigation: Bool
+    let title: String
+    let theme: ModeVisualTheme
+
+    func body(content: Content) -> some View {
+        if embedsInNavigation {
+            content
+                .navigationTitle(title)
+                .navigationBarTitleDisplayMode(.inline)
+                .proTabBackground(theme: theme)
+        } else {
+            content
+                .proTabBackground(theme: theme)
+                .proTabNavigationChrome()
+        }
     }
 }
