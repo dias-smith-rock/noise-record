@@ -183,9 +183,18 @@ nonisolated enum L10n {
     static var videoGpsLocated: String { localized("video.gps.located") }
     static var videoGpsPending: String { localized("video.gps.pending") }
     static var videoAutoMonitoringHint: String { localized("video.hint.autoMonitoring") }
+    static var videoIdleTapToMeasure: String { localized("video.idle.tapToMeasure") }
+    static var videoIdleDbPlaceholder: String { localized("video.idle.dbPlaceholder") }
+    static var videoCameraPermissionTitle: String { localized("video.cameraPermission.title") }
+    static var videoCameraPermissionBody: String { localized("video.cameraPermission.body") }
+    static var videoCameraPermissionEnable: String { localized("video.cameraPermission.enable") }
     static var videoStartRecording: String { localized("video.button.startRecording") }
     static var videoSwitchCamera: String { localized("video.button.switchCamera") }
     static var videoStopAndSave: String { localized("video.button.stopAndSave") }
+    static var videoLeaveRecordingTitle: String { localized("video.leaveRecording.title") }
+    static var videoLeaveRecordingMessage: String { localized("video.leaveRecording.message") }
+    static var videoLeaveRecordingStay: String { localized("video.leaveRecording.stay") }
+    static var videoLeaveRecordingStopAndLeave: String { localized("video.leaveRecording.stopAndLeave") }
     static var videoWatermarkTitle: String { localized("video.tips.watermarkTitle") }
     static var videoWatermarkBody: String { localized("video.tips.watermarkBody") }
     static var videoMonitoringStartFailed: String { localized("video.error.monitoringStartFailed") }
@@ -437,17 +446,6 @@ nonisolated enum L10n {
     static var micPermissionIntroPointSleep: String { localized("permission.microphone.intro.point.sleep") }
     static var micPermissionIntroContinue: String { localized("permission.microphone.intro.continue") }
 
-    // MARK: - App onboarding
-
-    static var appOnboardingStepMeasureTitle: String { localized("onboarding.app.step.measure.title") }
-    static var appOnboardingStepMeasureBody: String { localized("onboarding.app.step.measure.body") }
-    static var appOnboardingStepSleepTitle: String { localized("onboarding.app.step.sleep.title") }
-    static var appOnboardingStepSleepBody: String { localized("onboarding.app.step.sleep.body") }
-    static var appOnboardingStepExportTitle: String { localized("onboarding.app.step.export.title") }
-    static var appOnboardingStepExportBody: String { localized("onboarding.app.step.export.body") }
-    static var appTaskOnboardingTitle: String { localized("onboarding.app.task.title") }
-    static var appTaskOnboardingMeasureBody: String { localized("onboarding.app.task.measure.body") }
-    static var appTaskOnboardingFilesBody: String { localized("onboarding.app.task.files.body") }
     static var monitorSessionSummaryPreviousMax: String { localized("monitor.sessionSummary.previousMax") }
     static var filesEmptyAudioMonitoringMessage: String { localized("files.empty.audio.monitoring.message") }
     static var filesEmptyVideoMonitoringMessage: String { localized("files.empty.video.monitoring.message") }

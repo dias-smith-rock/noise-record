@@ -92,6 +92,22 @@ enum PaywallContext: String, Sendable {
     case videoDurationLimit
     case sleepHistory
     case sleepExport
+
+    /// Stable feature tag for purchase funnel attribution (pairs with `context`).
+    var defaultTriggerFeature: String {
+        switch self {
+        case .launch: "launch"
+        case .settings: "settings"
+        case .videoEvidence: "video_evidence"
+        case .aiFilter: "ai_filter"
+        case .advancedFFT: "advanced_fft"
+        case .voiceDurationLimit: "voice_duration"
+        case .videoDailyLimit: "video_daily"
+        case .videoDurationLimit: "video_duration"
+        case .sleepHistory: "sleep_history"
+        case .sleepExport: "sleep_export"
+        }
+    }
 }
 
 enum SubscriptionPurchaseResult: Sendable, Equatable {

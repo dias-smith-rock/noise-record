@@ -22,23 +22,25 @@ struct PaywallView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 22) {
+                VStack(alignment: .leading, spacing: 14) {
                     heroSection
                     if subscriptions.isEarlySupporter {
                         earlySupporterBanner
                     }
                     if let subtitle = contextSubtitle {
                         Text(subtitle)
-                            .font(.subheadline)
+                            .font(.footnote)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.leading)
                     }
-                    benefitsSection
+                    // Pricing first so amounts stay above the sticky footer without scrolling.
                     tierCardsSection
+                    benefitsSection
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 8)
             }
+            .scrollBounceBehavior(.basedOnSize)
             .scrollClipDisabled()
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 stickyContinueFooter
@@ -60,7 +62,10 @@ struct PaywallView: View {
                     Button(L10n.close) {
                         AppTelemetry.logProductEvent(
                             "paywall_close_tap",
-                            parameters: ["context": context.rawValue]
+                            parameters: [
+                                "context": context.rawValue,
+                                "trigger_feature": paywallPresenter.triggerFeature,
+                            ]
                         )
                         closePaywall(purchased: false)
                     }
@@ -70,7 +75,10 @@ struct PaywallView: View {
                     Button(L10n.settingsRemoveAdsRestore) {
                         AppTelemetry.logProductEvent(
                             "paywall_restore_tap",
-                            parameters: ["context": context.rawValue]
+                            parameters: [
+                                "context": context.rawValue,
+                                "trigger_feature": paywallPresenter.triggerFeature,
+                            ]
                         )
                         Task { await restorePurchases() }
                     }
@@ -115,9 +123,9 @@ struct PaywallView: View {
     }
 
     private var heroSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(L10n.paywallTitle)
-                .font(.system(size: 30, weight: .bold, design: .rounded))
+                .font(.system(size: 26, weight: .bold, design: .rounded))
                 .foregroundStyle(
                     LinearGradient(
                         colors: [.white, accent, .yellow.opacity(0.9)],
@@ -126,23 +134,23 @@ struct PaywallView: View {
                     )
                 )
             Text(L10n.paywallHeadline)
-                .font(.subheadline)
+                .font(.footnote)
                 .foregroundStyle(.white.opacity(0.78))
         }
-        .padding(.top, 8)
+        .padding(.top, 4)
     }
 
     private var earlySupporterBanner: some View {
         Text(L10n.paywallEarlySupporterMessage)
-            .font(.subheadline.weight(.semibold))
+            .font(.footnote.weight(.semibold))
             .foregroundStyle(.white)
-            .padding(14)
+            .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 14)
+                RoundedRectangle(cornerRadius: 12)
                     .fill(accent.opacity(0.22))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 14)
+                        RoundedRectangle(cornerRadius: 12)
                             .strokeBorder(accent.opacity(0.55), lineWidth: 1)
                     )
             )
@@ -163,50 +171,41 @@ struct PaywallView: View {
     }
 
     private var benefitsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             benefitRow(L10n.paywallBenefitVoiceUnlimited, icon: "mic.badge.plus")
             benefitRow(L10n.paywallBenefitVideo, icon: "video.badge.checkmark")
             benefitRow(L10n.paywallBenefitSleepReport, icon: "moon.stars.fill")
             benefitRow(L10n.paywallBenefitAI, icon: "waveform.badge.magnifyingglass")
             benefitRow(L10n.paywallBenefitNoAds, icon: "sparkles")
         }
-        .padding(16)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
         .background(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 14)
                 .fill(Color.white.opacity(0.06))
         )
     }
 
     private func benefitRow(_ text: String, icon: String) -> some View {
-        HStack(spacing: 12) {
+        HStack(alignment: .top, spacing: 10) {
             Image(systemName: icon)
-                .font(.body.weight(.semibold))
+                .font(.footnote.weight(.semibold))
                 .foregroundStyle(accent)
-                .frame(width: 24)
+                .frame(width: 20)
             Text(text)
-                .font(.subheadline)
+                .font(.footnote)
                 .foregroundStyle(.white.opacity(0.92))
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
     private var tierCardsSection: some View {
-        GeometryReader { proxy in
-            let spacing: CGFloat = 6
-            let bleed: CGFloat = 6
-            let availableWidth = max(0, proxy.size.width - bleed * 2)
-            let cardWidth = (availableWidth - spacing * 2) / 3
-
-            HStack(alignment: .top, spacing: spacing) {
-                ForEach(SubscriptionTier.allCases) { tier in
-                    tierCard(tier)
-                        .frame(width: cardWidth)
-                }
+        HStack(alignment: .top, spacing: 8) {
+            ForEach(SubscriptionTier.allCases) { tier in
+                tierCard(tier)
+                    .frame(maxWidth: .infinity)
             }
-            .padding(.horizontal, bleed)
-            .padding(.vertical, 8)
-            .frame(width: proxy.size.width, alignment: .center)
         }
-        .frame(height: 136)
     }
 
     private func tierCard(_ tier: SubscriptionTier) -> some View {
@@ -216,7 +215,7 @@ struct PaywallView: View {
         return Button {
             selectedTier = tier
         } label: {
-            VStack(spacing: 5) {
+            VStack(spacing: 6) {
                 if isYearly {
                     Text(L10n.paywallBestValue)
                         .font(.system(size: 9, weight: .bold))
@@ -237,27 +236,24 @@ struct PaywallView: View {
                     .foregroundStyle(isYearly ? accent : .white)
                     .monospacedDigit()
                     .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.75)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 Group {
                     if let secondary = subscriptions.secondaryDisplayText(for: tier) {
                         Text(secondary)
-                            .font(.system(size: 9))
+                            .font(.caption2)
                             .foregroundStyle(.white.opacity(0.65))
                             .multilineTextAlignment(.center)
-                            .lineLimit(2)
-                            .minimumScaleFactor(0.75)
+                            .fixedSize(horizontal: false, vertical: true)
                     } else {
                         Text(" ")
-                            .font(.system(size: 9))
+                            .font(.caption2)
                     }
                 }
-                .frame(minHeight: 24)
             }
-            .frame(maxWidth: .infinity, minHeight: 118)
-            .padding(.horizontal, 4)
-            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 12)
             .background(
                 RoundedRectangle(cornerRadius: 14)
                     .fill(isYearly ? accent.opacity(0.12) : Color.white.opacity(0.05))
@@ -303,11 +299,11 @@ struct PaywallView: View {
                 startPoint: .top,
                 endPoint: .bottom
             )
-            .frame(height: 16)
+            .frame(height: 12)
             .allowsHitTesting(false)
 
-            VStack(spacing: 10) {
-                VStack(spacing: 6) {
+            VStack(spacing: 8) {
+                VStack(spacing: 4) {
                     if subscriptions.shouldPresentFreeTrial(for: selectedTier) {
                         Text(L10n.paywallTrialDisclaimer(days: subscriptions.introductoryTrialDays(for: selectedTier)))
                             .font(.caption2)
@@ -325,6 +321,7 @@ struct PaywallView: View {
                         "paywall_purchase_tap",
                         parameters: [
                             "context": context.rawValue,
+                            "trigger_feature": paywallPresenter.triggerFeature,
                             "tier": selectedTier.rawValue,
                         ]
                     )
@@ -341,7 +338,7 @@ struct PaywallView: View {
                         }
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
+                    .padding(.vertical, 13)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(accent)
@@ -354,8 +351,8 @@ struct PaywallView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 20)
             }
-            .padding(.top, 8)
-            .padding(.bottom, 10)
+            .padding(.top, 4)
+            .padding(.bottom, 8)
             .background(Color.black)
         }
     }

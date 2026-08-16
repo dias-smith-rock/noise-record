@@ -5,8 +5,6 @@ extension Notification.Name {
     static let launchRemoveAdsPromoShouldPresent = Notification.Name("launchRemoveAdsPromoShouldPresent")
     /// 冷启动 Paywall 关闭后（或无需 Paywall 时）请求自动开启监测。
     static let launchAutoStartMonitoring = Notification.Name("launchAutoStartMonitoring")
-    /// 新手任务：首次监测满 10 秒，应自动保存监测报告到 Files。
-    static let onboardingMeasureReportDue = Notification.Name("onboardingMeasureReportDue")
     /// 全屏广告（开屏 / 插屏）关闭或展示失败后，用于恢复监测音频管道。
     static let fullscreenAdDidDismiss = Notification.Name("fullscreenAdDidDismiss")
 }

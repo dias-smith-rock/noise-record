@@ -14,11 +14,14 @@ struct ContentView: View {
     @State private var audioStateManager: AudioStateManager
     @State private var sleepCoordinator = SleepNoiseMonitorCoordinator()
     @State private var videoCoordinator = VideoEvidenceCoordinator()
-    @State private var selectedTab: MainTab = .video
-    @State private var mountedTabs: Set<MainTab> = [.video]
+    @State private var selectedTab: MainTab = Self.defaultTab
+    @State private var mountedTabs: Set<MainTab> = [Self.defaultTab]
     @State private var showAppReviewPrompt = false
     @State private var showMicPermissionIntro = false
+    @State private var micIntroResume: ((Bool) -> Void)?
     @State private var suppressNextTabSelectionAd = false
+    @State private var pendingTabWhileVideoRecording: MainTab?
+    @State private var isResolvingVideoLeave = false
     @State private var pendingEvidenceRecordingID: UUID?
     @Query(filter: #Predicate<RecordingSession> { $0.isNew == true })
     private var unreadAudioSessions: [RecordingSession]
@@ -28,6 +31,11 @@ struct ContentView: View {
     @Bindable private var paywallPresenter = PaywallPresenter.shared
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
+
+    /// Prefer Video when camera is already authorized; otherwise open Live.
+    private static var defaultTab: MainTab {
+        MediaPermissions.isCameraAuthorized ? .video : .monitor
+    }
 
     private var hasUnreadFiles: Bool {
         !unreadAudioSessions.isEmpty || !unreadVideoSessions.isEmpty
@@ -48,7 +56,7 @@ struct ContentView: View {
         let _ = appearance.accentRefreshID
         let locale = AppLocalization.resolvedLocale(for: appearance.preferredLanguage)
 
-        TabView(selection: $selectedTab) {
+        TabView(selection: tabSelection) {
             videoTab
             monitorTab
             filesTab
@@ -58,6 +66,37 @@ struct ContentView: View {
         .environment(\.locale, locale)
         .environment(\.appLanguageRevision, appearance.languageRefreshID)
         .preferredColorScheme(appearance.colorSchemePreference.colorScheme)
+        .alert(
+            L10n.videoLeaveRecordingTitle,
+            isPresented: Binding(
+                get: { pendingTabWhileVideoRecording != nil },
+                set: { if !$0, !isResolvingVideoLeave { pendingTabWhileVideoRecording = nil } }
+            )
+        ) {
+            Button(L10n.videoLeaveRecordingStay, role: .cancel) {
+                pendingTabWhileVideoRecording = nil
+            }
+            Button(L10n.videoLeaveRecordingStopAndLeave, role: .destructive) {
+                guard let target = pendingTabWhileVideoRecording else { return }
+                isResolvingVideoLeave = true
+                pendingTabWhileVideoRecording = nil
+                Task { @MainActor in
+                    defer { isResolvingVideoLeave = false }
+                    if let stopAndSave = videoCoordinator.performStopAndSave {
+                        await stopAndSave()
+                    } else if videoCoordinator.isRecording {
+                        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                            videoCoordinator.stopRecording { _ in
+                                continuation.resume()
+                            }
+                        }
+                    }
+                    selectedTab = target
+                }
+            }
+        } message: {
+            Text(L10n.videoLeaveRecordingMessage)
+        }
         .onAppear {
             LaunchPerformance.mark(.launchContentViewAppear)
             LaunchPerformance.mark(.launchFirstInteractive)
@@ -83,6 +122,7 @@ struct ContentView: View {
             TabBarAppearanceUpdater.applyTabTitles()
             Task { await SleepNotificationScheduler.scheduleDailyReminders() }
             handlePendingSleepNotificationAction()
+            Task { await runFirstLaunchPermissionLadderIfNeeded() }
         }
         .onReceive(
             NotificationCenter.default.publisher(
@@ -111,7 +151,6 @@ struct ContentView: View {
             mountedTabs.insert(tab)
             if tab == .files {
                 syncAppReviewFilesCount()
-                AppOnboardingStore.noteFilesTabVisited()
             }
             #if DEBUG
             AppDebugSessionState.shared.setTab(analyticsTabName(for: tab), viewID: "tab.\(analyticsTabName(for: tab))")
@@ -279,10 +318,6 @@ struct ContentView: View {
                 await handleLaunchAutoStartMonitoring()
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: .onboardingMeasureReportDue)) { _ in
-            engine.exportOnboardingMonitoringSnapshot()
-            syncAppReviewFilesCount()
-        }
         .sheet(isPresented: $showMicPermissionIntro) {
             MicPermissionIntroSheet(
                 theme: ModeVisualTheme.theme(
@@ -291,11 +326,20 @@ struct ContentView: View {
                 onContinue: {
                     MicPermissionIntroStore.markSeen()
                     showMicPermissionIntro = false
-                    Task { await performLaunchAutoStartMonitoring() }
+                    if let resume = micIntroResume {
+                        micIntroResume = nil
+                        resume(true)
+                    } else {
+                        Task { await performLaunchAutoStartMonitoring() }
+                    }
                 },
                 onDismiss: {
                     MicPermissionIntroStore.markSeen()
                     showMicPermissionIntro = false
+                    if let resume = micIntroResume {
+                        micIntroResume = nil
+                        resume(false)
+                    }
                 }
             )
         }
@@ -511,7 +555,10 @@ struct ContentView: View {
                 "freemium_limit_hit",
                 parameters: ["limit_type": "voice_duration"]
             )
-            PaywallPresenter.shared.present(context: .voiceDurationLimit) { purchased in
+            PaywallPresenter.shared.present(
+                context: .voiceDurationLimit,
+                triggerFeature: "voice_session_save"
+            ) { purchased in
                 if purchased {
                     engine.commitDeferredSessionRecording()
                     syncAppReviewFilesCount()
@@ -585,6 +632,22 @@ struct ContentView: View {
             || sleepCoordinator.showReportSheet
     }
 
+    private var tabSelection: Binding<MainTab> {
+        Binding(
+            get: { selectedTab },
+            set: { newTab in
+                guard selectedTab == .video,
+                      newTab != .video,
+                      videoCoordinator.isRecording,
+                      !isResolvingVideoLeave else {
+                    selectedTab = newTab
+                    return
+                }
+                pendingTabWhileVideoRecording = newTab
+            }
+        )
+    }
+
     private func analyticsTabName(for tab: MainTab) -> String {
         switch tab {
         case .monitor: "monitor"
@@ -598,6 +661,8 @@ struct ContentView: View {
     private func handleLaunchAutoStartMonitoring() async {
         guard MonitorSettingsStore.autoStartMonitoringOnLaunch else { return }
         guard audioStateManager.appAudioState != .playing else { return }
+        // First-launch ladder owns the initial mic prompt.
+        guard FirstLaunchPermissionStore.hasCompletedLadder else { return }
 
         if shouldPresentMicPermissionIntro {
             showMicPermissionIntro = true
@@ -608,7 +673,7 @@ struct ContentView: View {
     }
 
     private var shouldPresentMicPermissionIntro: Bool {
-        AudioSessionManager.isMicrophonePermissionUndetermined
+        MediaPermissions.isMicrophoneUndetermined
             && !MicPermissionIntroStore.hasSeenIntro
     }
 
@@ -616,6 +681,41 @@ struct ContentView: View {
         await audioStateManager.manuallyResumeMonitoring()
         if engine.isMonitoring {
             AppTelemetry.logProductEvent("monitoring_auto_start_launch")
+        }
+    }
+
+    private func runFirstLaunchPermissionLadderIfNeeded() async {
+        guard FirstLaunchPermissionStore.shouldRunLadder else { return }
+
+        let outcome = await FirstLaunchPermissionCoordinator.run(
+            shouldShowMicIntro: shouldPresentMicPermissionIntro,
+            presentMicIntro: { await presentMicIntroForPermissionLadder() }
+        )
+        applyFirstLaunchPermissionOutcome(outcome)
+    }
+
+    private func presentMicIntroForPermissionLadder() async -> Bool {
+        await withCheckedContinuation { continuation in
+            micIntroResume = { didContinue in
+                continuation.resume(returning: didContinue)
+            }
+            showMicPermissionIntro = true
+        }
+    }
+
+    private func applyFirstLaunchPermissionOutcome(_ outcome: FirstLaunchPermissionOutcome) {
+        suppressNextTabSelectionAd = true
+        switch outcome {
+        case .goToLiveWithoutMonitoring:
+            mountedTabs.insert(.monitor)
+            selectedTab = .monitor
+        case .goToLiveAndStartMonitoring:
+            mountedTabs.insert(.monitor)
+            selectedTab = .monitor
+            Task { await audioStateManager.manuallyResumeMonitoring() }
+        case .stayOnVideo:
+            mountedTabs.insert(.video)
+            selectedTab = .video
         }
     }
 

@@ -2,15 +2,18 @@ import UIKit
 
 enum SharePresenter {
     @MainActor
-    static func present(items: [Any], onComplete: (() -> Void)? = nil) {
+    static func present(
+        items: [Any],
+        onComplete: ((_ didShare: Bool, _ activityType: String?) -> Void)? = nil
+    ) {
         guard let presenter = topViewController() else { return }
 
         let activity = UIActivityViewController(
             activityItems: items,
             applicationActivities: nil
         )
-        activity.completionWithItemsHandler = { _, _, _, _ in
-            onComplete?()
+        activity.completionWithItemsHandler = { activityType, completed, _, _ in
+            onComplete?(completed, activityType?.rawValue)
         }
 
         if let popover = activity.popoverPresentationController {

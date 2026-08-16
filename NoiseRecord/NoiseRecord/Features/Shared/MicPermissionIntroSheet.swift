@@ -7,45 +7,57 @@ struct MicPermissionIntroSheet: View {
 
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: 20) {
-                Image(systemName: "waveform.circle.fill")
-                    .font(.system(size: 52))
-                    .foregroundStyle(theme.accent)
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        Image(systemName: "waveform.circle.fill")
+                            .font(.system(size: 52))
+                            .foregroundStyle(theme.accent)
 
-                Text(L10n.micPermissionIntroTitle)
-                    .font(.title3.bold())
+                        Text(L10n.micPermissionIntroTitle)
+                            .font(.title3.bold())
+                            .fixedSize(horizontal: false, vertical: true)
 
-                Text(L10n.micPermissionIntroBody)
-                    .font(.body)
-                    .foregroundStyle(.secondary)
+                        Text(L10n.micPermissionIntroBody)
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
 
-                VStack(alignment: .leading, spacing: 10) {
-                    introRow(systemImage: "ear.and.waveform", text: L10n.micPermissionIntroPointMeasure)
-                    introRow(systemImage: "lock.shield", text: L10n.micPermissionIntroPointLocal)
-                    introRow(systemImage: "moon.zzz.fill", text: L10n.micPermissionIntroPointSleep)
+                        VStack(alignment: .leading, spacing: 12) {
+                            introRow(systemImage: "ear.and.waveform", text: L10n.micPermissionIntroPointMeasure)
+                            introRow(systemImage: "lock.shield", text: L10n.micPermissionIntroPointLocal)
+                            introRow(systemImage: "moon.zzz.fill", text: L10n.micPermissionIntroPointSleep)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(24)
                 }
 
-                Spacer(minLength: 0)
+                VStack(spacing: 8) {
+                    Button(action: onContinue) {
+                        Text(L10n.micPermissionIntroContinue)
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(theme.accent)
 
-                Button(action: onContinue) {
-                    Text(L10n.micPermissionIntroContinue)
-                        .font(.headline)
+                    Button(L10n.close, action: onDismiss)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
+                        .padding(.vertical, 4)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(theme.accent)
-
-                Button(L10n.close, action: onDismiss)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 4)
+                .padding(.horizontal, 24)
+                .padding(.top, 8)
+                .padding(.bottom, 16)
+                .background(.bar)
             }
-            .padding(24)
             .navigationBarTitleDisplayMode(.inline)
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
     }
 
     private func introRow(systemImage: String, text: String) -> some View {
@@ -53,10 +65,13 @@ struct MicPermissionIntroSheet: View {
             Image(systemName: systemImage)
                 .font(.body.weight(.semibold))
                 .foregroundStyle(theme.accent)
-                .frame(width: 22)
+                .frame(width: 22, alignment: .center)
             Text(text)
                 .font(.subheadline)
                 .foregroundStyle(.primary)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }

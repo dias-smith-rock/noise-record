@@ -48,15 +48,6 @@ enum MonitoringFunnelTracker {
     static func observeReading(currentDB: Float, isMonitoring: Bool) {
         guard isMonitoring else { return }
 
-        if let startedAt = monitoringStartedAt {
-            if AppOnboardingStore.noteMonitoringElapsed(
-                Date().timeIntervalSince(startedAt),
-                isMonitoring: true
-            ) {
-                NotificationCenter.default.post(name: .onboardingMeasureReportDue, object: nil)
-            }
-        }
-
         if !hasLoggedFirstDBReading, currentDB >= minimumMeaningfulDB {
             hasLoggedFirstDBReading = true
             let elapsedMs = Int(Date().timeIntervalSince(processLaunchTime) * 1000)

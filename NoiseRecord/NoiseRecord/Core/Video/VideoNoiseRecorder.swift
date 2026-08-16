@@ -149,6 +149,8 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
                 self.isSessionRunning = true
                 VideoTabPerformance.mark(.captureSessionRunning)
             }
+            // Session start can reset device zoom; re-assert Camera-app 1× for a stable UI.
+            _ = self.applyDisplayZoomLocked(1.0)
             let position = self.currentCameraPosition
             if let completion {
                 DispatchQueue.main.async {
@@ -286,16 +288,24 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
     }
 
     private func refreshZoomGeometryLocked(for device: AVCaptureDevice) {
+        let minDevice = device.minAvailableVideoZoomFactor
+        let maxDevice = device.maxAvailableVideoZoomFactor
+        var divisor: CGFloat = 1.0
         if #available(iOS 18.0, *), device.displayVideoZoomFactorMultiplier > 0 {
-            zoomDisplayDivisor = 1.0 / device.displayVideoZoomFactorMultiplier
-            return
-        }
-        if let first = device.virtualDeviceSwitchOverVideoZoomFactors.first {
+            divisor = 1.0 / device.displayVideoZoomFactorMultiplier
+        } else if let first = device.virtualDeviceSwitchOverVideoZoomFactors.first {
             let value = CGFloat(truncating: first)
-            zoomDisplayDivisor = value > 0 ? value : 1.0
-        } else {
-            zoomDisplayDivisor = 1.0
+            divisor = value > 0 ? value : 1.0
         }
+        // Keep display 1× reachable. Simulator / some virtual devices report a switch-over
+        // above maxAvailableVideoZoomFactor, which otherwise publishes a misleading ~0.8×.
+        if divisor > maxDevice, maxDevice > 0 {
+            divisor = maxDevice
+        }
+        if divisor < minDevice, minDevice > 0 {
+            divisor = minDevice
+        }
+        zoomDisplayDivisor = divisor > 0 ? divisor : 1.0
     }
 
     private func displayZoom(fromDevice deviceZoom: CGFloat) -> CGFloat {

@@ -402,15 +402,20 @@ final class SubscriptionManager {
                 AppTelemetry.logIAPLifecycle(
                     step: "purchase_verified",
                     metadata: [
-                        "transaction_id": String(transaction.id),
                         "product_id": transaction.productID,
+                        "context": PaywallPresenter.shared.context.rawValue,
+                        "trigger_feature": PaywallPresenter.shared.triggerFeature,
                     ]
                 )
                 if let tier {
                     AppTelemetry.logCommercialEvent(
                         domain: "sub",
                         outcome: "purchase_success",
-                        metadata: ["tier": tier.rawValue]
+                        metadata: [
+                            "tier": tier.rawValue,
+                            "context": PaywallPresenter.shared.context.rawValue,
+                            "trigger_feature": PaywallPresenter.shared.triggerFeature,
+                        ]
                     )
                 }
                 grantEntitlement(from: transaction)

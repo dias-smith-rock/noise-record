@@ -7,6 +7,7 @@ struct NoiseLevelGauge: View {
     var temperatureText: String = "--"
     var hidesFullscreenButton: Bool = false
     var onFullscreenTap: (() -> Void)?
+    var onEnvironmentTap: (() -> Void)?
 
     private var theme: ModeVisualTheme { .theme(for: mode) }
 
@@ -45,7 +46,7 @@ struct NoiseLevelGauge: View {
             }
 
             HStack(spacing: 18) {
-                EnvironmentInlineMetric(
+                environmentMetricButton(
                     symbol: "drop.fill",
                     text: humidityText,
                     tint: Color(red: 0.35, green: 0.68, blue: 0.92)
@@ -58,7 +59,7 @@ struct NoiseLevelGauge: View {
                     .shadow(color: zoneAccentColor.opacity(0.30), radius: 5)
                     .animation(.easeOut(duration: 0.18), value: ambientNoiseDescription)
 
-                EnvironmentInlineMetric(
+                environmentMetricButton(
                     symbol: "thermometer.medium",
                     text: temperatureText,
                     tint: Color(red: 0.95, green: 0.55, blue: 0.28)
@@ -73,6 +74,17 @@ struct NoiseLevelGauge: View {
                     .multilineTextAlignment(.center)
             }
         }
+    }
+
+    private func environmentMetricButton(symbol: String, text: String, tint: Color) -> some View {
+        Button {
+            onEnvironmentTap?()
+        } label: {
+            EnvironmentInlineMetric(symbol: symbol, text: text, tint: tint)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint(L10n.settingsLocationAccess)
     }
 
     private func fullscreenButton(action: @escaping () -> Void) -> some View {

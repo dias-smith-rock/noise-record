@@ -19,7 +19,6 @@ struct DashboardView: View {
     @State private var csvExportErrorMessage: String?
     @State private var measurementPersistTick = 0
     @State private var isFullScreenPresented = false
-    @State private var showsAppOnboarding = false
     @State private var showSessionEndSheet = false
     @State private var sessionEndMonitoringSummary: MonitorSessionSummary?
     @State private var sessionEndPreviousSession: StoredMonitorSessionSnapshot?
@@ -28,7 +27,6 @@ struct DashboardView: View {
     @State private var environment = AmbientEnvironmentProvider()
     @State private var showLocationWeatherPermissionDenied = false
     @State private var showLocationAccessGuide = false
-    @State private var hasScheduledLocationPermissionPrompt = false
     @State private var waveformReferenceLimitDB = NoiseReferenceLimits.residentialNightDB
     @State private var latestCompletedSessionID: UUID?
 
@@ -57,25 +55,15 @@ struct DashboardView: View {
         .onAppear {
             LaunchPerformance.mark(.launchFirstInteractive)
             environment.startUpdating()
-            refreshAppOnboardingVisibility()
             waveformReferenceLimitDB = NoiseReferenceLimits.residentialNightDB
             refreshLatestSleepSession()
-            scheduleLocationPermissionPromptIfNeeded()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .launchAutoStartMonitoring)) { _ in
-            scheduleLocationPermissionPromptIfNeeded()
         }
         .onReceive(NotificationCenter.default.publisher(for: NoiseReferenceLimits.didChangeNotification)) { _ in
             waveformReferenceLimitDB = NoiseReferenceLimits.residentialNightDB
         }
         .onChange(of: isTabActive) { _, isActive in
-            refreshAppOnboardingVisibility()
             if isActive {
                 refreshLatestSleepSession()
-                Task { @MainActor in
-                    await waitForLaunchPresentationToFinish()
-                    presentLocationPermissionPromptIfNeeded()
-                }
             }
         }
         .onChange(of: sleepCoordinator.showReportSheet) { _, isPresented in
@@ -260,12 +248,6 @@ struct DashboardView: View {
 
     private var dashboardContent: some View {
         VStack(spacing: 20) {
-            if showsAppOnboarding {
-                AppTaskOnboardingBanner(theme: theme) {
-                    dismissAppOnboarding(method: "skip_banner")
-                }
-            }
-
             VStack(alignment: .leading, spacing: 8) {
                 Text(L10n.dashboardSpectrum)
                     .font(.headline)
@@ -284,11 +266,12 @@ struct DashboardView: View {
                 mode: measurementMode,
                 humidityText: environment.humidityDisplay,
                 temperatureText: environment.temperatureDisplay,
-                hidesFullscreenButton: showsAppOnboarding,
+                hidesFullscreenButton: false,
                 onFullscreenTap: {
                     HotStartAdManager.shared.loadAd()
                     isFullScreenPresented = true
-                }
+                },
+                onEnvironmentTap: requestEnvironmentLocationAccess
             )
 
             VideoEvidenceEntrySection(theme: theme) {
@@ -469,7 +452,10 @@ struct DashboardView: View {
                 "freemium_limit_hit",
                 parameters: ["limit_type": "voice_duration"]
             )
-            PaywallPresenter.shared.present(context: .voiceDurationLimit) { purchased in
+            PaywallPresenter.shared.present(
+                context: .voiceDurationLimit,
+                triggerFeature: "voice_session_save"
+            ) { purchased in
                 if purchased {
                     completeSessionEndSave()
                 } else {
@@ -557,64 +543,17 @@ struct DashboardView: View {
         )
     }
 
-    private func scheduleLocationPermissionPromptIfNeeded() {
-        guard isTabActive else { return }
-        guard !hasScheduledLocationPermissionPrompt else { return }
-        hasScheduledLocationPermissionPrompt = true
-
-        Task { @MainActor in
-            await waitForLaunchPresentationToFinish()
-            presentLocationPermissionPromptIfNeeded()
-        }
-    }
-
-    @MainActor
-    private func waitForLaunchPresentationToFinish() async {
-        for _ in 0..<40 {
-            if !PaywallPresenter.shared.isPresented {
-                break
-            }
-            try? await Task.sleep(for: .milliseconds(150))
-        }
-        try? await Task.sleep(for: .milliseconds(400))
-    }
-
-    private func presentLocationPermissionPromptIfNeeded() {
-        guard isTabActive else { return }
-        guard !PaywallPresenter.shared.isPresented else { return }
-        guard !LocationWeatherPermissionPromptStore.userDismissedPrompt else { return }
-
+    private func requestEnvironmentLocationAccess() {
+        AppTelemetry.logProductEvent("dashboard_environment_tap")
         switch environment.permissionPromptAction() {
         case .none:
-            break
+            environment.startUpdating()
         case .requestSystemAuthorization:
             environment.requestSystemLocationAuthorization()
+            environment.startUpdating()
         case .showSettingsPrompt:
             showLocationWeatherPermissionDenied = true
         }
-    }
-
-    private func handleEnvironmentPermissionIfNeeded() {
-        presentLocationPermissionPromptIfNeeded()
-    }
-
-    private func refreshAppOnboardingVisibility() {
-        guard isTabActive else {
-            showsAppOnboarding = false
-            return
-        }
-        showsAppOnboarding = AppOnboardingStore.showsTaskBanner
-    }
-
-    private func dismissAppOnboarding(method: String) {
-        guard showsAppOnboarding else { return }
-        AppTelemetry.logProductEvent(
-            "onboarding_dismissed",
-            parameters: ["method": method]
-        )
-        showsAppOnboarding = false
-        AppOnboardingStore.markCompleted()
-        FullscreenLEDGuideStore.markSeen()
     }
 
     private var footerNote: String {

@@ -7,10 +7,17 @@ final class PaywallPresenter {
 
     var isPresented = false
     var context: PaywallContext = .settings
+    /// What feature triggered this paywall (launch, video_daily, video_duration, …).
+    private(set) var triggerFeature: String = PaywallContext.settings.defaultTriggerFeature
     private var onResult: ((Bool) -> Void)?
     private var didResolve = false
 
-    func present(context: PaywallContext, onResult: ((Bool) -> Void)? = nil) {
+    func present(
+        context: PaywallContext,
+        triggerFeature: String? = nil,
+        onResult: ((Bool) -> Void)? = nil
+    ) {
+        let resolvedTrigger = triggerFeature ?? context.defaultTriggerFeature
         if PaywallFrequencyStore.isAutomaticContext(context),
            PaywallFrequencyStore.shouldSuppressAutomaticPaywall {
             AppTelemetry.logProductEvent(
@@ -18,6 +25,7 @@ final class PaywallPresenter {
                 parameters: [
                     "context": context.rawValue,
                     "reason": "frequency_cap",
+                    "trigger_feature": resolvedTrigger,
                 ]
             )
             onResult?(false)
@@ -25,12 +33,16 @@ final class PaywallPresenter {
         }
 
         self.context = context
+        self.triggerFeature = resolvedTrigger
         self.onResult = onResult
         didResolve = false
         AppTelemetry.logCommercialEvent(
             domain: "paywall",
             outcome: "shown",
-            metadata: ["context": context.rawValue]
+            metadata: [
+                "context": context.rawValue,
+                "trigger_feature": resolvedTrigger,
+            ]
         )
         isPresented = true
     }

@@ -107,18 +107,3 @@ final class AdSessionPolicyTests: XCTestCase {
         )
     }
 }
-
-final class AppOnboardingStoreTests: XCTestCase {
-    override func tearDown() {
-        AppOnboardingStore.resetForTesting()
-        super.tearDown()
-    }
-
-    func testMeasureTaskCompletionRequestsReportOnce() {
-        AppOnboardingStore.resetForTesting()
-        XCTAssertFalse(AppOnboardingStore.noteMonitoringElapsed(5, isMonitoring: true))
-        XCTAssertTrue(AppOnboardingStore.noteMonitoringElapsed(10, isMonitoring: true))
-        XCTAssertEqual(AppOnboardingStore.currentStep, .visitFiles)
-        XCTAssertFalse(AppOnboardingStore.noteMonitoringElapsed(12, isMonitoring: true))
-    }
-}

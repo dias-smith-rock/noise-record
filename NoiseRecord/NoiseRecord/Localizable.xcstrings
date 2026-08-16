@@ -49578,19 +49578,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open the Files tab to view your saved monitoring report."
+            "value": "Open Library to find your saved video evidence."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "打开 Files 标签页，查看已保存的监测报告。"
+            "value": "打开「证据」查看刚保存的视频。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "打開 Files 標籤頁，查看已保存的監測報告。"
+            "value": "打開「證據」查看剛儲存的影片。"
           }
         }
       }
@@ -49601,19 +49601,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Keep monitoring for 10 seconds to finish task 1."
+            "value": "Record a short evidence clip with live dB on video to finish task 1."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "保持监测 10 秒，完成任务 1。"
+            "value": "录一段带分贝水印的视频证据，完成任务 1。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "保持監測 10 秒，完成任務 1。"
+            "value": "錄一段帶分貝浮水印的影片證據，完成任務 1。"
           }
         }
       }
@@ -100471,205 +100471,205 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "فيديو"
           }
         },
         "bg": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "Видео"
           }
         },
         "ca": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "Vídeo"
           }
         },
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "Video"
           }
         },
         "da": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "Video"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "Video"
           }
         },
         "el": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "Βίντεο"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "Video"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "Vídeo"
           }
         },
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "Video"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "Vidéo"
           }
         },
         "he": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "וידאו"
           }
         },
         "hi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "वीडियो"
           }
         },
         "hr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "Video"
           }
         },
         "hu": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "Videó"
           }
         },
         "id": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "Video"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "Video"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "ビデオ"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "비디오"
           }
         },
         "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "Video"
           }
         },
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "Video"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "Video"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "Wideo"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "Vídeo"
           }
         },
         "ro": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "Video"
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "Видео"
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "Video"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "Video"
           }
         },
         "th": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "วิดีโอ"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "Video"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "Відео"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Evidence"
+            "value": "Video"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "取证"
+            "value": "视频"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "取證"
+            "value": "影片"
           }
         }
       }
@@ -101947,6 +101947,98 @@
           "stringUnit": {
             "state": "translated",
             "value": "剩餘 %lld 秒"
+          }
+        }
+      }
+    },
+    "video.leaveRecording.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leaving Video will stop the current recording and end live measurement on this screen."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "离开「视频」页将停止当前录制，并结束本页的实时监测。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "離開「影片」頁將停止目前錄製，並結束本頁的即時監測。"
+          }
+        }
+      }
+    },
+    "video.leaveRecording.stay": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep recording"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "继续录制"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "繼續錄製"
+          }
+        }
+      }
+    },
+    "video.leaveRecording.stopAndLeave": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop and leave"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停止并离开"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停止並離開"
+          }
+        }
+      }
+    },
+    "video.leaveRecording.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop recording?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "要停止录制吗？"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "要停止錄製嗎？"
           }
         }
       }
@@ -107634,6 +107726,144 @@
           "stringUnit": {
             "state": "translated",
             "value": "聲控錄音會在超過閾值時自動抓取音訊。需先在「監測」頁開始監測後才會生效。"
+          }
+        }
+      }
+    },
+    "video.idle.tapToMeasure": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap Record to measure — live dB appears and burns into the video."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点下方开始录像即可测分贝，读数会显示并烧进画面。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "點下方開始錄影即可測分貝，讀數會顯示並燒進畫面。"
+          }
+        }
+      }
+    },
+    "video.idle.dbPlaceholder": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "—.- dB"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "—.- dB"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "—.- dB"
+          }
+        }
+      }
+    },
+    "onboarding.app.task.record.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record a short evidence clip with live dB on video to finish task 1."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "录一段带分贝水印的视频证据，完成任务 1。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "錄一段帶分貝浮水印的影片證據，完成任務 1。"
+          }
+        }
+      }
+    },
+    "video.cameraPermission.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Camera access needed"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要相机权限"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要相機權限"
+          }
+        }
+      }
+    },
+    "video.cameraPermission.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable the camera to record video evidence with live dB burned in."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开启相机后即可录制带实时分贝水印的视频证据。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開啟相機後即可錄製帶即時分貝浮水印的影片證據。"
+          }
+        }
+      }
+    },
+    "video.cameraPermission.enable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable Camera"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开启相机"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開啟相機"
           }
         }
       }

@@ -11,7 +11,7 @@ enum LaunchExperienceCoordinator {
                 parameters: [
                     "context": PaywallContext.launch.rawValue,
                     "reason": "frequency_cap",
-                    "trigger": trigger,
+                    "trigger_feature": trigger,
                 ]
             )
             return
@@ -23,7 +23,10 @@ enum LaunchExperienceCoordinator {
             parameters: ["trigger": trigger]
         )
 
-        PaywallPresenter.shared.present(context: .launch) { purchased in
+        PaywallPresenter.shared.present(
+            context: .launch,
+            triggerFeature: trigger
+        ) { purchased in
             handleLaunchPaywallDismissed(purchased: purchased, trigger: trigger)
         }
     }
@@ -37,7 +40,7 @@ enum LaunchExperienceCoordinator {
                 parameters: [
                     "context": PaywallContext.launch.rawValue,
                     "reason": "frequency_cap",
-                    "trigger": "cold_start_repeat",
+                    "trigger_feature": "cold_start_repeat",
                 ]
             )
             AdSceneLifecycle.handleLaunchRemoveAdsPromoDismissed(purchased: false)
@@ -52,7 +55,10 @@ enum LaunchExperienceCoordinator {
             parameters: ["trigger": "cold_start_repeat"]
         )
 
-        PaywallPresenter.shared.present(context: .launch) { purchased in
+        PaywallPresenter.shared.present(
+            context: .launch,
+            triggerFeature: "cold_start_repeat"
+        ) { purchased in
             handleLaunchPaywallDismissed(purchased: purchased, trigger: "cold_start_repeat")
         }
         return true
