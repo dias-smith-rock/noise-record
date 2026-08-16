@@ -160,34 +160,55 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         }
     }
 
+    /// Awaits preview `startRunning` so callers can sequence audio restore after capture is up.
+    func startSession() async -> AVCaptureDevice.Position {
+        await withCheckedContinuation { continuation in
+            startSession { position in
+                continuation.resume(returning: position)
+            }
+        }
+    }
+
     /// Stops preview capture but keeps the configured preview pipeline for fast re-entry.
     func pausePreview(completion: ((Result<URL, Error>?) -> Void)? = nil) {
         writerQueue.async { [weak self] in
-            guard let self else { return }
+            guard let self else {
+                DispatchQueue.main.async { completion?(nil) }
+                return
+            }
             if self.isRecording {
                 self.stopRecordingInternal(detachOutputs: true) { result in
                     self.sessionQueue.async {
-                        if self.isSessionRunning {
-                            self.captureSession.stopRunning()
-                            self.isSessionRunning = false
-                        }
+                        self.stopSessionIfRunningLocked()
                         DispatchQueue.main.async {
                             completion?(result.map { $0 })
                         }
                     }
                 }
             } else {
+                // Avoid an extra hop when idle — leave-path latency is dominated by stopRunning.
                 self.sessionQueue.async {
-                    guard self.isSessionRunning else {
-                        DispatchQueue.main.async { completion?(nil) }
-                        return
+                    self.stopSessionIfRunningLocked()
+                    DispatchQueue.main.async {
+                        completion?(nil)
                     }
-                    self.captureSession.stopRunning()
-                    self.isSessionRunning = false
-                    DispatchQueue.main.async { completion?(nil) }
                 }
             }
         }
+    }
+
+    func pausePreview() async -> Result<URL, Error>? {
+        await withCheckedContinuation { continuation in
+            pausePreview { result in
+                continuation.resume(returning: result)
+            }
+        }
+    }
+
+    private func stopSessionIfRunningLocked() {
+        guard isSessionRunning else { return }
+        captureSession.stopRunning()
+        isSessionRunning = false
     }
 
     var captureSessionForPreview: AVCaptureSession { captureSession }

@@ -285,7 +285,7 @@ struct ContentView: View {
                                 isAnimating: true
                             )
                         }
-                        try? await Task.sleep(for: .milliseconds(66))
+                        try? await Task.sleep(for: .milliseconds(100))
                     }
                 }
                 group.addTask {

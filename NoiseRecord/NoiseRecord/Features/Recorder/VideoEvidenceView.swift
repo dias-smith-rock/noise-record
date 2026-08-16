@@ -20,14 +20,24 @@ final class VideoEvidenceCoordinator {
     var sessionPeakDB: Float = 0
     var cameraPosition: AVCaptureDevice.Position = .back
     var currentSegmentGroupID: UUID?
+    /// True after video recording claimed / mutated the shared AVAudioSession.
+    private(set) var didMutateAudioSessionForVideo = false
 
     var onSegmentFinished: ((VideoSegmentFinishedEvent) -> Void)?
     /// Installed by `VideoEvidenceView` so tab switches can stop + save before leaving.
     var performStopAndSave: (@MainActor () async -> Void)?
 
+    /// Invalidates in-flight configure / startSession completions when leaving the tab.
+    private var configureGeneration = 0
+    private var storedBackgroundMonitoringEnabled = false
+
     func configure(backgroundMonitoringEnabled: Bool, isMonitoring: Bool) async {
         let configureSignpost = VideoTabPerformance.begin(.configureTotal)
         defer { VideoTabPerformance.end(.configureTotal, configureSignpost) }
+
+        configureGeneration += 1
+        let generation = configureGeneration
+        storedBackgroundMonitoringEnabled = backgroundMonitoringEnabled
 
         isSessionReady = false
         isPreviewReady = false
@@ -40,14 +50,8 @@ final class VideoEvidenceCoordinator {
         }
 
         do {
-            let audioSignpost = VideoTabPerformance.begin(.audioSession)
-            try configureAudioSessionForVideo(
-                backgroundMonitoringEnabled: backgroundMonitoringEnabled,
-                isMonitoring: isMonitoring
-            )
-            VideoTabPerformance.end(.audioSession, audioSignpost)
-            VideoTabPerformance.mark(.audioSessionDone)
-
+            // Idle preview is video-only — do not reconfigure AVAudioSession or open Best GPS.
+            // Claiming the measurement session here races with Live monitoring and makes tab switches janky.
             let captureSignpost = VideoTabPerformance.begin(.captureConfigure)
             try await recorder.configureSession(
                 backgroundMonitoringEnabled: backgroundMonitoringEnabled
@@ -55,21 +59,26 @@ final class VideoEvidenceCoordinator {
             VideoTabPerformance.end(.captureConfigure, captureSignpost)
             VideoTabPerformance.mark(.captureConfigureDone)
 
-            VideoTabPerformance.mark(.captureStartRequested)
-            recorder.startSession { [weak self] position in
-                guard let self else { return }
-                self.cameraPosition = position
-                self.isPreviewReady = true
-                VideoTabPerformance.mark(.previewReady)
+            guard generation == configureGeneration else {
+                VideoTabPerformance.mark(.configureCancelled)
+                return
             }
 
-            // Location only after camera is authorized.
-            locationProvider.requestPermission()
-            VideoTabPerformance.mark(.locationPermissionRequested)
+            VideoTabPerformance.mark(.captureStartRequested)
+            let position = await recorder.startSession()
+            guard generation == configureGeneration else {
+                VideoTabPerformance.mark(.configureCancelled)
+                return
+            }
+            cameraPosition = position
+            isPreviewReady = true
+            VideoTabPerformance.mark(.previewReady)
+
             installRecorderCallbacks()
             isSessionReady = true
             VideoTabPerformance.mark(.uiReady)
             VideoTabPerformance.mark(.configureComplete)
+            _ = isMonitoring
         } catch {
             VideoTabPerformance.mark(.configureFailed)
             errorMessage = error.localizedDescription
@@ -119,7 +128,20 @@ final class VideoEvidenceCoordinator {
         guard isSessionReady, isPreviewReady, !isRecording else { return }
         peakDB = 0
         currentSegmentGroupID = nil
-        locationProvider.startUpdating()
+
+        // Claim measurement audio + GPS only when capture actually starts.
+        let audioSignpost = VideoTabPerformance.begin(.audioSession)
+        try configureAudioSessionForVideo(
+            backgroundMonitoringEnabled: storedBackgroundMonitoringEnabled,
+            isMonitoring: true
+        )
+        VideoTabPerformance.end(.audioSession, audioSignpost)
+        didMutateAudioSessionForVideo = true
+        VideoTabPerformance.mark(.audioSessionDone)
+        // Prompt or start GPS for evidence watermark — idle preview no longer opens Best GPS.
+        locationProvider.requestPermission()
+        VideoTabPerformance.mark(.locationPermissionRequested)
+
         try await recorder.startRecording()
         isRecording = recorder.isRecording
         // Start the free-quota clock only after capture is actually running.
@@ -140,17 +162,26 @@ final class VideoEvidenceCoordinator {
         }
     }
 
-    func teardown(completion: (() -> Void)? = nil) {
+    /// Stops GPS + camera preview and awaits `stopRunning` before returning.
+    func teardown() async {
+        configureGeneration += 1
+        VideoTabPerformance.mark(.teardownRequested)
         let teardownSignpost = VideoTabPerformance.begin(.teardown)
         locationProvider.stopUpdating()
         isRecording = false
         isSessionReady = false
         isPreviewReady = false
-        recorder.pausePreview { _ in
-            VideoTabPerformance.end(.teardown, teardownSignpost)
-            VideoTabPerformance.mark(.teardownDone)
-            completion?()
-        }
+        _ = await recorder.pausePreview()
+        VideoTabPerformance.end(.teardown, teardownSignpost)
+        VideoTabPerformance.mark(.teardownDone)
+        VideoTabPerformance.mark(.captureStopped)
+    }
+
+    /// Returns whether leave-path should rebuild the monitoring pipeline.
+    func consumeAudioSessionMutationFlag() -> Bool {
+        let mutated = didMutateAudioSessionForVideo
+        didMutateAudioSessionForVideo = false
+        return mutated
     }
 
     func emergencyFinalizeIfRecording() {
@@ -294,20 +325,40 @@ struct VideoEvidenceView: View {
                     backgroundMonitoringEnabled: engine.backgroundMonitoringEnabled,
                     isMonitoring: engine.isMonitoring
                 )
+                guard isTabActive else { return }
                 engine.refreshCalibrationOffset()
                 lastNoiseSync = .distantPast
                 coordinator.syncNoise(from: engine)
                 coordinator.syncLocation(from: engine)
                 VideoTabPerformance.mark(.syncNoiseDone)
-                audioStateManager.restoreMonitoringPipelineIfNeeded()
+                // Idle preview no longer steals the measurement session — only restore if
+                // the engine was already broken, or after a prior recording mutation.
+                if !engine.isAudioEngineRunning, audioStateManager.appAudioState == .monitoring {
+                    let restoreSignpost = VideoTabPerformance.begin(.restoreMonitoring)
+                    VideoTabPerformance.mark(.restoreBegin)
+                    audioStateManager.restoreMonitoringPipelineIfNeeded()
+                    VideoTabPerformance.end(.restoreMonitoring, restoreSignpost)
+                }
                 VideoTabPerformance.mark(.restoreMonitoringDone)
                 previewZoomFactor = coordinator.recorder.currentZoomFactor
                 VideoTabPerformance.mark(.taskActiveComplete)
             } else {
+                let leaveSignpost = VideoTabPerformance.begin(.leaveTotal)
                 VideoTabPerformance.mark(.taskInactiveBegin)
                 coordinator.performStopAndSave = nil
-                coordinator.teardown()
-                audioStateManager.restoreMonitoringPipelineIfNeeded()
+                await coordinator.teardown()
+                // Yield so TabView can commit the selection animation before any restore work.
+                await Task.yield()
+                let shouldRestore = coordinator.consumeAudioSessionMutationFlag()
+                    || (audioStateManager.appAudioState == .monitoring && !engine.isAudioEngineRunning)
+                if shouldRestore {
+                    VideoTabPerformance.mark(.restoreBegin)
+                    let restoreSignpost = VideoTabPerformance.begin(.restoreMonitoring)
+                    audioStateManager.restoreMonitoringPipelineIfNeeded()
+                    VideoTabPerformance.end(.restoreMonitoring, restoreSignpost)
+                    VideoTabPerformance.mark(.restoreDone)
+                }
+                VideoTabPerformance.end(.leaveTotal, leaveSignpost)
                 VideoTabPerformance.mark(.taskInactiveComplete)
             }
         }
@@ -950,7 +1001,10 @@ struct VideoEvidenceView: View {
         coordinator.syncLocation(from: engine)
         do {
             try await coordinator.startRecording()
-            audioStateManager.restoreMonitoringPipelineIfNeeded()
+            // Capture audio attach can interrupt the monitoring graph — rebuild only if needed.
+            if !engine.isAudioEngineRunning {
+                audioStateManager.restoreMonitoringPipelineIfNeeded()
+            }
             AppTelemetry.logVideoRecordingStart()
         } catch {
             stopMonitoringAfterVideoEvidence()

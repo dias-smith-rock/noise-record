@@ -3,6 +3,10 @@ import Foundation
 import os
 
 /// Video tab activation milestones for profiling. Logging only — does not alter app flow.
+///
+/// Leave-path timing (Instruments + DEBUG console):
+/// `taskInactiveBegin` → `teardownRequested` → `captureStopped` → `restoreBegin` →
+/// `restoreDone` → `taskInactiveComplete`
 nonisolated enum VideoTabPerformance {
     enum Step: String {
         case tabSelected
@@ -17,11 +21,16 @@ nonisolated enum VideoTabPerformance {
         case locationPermissionRequested
         case configureComplete
         case configureFailed
+        case configureCancelled
         case syncNoiseDone
         case restoreMonitoringDone
         case taskActiveComplete
         case previewViewCreated
         case taskInactiveBegin
+        case teardownRequested
+        case captureStopped
+        case restoreBegin
+        case restoreDone
         case teardownDone
         case taskInactiveComplete
     }
@@ -31,6 +40,8 @@ nonisolated enum VideoTabPerformance {
         case captureConfigure = "videoTabCaptureConfigure"
         case configureTotal = "videoTabConfigureTotal"
         case teardown = "videoTabTeardown"
+        case restoreMonitoring = "videoTabRestoreMonitoring"
+        case leaveTotal = "videoTabLeaveTotal"
     }
 
     private static let log = OSLog(subsystem: "com.goodcraft.NoiseRecord", category: "VideoTab")
@@ -70,12 +81,18 @@ nonisolated enum VideoTabPerformance {
     static func begin(_ interval: Interval) -> OSSignpostID {
         let id = OSSignpostID(log: log)
         os_signpost(.begin, log: log, name: "Interval", signpostID: id, "%{public}s", interval.rawValue)
+        #if DEBUG
+        print("[VideoTab] BEGIN \(interval.rawValue)")
+        #endif
         return id
     }
 
     static func end(_ interval: Interval, _ id: OSSignpostID) {
         let elapsedMs = elapsedMsSinceSession()
         os_signpost(.end, log: log, name: "Interval", signpostID: id, "%{public}s +%{public}dms", interval.rawValue, elapsedMs)
+        #if DEBUG
+        print("[VideoTab] END \(interval.rawValue) @ +\(elapsedMs)ms")
+        #endif
     }
 
     private static func elapsedMsSinceSession() -> Int {
