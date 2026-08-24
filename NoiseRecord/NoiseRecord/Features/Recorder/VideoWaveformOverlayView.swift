@@ -15,6 +15,10 @@ struct VideoWaveformOverlayView: View {
         max(playbackDuration, 0.001)
     }
 
+    private var visibleSamples: [VideoNoiseSample] {
+        VideoNoiseWaveformStripDrawer.rollingSamples(from: timeline.samples, upTo: currentTime)
+    }
+
     var body: some View {
         VStack(spacing: 4) {
             GeometryReader { geometry in
@@ -45,20 +49,10 @@ struct VideoWaveformOverlayView: View {
     }
 
     private func drawWaveform(in context: inout GraphicsContext, size: CGSize) {
-        guard size.width > 1, size.height > 1, timeline.samples.count > 1, duration > 0 else { return }
+        let samples = visibleSamples
+        guard size.width > 1, size.height > 1, samples.count > 1 else { return }
 
-        let pointCount = min(max(Int(size.width), 2), 256)
-        var points: [(CGPoint, Float)] = []
-        points.reserveCapacity(pointCount)
-
-        for pointIndex in 0..<pointCount {
-            let time = duration * Double(pointIndex) / Double(max(pointCount - 1, 1))
-            guard let db = timeline.decibelStrict(at: time) else { continue }
-            let x = CGFloat(time / duration) * size.width
-            let y = waveformYPosition(for: db, height: size.height, minDB: minDB, maxDB: maxDB)
-            points.append((CGPoint(x: x, y: y), db))
-        }
-
+        let points = resampledPoints(samples: samples, size: size)
         guard points.count > 1 else { return }
 
         let strokeStyle = StrokeStyle(
@@ -80,6 +74,22 @@ struct VideoWaveformOverlayView: View {
             context.stroke(segment, with: .color(segmentColor), style: strokeStyle)
             previousPoint = point
         }
+    }
+
+    private func resampledPoints(samples: [VideoNoiseSample], size: CGSize) -> [(CGPoint, Float)] {
+        let pointCount = min(samples.count, max(Int(size.width), 2))
+        var points: [(CGPoint, Float)] = []
+        points.reserveCapacity(pointCount)
+
+        for pointIndex in 0..<pointCount {
+            let sampleIndex = pointIndex * (samples.count - 1) / max(pointCount - 1, 1)
+            let sample = samples[sampleIndex]
+            let x = size.width * CGFloat(pointIndex) / CGFloat(max(pointCount - 1, 1))
+            let y = waveformYPosition(for: sample.decibel, height: size.height, minDB: minDB, maxDB: maxDB)
+            points.append((CGPoint(x: x, y: y), sample.decibel))
+        }
+
+        return points
     }
 
     private func drawPlayhead(in context: inout GraphicsContext, size: CGSize) {

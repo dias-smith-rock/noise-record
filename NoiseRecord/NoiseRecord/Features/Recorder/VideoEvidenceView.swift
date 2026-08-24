@@ -584,7 +584,7 @@ struct VideoEvidenceView: View {
                     showsReferenceLimitLine: false,
                     axisLabelColor: .white.opacity(0.7)
                 )
-                .frame(height: 56)
+                .frame(height: VideoNoiseWaveformStripDrawer.livePreviewStripHeight)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 .background(Color.black.opacity(0.35))

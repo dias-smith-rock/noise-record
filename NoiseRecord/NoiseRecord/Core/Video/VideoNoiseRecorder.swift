@@ -851,7 +851,7 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
 
     // MARK: - OSD rendering
 
-    private func drawWatermark(on pixelBuffer: CVPixelBuffer, captureDate: Date) {
+    private func drawWatermark(on pixelBuffer: CVPixelBuffer, captureDate: Date, relativeTime: Double) {
         let signpost = PerformanceSignpost.begin(.drawWatermark)
         defer { PerformanceSignpost.end(.drawWatermark, signpost) }
 
@@ -916,71 +916,36 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
         )
 
         drawNoiseWaveformStrip(
+            in: context,
             canvasWidth: CGFloat(width),
             canvasHeight: CGFloat(height),
-            scale: scale
+            scale: scale,
+            relativeTime: relativeTime
         )
         UIGraphicsPopContext()
         context.restoreGState()
     }
 
     private func drawNoiseWaveformStrip(
+        in context: CGContext,
         canvasWidth: CGFloat,
         canvasHeight: CGFloat,
-        scale: CGFloat
+        scale: CGFloat,
+        relativeTime: Double
     ) {
-        let samples = Array(noiseTimelineSamples.suffix(120))
+        let samples = noiseTimelineSamples
         guard samples.count >= 2 else { return }
 
-        let margin: CGFloat = 40 * scale
-        let stripHeight = 120 * scale
-        let stripRect = CGRect(
-            x: margin,
-            y: canvasHeight - margin - stripHeight,
-            width: canvasWidth - margin * 2,
-            height: stripHeight
-        )
+        let mode = AcousticMeasurementMode(isHighSensitivity: DeviceCalibrationStore.isHighSensitivityMode)
 
-        let background = UIBezierPath(roundedRect: stripRect, cornerRadius: 14 * scale)
-        UIColor.black.withAlphaComponent(0.55).setFill()
-        background.fill()
-
-        let plotInset = 16 * scale
-        let plotRect = stripRect.insetBy(dx: plotInset, dy: plotInset)
-        guard plotRect.width > 8, plotRect.height > 8 else { return }
-
-        let minDB: Float = 20
-        let maxDB: Float = 100
-        let path = UIBezierPath()
-        for (index, sample) in samples.enumerated() {
-            let xRatio = CGFloat(index) / CGFloat(samples.count - 1)
-            let clamped = min(max(sample.decibel, minDB), maxDB)
-            let yRatio = CGFloat((clamped - minDB) / (maxDB - minDB))
-            let point = CGPoint(
-                x: plotRect.minX + plotRect.width * xRatio,
-                y: plotRect.maxY - plotRect.height * yRatio
-            )
-            if index == 0 {
-                path.move(to: point)
-            } else {
-                path.addLine(to: point)
-            }
-        }
-
-        UIColor.systemOrange.setStroke()
-        path.lineWidth = max(2.5 * scale, 2)
-        path.lineJoinStyle = .round
-        path.lineCapStyle = .round
-        path.stroke()
-
-        let label = "dB"
-        let labelAttributes: [NSAttributedString.Key: Any] = [
-            .font: UIFont.systemFont(ofSize: 18 * scale, weight: .semibold),
-            .foregroundColor: UIColor.white.withAlphaComponent(0.85),
-        ]
-        (label as NSString).draw(
-            at: CGPoint(x: stripRect.minX + 14 * scale, y: stripRect.minY + 10 * scale),
-            withAttributes: labelAttributes
+        VideoNoiseWaveformStripDrawer.drawRolling(
+            in: context,
+            canvasWidth: canvasWidth,
+            canvasHeight: canvasHeight,
+            scale: scale,
+            samples: samples,
+            upTo: relativeTime,
+            mode: mode
         )
     }
 
@@ -1061,9 +1026,12 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
                 self.flushPendingAudio()
             }
 
+            let relativeTime: Double
             if let origin = self.recordingOriginTime {
-                let relative = CMTimeGetSeconds(CMTimeSubtract(timestamp, origin))
-                self.appendTimelineSampleIfNeeded(at: relative)
+                relativeTime = CMTimeGetSeconds(CMTimeSubtract(timestamp, origin))
+                self.appendTimelineSampleIfNeeded(at: relativeTime)
+            } else {
+                relativeTime = 0
             }
 
             guard let pool = adaptor.pixelBufferPool else { return }
@@ -1089,7 +1057,7 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
             CVPixelBufferUnlockBaseAddress(outputBuffer, [])
             CVPixelBufferUnlockBaseAddress(sourceBuffer, .readOnly)
 
-            self.drawWatermark(on: outputBuffer, captureDate: Date())
+            self.drawWatermark(on: outputBuffer, captureDate: Date(), relativeTime: relativeTime)
             guard adaptor.append(outputBuffer, withPresentationTime: timestamp) else {
                 if let writer = self.assetWriter, let error = writer.error {
                     self.reportRecordingFailure(VideoNoiseRecorderError.finishFailed(error.localizedDescription))
