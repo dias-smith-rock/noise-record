@@ -442,6 +442,7 @@ struct RecordingListView: View {
                         subtitle: nil,
                         detailLine: video.startedAt.formatted(date: .abbreviated, time: .shortened),
                         playFooterText: DurationFormatting.hms(from: video.duration),
+                        videoPosterURL: video.fileURL,
                         waveformFileURL: video.fileURL,
                         waveformMode: measurementMode,
                         waveformReloadToken: waveformReloadVersions[video.fileURL.standardizedFileURL.path, default: 0],
@@ -807,6 +808,13 @@ struct RecordingListView: View {
 
         do {
             let kind = try await PhotoLibrarySaver.saveFile(at: session.fileURL)
+            AppTelemetry.logProductEvent(
+                "video_save_to_photos",
+                parameters: [
+                    "source": "files",
+                    "count": "1",
+                ]
+            )
             toastMessage = PhotoLibrarySaver.successMessage(for: kind)
         } catch {
             saveToPhotosErrorMessage = error.localizedDescription
@@ -830,9 +838,23 @@ struct RecordingListView: View {
         do {
             if urls.count == 1, let url = urls.first {
                 let kind = try await PhotoLibrarySaver.saveFile(at: url)
+                AppTelemetry.logProductEvent(
+                    "video_save_to_photos",
+                    parameters: [
+                        "source": "files_batch",
+                        "count": "1",
+                    ]
+                )
                 toastMessage = PhotoLibrarySaver.successMessage(for: kind)
             } else {
                 try await PhotoLibrarySaver.saveFiles(at: urls)
+                AppTelemetry.logProductEvent(
+                    "video_save_to_photos",
+                    parameters: [
+                        "source": "files_batch",
+                        "count": String(urls.count),
+                    ]
+                )
                 toastMessage = L10n.playerSavedItemsToPhotos(urls.count)
             }
         } catch {
@@ -876,6 +898,7 @@ struct RecordingListView: View {
 
     private func deleteVideo(_ session: VideoEvidenceSession) {
         WaveformThumbnailCache.invalidate(for: session.fileURL)
+        VideoPosterThumbnailCache.invalidate(for: session.fileURL)
         try? FileManager.default.removeItem(at: session.fileURL)
         VideoNoiseTimelineStore.remove(for: session.fileURL)
         modelContext.delete(session)
@@ -969,6 +992,9 @@ struct RecordingListView: View {
             try? FileManager.default.removeItem(at: newURL)
         }
         do {
+            if session is VideoEvidenceSession {
+                VideoPosterThumbnailCache.invalidate(for: oldURL)
+            }
             try FileManager.default.moveItem(at: oldURL, to: newURL)
             try? VideoNoiseTimelineStore.moveSidecar(from: oldURL, to: newURL)
             update(newURL)
@@ -996,6 +1022,7 @@ private struct MediaListCard: View {
     let subtitle: String?
     var detailLine: String?
     var playFooterText: String?
+    var videoPosterURL: URL?
     var waveformFileURL: URL?
     var waveformAlternateURLs: [URL] = []
     var waveformMode: AcousticMeasurementMode?
@@ -1032,9 +1059,16 @@ private struct MediaListCard: View {
 
                         VStack(spacing: 4) {
                             ZStack(alignment: .topTrailing) {
-                                Image(systemName: playIcon)
-                                    .font(.system(size: 36))
-                                    .foregroundStyle(theme.accent)
+                                if let videoPosterURL {
+                                    VideoPosterThumbnailView(
+                                        url: videoPosterURL,
+                                        reloadToken: waveformReloadToken
+                                    )
+                                } else {
+                                    Image(systemName: playIcon)
+                                        .font(.system(size: 36))
+                                        .foregroundStyle(theme.accent)
+                                }
 
                                 if isNew {
                                     Circle()
@@ -1053,7 +1087,7 @@ private struct MediaListCard: View {
                                     .minimumScaleFactor(0.8)
                             }
                         }
-                        .frame(width: 52)
+                        .frame(width: videoPosterURL == nil ? 52 : 84)
 
                         VStack(alignment: .leading, spacing: 8) {
                             Text(fileName)

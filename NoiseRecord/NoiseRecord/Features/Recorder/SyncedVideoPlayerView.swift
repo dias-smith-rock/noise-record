@@ -62,7 +62,7 @@ struct SyncedVideoPlayerView: View {
                         finishPlaybackAndDismiss()
                     }
                 }
-                ToolbarItem(placement: .primaryAction) {
+                ToolbarItemGroup(placement: .primaryAction) {
                     Button {
                         Task { await saveVideoToPhotoLibrary() }
                     } label: {
@@ -74,6 +74,13 @@ struct SyncedVideoPlayerView: View {
                     }
                     .accessibilityLabel(L10n.playerSaveToPhotos)
                     .disabled(isSavingToPhotos)
+
+                    Button {
+                        shareCurrentVideo()
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .accessibilityLabel(L10n.share)
                 }
             }
             .onAppear {
@@ -215,9 +222,34 @@ struct SyncedVideoPlayerView: View {
 
         do {
             let kind = try await PhotoLibrarySaver.saveFile(at: url)
+            AppTelemetry.logProductEvent(
+                "video_save_to_photos",
+                parameters: [
+                    "source": "preview",
+                    "count": "1",
+                ]
+            )
             toastMessage = PhotoLibrarySaver.successMessage(for: kind)
         } catch {
             saveErrorMessage = error.localizedDescription
+        }
+    }
+
+    private func shareCurrentVideo() {
+        player?.pause()
+        AppTelemetry.logProductEvent(
+            "video_share_tap",
+            parameters: ["source": "preview"]
+        )
+        SharePresenter.present(items: [url]) { didShare, activityType in
+            AppTelemetry.logProductEvent(
+                "video_share_result",
+                parameters: [
+                    "source": "preview",
+                    "shared": didShare ? "true" : "false",
+                    "activity": activityType ?? "none",
+                ]
+            )
         }
     }
 }
