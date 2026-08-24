@@ -824,33 +824,23 @@ struct VideoEvidenceView: View {
             }
 
             Button {
-                let saveID = lastSavedAnalyticsID ?? "unknown"
-                AppTelemetry.logProductEvent(
-                    "video_share_tap",
-                    parameters: [
-                        "source": "save_success",
-                        "save_id": saveID,
-                    ]
-                )
-                SharePresenter.present(items: [url]) { didShare, activityType in
-                    AppTelemetry.logProductEvent(
-                        "video_share_result",
-                        parameters: [
-                            "source": "save_success",
-                            "save_id": saveID,
-                            "shared": didShare ? "true" : "false",
-                            "activity": activityType ?? "none",
-                        ]
-                    )
-                }
+                AppTelemetry.logProductEvent("video_record_tap", parameters: ["source": "save_success_again"])
+                Task { await startEvidenceRecording() }
             } label: {
-                Label(L10n.videoShareEvidence, systemImage: "square.and.arrow.up")
+                Label(L10n.videoRecordAgain, systemImage: "video.circle.fill")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
             }
             .buttonStyle(.borderedProminent)
             .tint(theme.accent)
+            .disabled(
+                !coordinator.isSessionReady
+                    || !coordinator.isPreviewReady
+                    || isPreparingRecording
+                    || isStoppingRecording
+                    || isSavingTrimmedClip
+            )
 
             HStack(spacing: 12) {
                 Button {
@@ -872,21 +862,31 @@ struct VideoEvidenceView: View {
                 .buttonStyle(.bordered)
 
                 Button {
-                    AppTelemetry.logProductEvent("video_record_tap", parameters: ["source": "save_success_again"])
-                    Task { await startEvidenceRecording() }
+                    let saveID = lastSavedAnalyticsID ?? "unknown"
+                    AppTelemetry.logProductEvent(
+                        "video_share_tap",
+                        parameters: [
+                            "source": "save_success",
+                            "save_id": saveID,
+                        ]
+                    )
+                    SharePresenter.present(items: [url]) { didShare, activityType in
+                        AppTelemetry.logProductEvent(
+                            "video_share_result",
+                            parameters: [
+                                "source": "save_success",
+                                "save_id": saveID,
+                                "shared": didShare ? "true" : "false",
+                                "activity": activityType ?? "none",
+                            ]
+                        )
+                    }
                 } label: {
-                    Text(L10n.videoRecordAgain)
+                    Text(L10n.videoShareEvidence)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
                 }
                 .buttonStyle(.bordered)
-                .disabled(
-                    !coordinator.isSessionReady
-                        || !coordinator.isPreviewReady
-                        || isPreparingRecording
-                        || isStoppingRecording
-                        || isSavingTrimmedClip
-                )
             }
         }
     }
