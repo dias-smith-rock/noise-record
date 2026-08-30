@@ -12,6 +12,28 @@ final class PaywallPresenter {
     private var onResult: ((Bool) -> Void)?
     private var didResolve = false
 
+    /// Arms paywall state without toggling `isPresented` — use when the caller hosts its own sheet
+    /// (e.g. inside a fullScreenCover so the cover is not dismissed).
+    func arm(
+        context: PaywallContext,
+        triggerFeature: String? = nil,
+        onResult: ((Bool) -> Void)? = nil
+    ) {
+        let resolvedTrigger = triggerFeature ?? context.defaultTriggerFeature
+        self.context = context
+        self.triggerFeature = resolvedTrigger
+        self.onResult = onResult
+        didResolve = false
+        AppTelemetry.logCommercialEvent(
+            domain: "paywall",
+            outcome: "shown",
+            metadata: [
+                "context": context.rawValue,
+                "trigger_feature": resolvedTrigger,
+            ]
+        )
+    }
+
     func present(
         context: PaywallContext,
         triggerFeature: String? = nil,
@@ -32,18 +54,7 @@ final class PaywallPresenter {
             return
         }
 
-        self.context = context
-        self.triggerFeature = resolvedTrigger
-        self.onResult = onResult
-        didResolve = false
-        AppTelemetry.logCommercialEvent(
-            domain: "paywall",
-            outcome: "shown",
-            metadata: [
-                "context": context.rawValue,
-                "trigger_feature": resolvedTrigger,
-            ]
-        )
+        arm(context: context, triggerFeature: resolvedTrigger, onResult: onResult)
         isPresented = true
     }
 

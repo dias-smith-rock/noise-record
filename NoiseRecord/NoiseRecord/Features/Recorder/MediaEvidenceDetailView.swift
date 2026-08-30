@@ -120,11 +120,60 @@ struct MediaEvidenceDetailView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
+                    let kind = analyticsMediaKind
                     AppTelemetry.logProductEvent(
                         "recording_share_tap",
-                        parameters: ["kind": analyticsMediaKind]
+                        parameters: ["kind": kind, "source": "detail"]
                     )
-                    SharePresenter.present(items: [fileURL])
+                    if kind == "video" {
+                        AppTelemetry.logProductEvent(
+                            "video_share_tap",
+                            parameters: ["source": "detail"]
+                        )
+                    }
+                    guard MediaEntitlementGate.requireShareAccess(triggerFeature: "recording_detail_share") else {
+                        AppTelemetry.logProductEvent(
+                            "recording_share_result",
+                            parameters: [
+                                "kind": kind,
+                                "source": "detail",
+                                "shared": "false",
+                                "activity": "vip_gate",
+                            ]
+                        )
+                        if kind == "video" {
+                            AppTelemetry.logProductEvent(
+                                "video_share_result",
+                                parameters: [
+                                    "source": "detail",
+                                    "shared": "false",
+                                    "activity": "vip_gate",
+                                ]
+                            )
+                        }
+                        return
+                    }
+                    SharePresenter.present(items: [fileURL]) { didShare, activityType in
+                        AppTelemetry.logProductEvent(
+                            "recording_share_result",
+                            parameters: [
+                                "kind": kind,
+                                "source": "detail",
+                                "shared": didShare ? "true" : "false",
+                                "activity": activityType ?? "none",
+                            ]
+                        )
+                        if kind == "video" {
+                            AppTelemetry.logProductEvent(
+                                "video_share_result",
+                                parameters: [
+                                    "source": "detail",
+                                    "shared": didShare ? "true" : "false",
+                                    "activity": activityType ?? "none",
+                                ]
+                            )
+                        }
+                    }
                 } label: {
                     Image(systemName: "square.and.arrow.up")
                 }

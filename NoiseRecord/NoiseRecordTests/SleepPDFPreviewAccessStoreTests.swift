@@ -12,17 +12,11 @@ final class SleepPDFPreviewAccessStoreTests: XCTestCase {
         super.tearDown()
     }
 
-    func testFirstPreviewIsNotBlurredForFreeUser() {
+    /// Blur gating is retired; helpers remain for migration/tests.
+    func testBlurHelpersStillToggleForLegacyCompatibility() {
         XCTAssertFalse(SleepPDFPreviewAccessStore.shouldBlurPreview(isPremium: false))
-    }
-
-    func testPreviewBlursAfterGlobalFreePreviewConsumed() {
         SleepPDFPreviewAccessStore.markGlobalFreePreviewConsumed()
         XCTAssertTrue(SleepPDFPreviewAccessStore.shouldBlurPreview(isPremium: false))
-    }
-
-    func testPremiumUserNeverBlursEvenAfterMark() {
-        SleepPDFPreviewAccessStore.markGlobalFreePreviewConsumed()
         XCTAssertFalse(SleepPDFPreviewAccessStore.shouldBlurPreview(isPremium: true))
     }
 }

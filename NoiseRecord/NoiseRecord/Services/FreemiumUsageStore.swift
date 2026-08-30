@@ -1,16 +1,14 @@
 import Foundation
 
-/// 免费层用量追踪（视频每日次数、首条加长试用等）。
+/// Legacy freemium counters retained for migration/tests. Video daily limits and
+/// duration caps are no longer enforced — in-app save is free for everyone.
 final class FreemiumUsageStore: @unchecked Sendable {
     static let shared = FreemiumUsageStore()
 
-    static let freeVideoDailyLimit = 1
-    /// Lifetime first free clip — long enough to feel like shareable proof.
-    static let freeVideoFirstClipMaxDuration: TimeInterval = 45
-    /// Subsequent free clips.
-    static let freeVideoStandardMaxDuration: TimeInterval = 30
-
-    /// Backward-compatible alias for UI that still reads a single constant.
+    /// Kept for older analytics / tests; not used as a product gate.
+    static let freeVideoDailyLimit = Int.max
+    static let freeVideoFirstClipMaxDuration: TimeInterval = .greatestFiniteMagnitude
+    static let freeVideoStandardMaxDuration: TimeInterval = .greatestFiniteMagnitude
     static var freeVideoMaxDuration: TimeInterval { freeVideoStandardMaxDuration }
 
     private let defaults: UserDefaults
@@ -24,31 +22,18 @@ final class FreemiumUsageStore: @unchecked Sendable {
     }
 
     func canStartVideoRecording(isPremium: Bool) -> Bool {
-        guard !isPremium else { return true }
-        lock.lock()
-        defer { lock.unlock() }
-        resetIfNewDayLocked()
-        return defaults.integer(forKey: countKey) < Self.freeVideoDailyLimit
+        _ = isPremium
+        return true
     }
 
     func remainingVideoRecordingsToday(isPremium: Bool) -> Int {
-        guard !isPremium else { return Int.max }
-        lock.lock()
-        defer { lock.unlock() }
-        resetIfNewDayLocked()
-        let used = defaults.integer(forKey: countKey)
-        return max(0, Self.freeVideoDailyLimit - used)
+        _ = isPremium
+        return Int.max
     }
 
-    /// Max seconds the next free save may keep. Premium is unlimited.
     func allowedVideoSaveDuration(isPremium: Bool) -> TimeInterval {
-        guard !isPremium else { return .greatestFiniteMagnitude }
-        lock.lock()
-        defer { lock.unlock() }
-        if defaults.bool(forKey: firstClipBonusUsedKey) {
-            return Self.freeVideoStandardMaxDuration
-        }
-        return Self.freeVideoFirstClipMaxDuration
+        _ = isPremium
+        return .greatestFiniteMagnitude
     }
 
     func hasUsedFirstClipBonus() -> Bool {
@@ -58,19 +43,11 @@ final class FreemiumUsageStore: @unchecked Sendable {
     }
 
     func recordVideoSessionStarted() {
-        lock.lock()
-        defer { lock.unlock() }
-        resetIfNewDayLocked()
-        let next = defaults.integer(forKey: countKey) + 1
-        defaults.set(next, forKey: countKey)
+        // No-op: daily quota removed.
     }
 
-    /// Call after a free clip is successfully saved (including trimmed saves).
     func markFirstClipBonusConsumedIfNeeded() {
-        lock.lock()
-        defer { lock.unlock() }
-        guard !defaults.bool(forKey: firstClipBonusUsedKey) else { return }
-        defaults.set(true, forKey: firstClipBonusUsedKey)
+        // No-op: first-clip bonus removed with duration caps.
     }
 
     #if DEBUG
@@ -82,20 +59,4 @@ final class FreemiumUsageStore: @unchecked Sendable {
         defaults.removeObject(forKey: firstClipBonusUsedKey)
     }
     #endif
-
-    private func resetIfNewDayLocked() {
-        let today = Self.dayString(from: Date())
-        let storedDay = defaults.string(forKey: dayKey)
-        guard storedDay != today else { return }
-        defaults.set(today, forKey: dayKey)
-        defaults.set(0, forKey: countKey)
-    }
-
-    private static func dayString(from date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar.current
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: date)
-    }
 }

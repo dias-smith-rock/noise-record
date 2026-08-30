@@ -75,15 +75,20 @@ struct EvidenceBarWaveformView: View {
 
         guard points.count > 1 else { return }
 
+        let smoothPoints = WaveformSinePath.densify(points, samplesPerSegment: 6) { startDB, endDB, t in
+            let sineT = Float((1 - cos(Double(t) * .pi)) * 0.5)
+            return startDB + (endDB - startDB) * sineT
+        }
+
         let strokeStyle = StrokeStyle(
             lineWidth: theme.waveformLineWidth,
             lineCap: .round,
             lineJoin: .round
         )
 
-        for index in 1..<points.count {
-            let (startPoint, startDB) = points[index - 1]
-            let (endPoint, endDB) = points[index]
+        for index in 1..<smoothPoints.count {
+            let (startPoint, startDB) = smoothPoints[index - 1]
+            let (endPoint, endDB) = smoothPoints[index]
             let segmentColor = AcousticGaugeStyle.color(forDecibel: (startDB + endDB) * 0.5)
 
             var segment = Path()

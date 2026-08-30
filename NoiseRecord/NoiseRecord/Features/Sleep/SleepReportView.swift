@@ -16,12 +16,14 @@ struct SleepReportView: View {
     @State private var showHistory = false
     @State private var csvExportErrorMessage: String?
     @State private var showPDFFormatPicker = false
+    @State private var showNEMRLanguagePicker = false
     @State private var pendingPDFSession: SleepNoiseSession?
     @State private var embeddedPDFURL: URL?
     @State private var embeddedPDFLoadFailed = false
     @State private var embeddedPDFCurrentPage = 1
     @State private var embeddedPDFTotalPages = 0
     @State private var embeddedPDFFormat: SleepForensicReportFormat = .legacyOvernight
+    @State private var embeddedPDFLanguage: AppLanguage = .en
     @State private var showPDFShareSheet = false
 
     private var measurementMode: AcousticMeasurementMode {
@@ -35,8 +37,8 @@ struct SleepReportView: View {
         .theme(for: themeMeasurementMode ?? measurementMode)
     }
 
-    private var isPDFPreviewBlurred: Bool {
-        SleepPDFPreviewAccessStore.shouldBlurPreview(isPremium: subscriptions.canAccessSleepExport)
+    private var showsPDFWatermark: Bool {
+        MediaEntitlementGate.shouldWatermarkSleepPDFPreview
     }
 
     var body: some View {
@@ -62,8 +64,8 @@ struct SleepReportView: View {
             }
             .scrollContentBackground(.hidden)
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                if showsPDFUnlockBar {
-                    pdfUnlockBar
+                if showsPDFExportBar {
+                    pdfExportBar
                 }
             }
             .navigationTitle(L10n.sleepReportTitle)
@@ -97,17 +99,64 @@ struct SleepReportView: View {
                     }
                 }
                 Button(SleepForensicReportFormat.nighttimeEnvironmental.title) {
-                    if let pendingPDFSession {
-                        AppTelemetry.logProductEvent(
-                            "sleep_pdf_format_selected",
-                            parameters: ["format": SleepForensicReportFormat.nighttimeEnvironmental.rawValue]
-                        )
-                        exportPDF(pendingPDFSession, format: .nighttimeEnvironmental)
-                    }
+                    AppTelemetry.logProductEvent(
+                        "sleep_pdf_format_selected",
+                        parameters: ["format": SleepForensicReportFormat.nighttimeEnvironmental.rawValue]
+                    )
+                    showNEMRLanguagePicker = true
                 }
                 Button(L10n.cancel, role: .cancel) {
                     pendingPDFSession = nil
                 }
+            }
+            .sheet(isPresented: $showNEMRLanguagePicker, onDismiss: {
+                if pendingPDFSession != nil {
+                    // Cancelled without choosing a language.
+                    pendingPDFSession = nil
+                }
+            }) {
+                NavigationStack {
+                    List {
+                        ForEach(AppLanguage.nemrReportChoices) { language in
+                            Button {
+                                guard let session = pendingPDFSession else { return }
+                                AppTelemetry.logProductEvent(
+                                    "sleep_pdf_nemr_language_selected",
+                                    parameters: ["language": language.rawValue]
+                                )
+                                pendingPDFSession = nil
+                                showNEMRLanguagePicker = false
+                                exportPDF(
+                                    session,
+                                    format: .nighttimeEnvironmental,
+                                    primaryLanguage: language
+                                )
+                            } label: {
+                                HStack {
+                                    Text(language.displayName)
+                                        .foregroundStyle(.primary)
+                                    Spacer()
+                                    if language == AppLocalization.resolvedAppLanguage(),
+                                       AppLanguage.nemrReportChoices.contains(language) {
+                                        Image(systemName: "checkmark")
+                                            .foregroundStyle(theme.accent)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .navigationTitle(L10n.sleepReportNEMRSelectLanguage)
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button(L10n.cancel) {
+                                pendingPDFSession = nil
+                                showNEMRLanguagePicker = false
+                            }
+                        }
+                    }
+                }
+                .presentationDetents([.medium, .large])
             }
         }
         .proTabBackground(theme: theme)
@@ -128,22 +177,25 @@ struct SleepReportView: View {
         }
         .task(id: session?.id) {
             guard let session else { return }
-            await refreshEmbeddedPDF(session, format: embeddedPDFFormat)
-        }
-        .onDisappear {
-            guard !subscriptions.canAccessSleepExport else { return }
-            guard !SleepPDFPreviewAccessStore.hasConsumedGlobalFreePreview else { return }
-            SleepPDFPreviewAccessStore.markGlobalFreePreviewConsumed()
+            await refreshEmbeddedPDF(
+                session,
+                format: embeddedPDFFormat,
+                primaryLanguage: embeddedPDFLanguage
+            )
         }
     }
 
-    private var showsPDFUnlockBar: Bool {
-        session != nil && isPDFPreviewBlurred
+    private var showsPDFExportBar: Bool {
+        session != nil && showsPDFWatermark
     }
 
-    private var pdfUnlockBar: some View {
-        PDFPreviewUnlockBar(theme: theme) {
-            AppTelemetry.logProductEvent("sleep_pdf_unlock_tap")
+    private var pdfExportBar: some View {
+        PDFPreviewUnlockBar(
+            theme: theme,
+            title: L10n.sleepReportPDFExportCleanTitle,
+            subtitle: L10n.sleepReportPDFExportCleanSubtitle
+        ) {
+            AppTelemetry.logProductEvent("sleep_pdf_export_clean_tap")
             PaywallPresenter.shared.present(context: .sleepExport)
         }
         .padding(.horizontal, 16)
@@ -251,10 +303,8 @@ struct SleepReportView: View {
                 systemImage: "doc.richtext"
             ) {
                 AppTelemetry.logProductEvent("sleep_export_pdf_tap")
-                guard SubscriptionManager.shared.canAccessSleepExport else {
-                    PaywallPresenter.shared.present(context: .sleepExport)
-                    return
-                }
+                // Format switching only refreshes in-app preview (still watermarked for free users).
+                // Clean takeaway is gated on share via weekly / VIP credit.
                 pendingPDFSession = session
                 showPDFFormatPicker = true
             }
@@ -270,13 +320,15 @@ struct SleepReportView: View {
                     .foregroundStyle(theme.accent.opacity(0.85))
                     .lineLimit(2)
                 Spacer()
-                if subscriptions.canAccessSleepExport,
-                   embeddedPDFURL != nil, !embeddedPDFLoadFailed {
+                if embeddedPDFURL != nil, !embeddedPDFLoadFailed {
                     Button {
                         AppTelemetry.logProductEvent(
                             "sleep_pdf_share_tap",
                             parameters: ["format": embeddedPDFFormat.rawValue]
                         )
+                        guard MediaEntitlementGate.requireCleanPDFExportAccess(triggerFeature: "sleep_pdf_share") else {
+                            return
+                        }
                         showPDFShareSheet = true
                     } label: {
                         Label(L10n.share, systemImage: "square.and.arrow.up")
@@ -295,14 +347,19 @@ struct SleepReportView: View {
                     )
                     .frame(height: 160)
                 } else if let embeddedPDFURL {
-                    PDFPagesStackView(
-                        url: embeddedPDFURL,
-                        reportFormat: embeddedPDFFormat,
-                        isPreviewBlurred: isPDFPreviewBlurred,
-                        loadFailed: $embeddedPDFLoadFailed,
-                        currentPage: $embeddedPDFCurrentPage,
-                        totalPages: $embeddedPDFTotalPages
-                    )
+                    ZStack {
+                        PDFPagesStackView(
+                            url: embeddedPDFURL,
+                            reportFormat: embeddedPDFFormat,
+                            loadFailed: $embeddedPDFLoadFailed,
+                            currentPage: $embeddedPDFCurrentPage,
+                            totalPages: $embeddedPDFTotalPages
+                        )
+                        if showsPDFWatermark {
+                            PDFPreviewWatermarkOverlay()
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                    }
                 } else {
                     ProgressView()
                         .frame(maxWidth: .infinity)
@@ -383,8 +440,7 @@ struct SleepReportView: View {
     }
 
     private func exportCSV(_ session: SleepNoiseSession) {
-        guard SubscriptionManager.shared.canAccessSleepExport else {
-            PaywallPresenter.shared.present(context: .sleepExport)
+        guard MediaEntitlementGate.requireExportAccess(triggerFeature: "sleep_export_csv") else {
             return
         }
         let samples = SleepMeasurementPersistence.samples(
@@ -413,8 +469,13 @@ struct SleepReportView: View {
         SharePresenter.present(items: [url])
     }
 
-    private func refreshEmbeddedPDF(_ session: SleepNoiseSession, format: SleepForensicReportFormat) async {
+    private func refreshEmbeddedPDF(
+        _ session: SleepNoiseSession,
+        format: SleepForensicReportFormat,
+        primaryLanguage: AppLanguage = .en
+    ) async {
         embeddedPDFFormat = format
+        embeddedPDFLanguage = AppLocalization.resolvedAppLanguage(for: primaryLanguage)
         embeddedPDFLoadFailed = false
         embeddedPDFCurrentPage = 1
         embeddedPDFTotalPages = 0
@@ -439,21 +500,25 @@ struct SleepReportView: View {
         case .legacyOvernight:
             url = SleepForensicPDFExporter.export(payload: payload)
         case .nighttimeEnvironmental:
-            url = SleepNEMRPDFExporter.export(payload: payload)
+            url = SleepNEMRPDFExporter.export(
+                payload: payload,
+                primaryLanguage: embeddedPDFLanguage
+            )
         }
 
         embeddedPDFURL = url
         embeddedPDFLoadFailed = url == nil
     }
 
-    private func exportPDF(_ session: SleepNoiseSession, format: SleepForensicReportFormat) {
-        guard SubscriptionManager.shared.canAccessSleepExport else {
-            PaywallPresenter.shared.present(context: .sleepExport)
-            return
-        }
+    private func exportPDF(
+        _ session: SleepNoiseSession,
+        format: SleepForensicReportFormat,
+        primaryLanguage: AppLanguage = .en
+    ) {
+        // Access already checked when opening the format picker.
         pendingPDFSession = nil
         Task {
-            await refreshEmbeddedPDF(session, format: format)
+            await refreshEmbeddedPDF(session, format: format, primaryLanguage: primaryLanguage)
         }
     }
 }
@@ -491,19 +556,30 @@ private enum PDFPageImageRenderer {
     }
 }
 
+private struct PDFContentHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
 private struct PDFPagesStackView: View {
     let url: URL
     let reportFormat: SleepForensicReportFormat
-    let isPreviewBlurred: Bool
     @Binding var loadFailed: Bool
     @Binding var currentPage: Int
     @Binding var totalPages: Int
 
     @State private var pageImages: [UIImage] = []
-    @State private var pageClearTopRatios: [CGFloat] = []
     @State private var renderWidth: CGFloat = 0
+    @State private var unscaledContentHeight: CGFloat = 0
     @State private var zoomScale: CGFloat = 1
     @State private var steadyZoomScale: CGFloat = 1
+
+    /// Fixed viewport so the outer report ScrollView does not steal pan gestures after zoom.
+    private var viewportHeight: CGFloat {
+        min(UIScreen.main.bounds.height * 0.55, 560)
+    }
 
     var body: some View {
         VStack(spacing: 8) {
@@ -512,12 +588,37 @@ private struct PDFPagesStackView: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 120)
             } else {
-                ScrollView([.horizontal, .vertical], showsIndicators: false) {
+                ScrollView([.horizontal, .vertical], showsIndicators: true) {
                     pageStack
-                        .scaleEffect(zoomScale, anchor: .top)
-                        .frame(width: renderWidth * zoomScale, alignment: .top)
+                        // Lay out at 1× first so intrinsic height can be measured.
+                        .frame(width: max(renderWidth, 1), alignment: .topLeading)
+                        .background {
+                            GeometryReader { geometry in
+                                Color.clear.preference(
+                                    key: PDFContentHeightKey.self,
+                                    value: geometry.size.height
+                                )
+                            }
+                        }
+                        .onPreferenceChange(PDFContentHeightKey.self) { height in
+                            guard height > 1, abs(height - unscaledContentHeight) > 0.5 else { return }
+                            unscaledContentHeight = height
+                        }
+                        .scaleEffect(zoomScale, anchor: .topLeading)
+                        // Only lock the zoomed scroll size after we know the real content height;
+                        // otherwise a 1pt placeholder frame hides the PDF until the next gesture.
+                        .frame(
+                            width: max(renderWidth, 1) * zoomScale,
+                            height: unscaledContentHeight > 1
+                                ? unscaledContentHeight * zoomScale
+                                : nil,
+                            alignment: .topLeading
+                        )
                 }
+                .coordinateSpace(name: "pdfPreviewViewport")
                 .frame(maxWidth: .infinity)
+                .frame(height: viewportHeight)
+                .clipped()
                 .simultaneousGesture(magnificationGesture)
                 .onTapGesture(count: 2) {
                     withAnimation(.easeOut(duration: 0.2)) {
@@ -544,9 +645,10 @@ private struct PDFPagesStackView: View {
                   best.visibleArea > 1 else { return }
             currentPage = best.pageIndex + 1
         }
-        .task(id: "\(url.absoluteString)-\(renderWidth)-\(isPreviewBlurred)-\(reportFormat.rawValue)") {
+        .task(id: "\(url.absoluteString)-\(renderWidth)-\(reportFormat.rawValue)") {
             zoomScale = 1
             steadyZoomScale = 1
+            unscaledContentHeight = 0
             await loadPages()
         }
     }
@@ -554,25 +656,27 @@ private struct PDFPagesStackView: View {
     private var pageStack: some View {
         VStack(spacing: 8) {
             ForEach(Array(pageImages.enumerated()), id: \.offset) { index, image in
-                BlurredPDFPageImage(
-                    image: image,
-                    clearTopRatio: pageClearTopRatios.indices.contains(index)
-                        ? pageClearTopRatios[index]
-                        : 1
-                )
-                .frame(maxWidth: .infinity)
-                .background(Color.white)
-                .background {
-                    GeometryReader { geometry in
-                        let frame = geometry.frame(in: .global)
-                        let visible = frame.intersection(UIScreen.main.bounds)
-                        let area = max(0, visible.width) * max(0, visible.height)
-                        Color.clear.preference(
-                            key: PageVisibilityPreference.self,
-                            value: [PageVisibilityEntry(pageIndex: index, visibleArea: area)]
-                        )
+                Image(uiImage: image)
+                    .resizable()
+                    .interpolation(.high)
+                    .scaledToFit()
+                    .frame(width: max(renderWidth, 1))
+                    .background(Color.white)
+                    .background {
+                        GeometryReader { geometry in
+                            let frame = geometry.frame(in: .named("pdfPreviewViewport"))
+                            let viewport = CGRect(
+                                origin: .zero,
+                                size: CGSize(width: max(renderWidth, 1), height: viewportHeight)
+                            )
+                            let visible = frame.intersection(viewport)
+                            let area = max(0, visible.width) * max(0, visible.height)
+                            Color.clear.preference(
+                                key: PageVisibilityPreference.self,
+                                value: [PageVisibilityEntry(pageIndex: index, visibleArea: area)]
+                            )
+                        }
                     }
-                }
             }
         }
     }
@@ -607,15 +711,12 @@ private struct PDFPagesStackView: View {
         guard let document, document.pageCount > 0 else {
             loadFailed = true
             pageImages = []
-            pageClearTopRatios = []
             totalPages = 0
             return
         }
 
         var images: [UIImage] = []
-        var clearTopRatios: [CGFloat] = []
         images.reserveCapacity(document.pageCount)
-        clearTopRatios.reserveCapacity(document.pageCount)
 
         for index in 0..<document.pageCount {
             guard let page = document.page(at: index),
@@ -623,26 +724,16 @@ private struct PDFPagesStackView: View {
                 continue
             }
             images.append(image)
-            clearTopRatios.append(
-                PDFPreviewBlurGate.clearTopRatio(
-                    forPageIndex: index,
-                    page: page,
-                    format: reportFormat,
-                    isPreviewBlurred: isPreviewBlurred
-                )
-            )
         }
 
         guard !images.isEmpty else {
             loadFailed = true
             pageImages = []
-            pageClearTopRatios = []
             totalPages = 0
             return
         }
 
         pageImages = images
-        pageClearTopRatios = clearTopRatios
         totalPages = images.count
         currentPage = 1
         loadFailed = false

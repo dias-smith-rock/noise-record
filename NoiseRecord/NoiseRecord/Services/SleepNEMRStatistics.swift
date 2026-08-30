@@ -29,10 +29,10 @@ enum SleepNEMRStatistics {
         let anyPeakExceedance: Bool
     }
 
-    enum ComplianceStatus: String, Sendable {
-        case pass = "Pass / 达标"
-        case exceed = "Exceed / 超标"
-        case nonCompliant = "Non-Compliant / 不符合"
+    enum ComplianceStatus: String, Sendable, Equatable {
+        case pass
+        case exceed
+        case nonCompliant
     }
 
     static func reportNumber(for sessionID: UUID, monitoringDate: Date) -> String {
@@ -103,62 +103,49 @@ enum SleepNEMRStatistics {
     static func buildConclusion(
         hourlyRows: [HourlyResultRow],
         peakRow: PeakAnalysisRow,
-        session: SleepForensicPDFExporter.SleepNoiseSessionSnapshot
+        session: SleepForensicPDFExporter.SleepNoiseSessionSnapshot,
+        copy: SleepNEMRCopy
     ) -> ConclusionSummary {
         let exceedingHours = hourlyRows.filter { $0.compliance == .exceed }
         let primaryRow = hourlyRows.first
         let l90 = primaryRow?.l90 ?? session.noiseFloorDB
         let leq = primaryRow?.leq ?? session.overallLeq
-        let localLimit = primaryRow?.localLimit ?? NoiseReferenceLimits.residentialNightDB
 
         var overall: [String] = []
         if let row = exceedingHours.first {
             overall.append(
-                """
-                6.1 Overall Conclusion / 总体结论: During the monitoring period, primary point \(row.pointLabel) recorded a 1-hour equivalent level of \(String(format: "%.1f", row.leq)) dB(A), exceeding the local nighttime residential limit of \(String(format: "%.0f", row.localLimit)) dB(A) and the EPA community noise guidance.
-                """
+                copy.conclusionExceed(point: row.pointLabel, leq: row.leq, limit: row.localLimit)
             )
         } else if let row = primaryRow {
             overall.append(
-                """
-                6.1 Overall Conclusion / 总体结论: Primary point \(row.pointLabel) recorded a 1-hour equivalent level of \(String(format: "%.1f", row.leq)) dB(A), within the local nighttime residential limit of \(String(format: "%.0f", row.localLimit)) dB(A).
-                """
+                copy.conclusionWithin(point: row.pointLabel, leq: row.leq, limit: row.localLimit)
             )
         }
 
         if peakRow.exceedCount > 0 {
             overall.append(
-                """
-                Impulsive peaks / 突发噪音显著: Point \(peakRow.pointLabel) recorded \(peakRow.exceedCount) instantaneous events above \(String(format: "%.0f", peakRow.peakThreshold)) dB(A), with a maximum of \(String(format: "%.1f", peakRow.highestLmax)) dB(A). These events indicate uncontrolled impulsive noise sources.
-                """
+                copy.conclusionPeaksSignificant(
+                    point: peakRow.pointLabel,
+                    count: peakRow.exceedCount,
+                    threshold: peakRow.peakThreshold,
+                    max: peakRow.highestLmax
+                )
             )
         } else {
-            overall.append(
-                "Impulsive peaks / 突发噪音: No instantaneous events exceeded \(String(format: "%.0f", peakRow.peakThreshold)) dB(A) during the session."
-            )
+            overall.append(copy.conclusionPeaksNone(threshold: peakRow.peakThreshold))
         }
 
         let backgroundNote: String
         if leq - l90 > 10 {
-            backgroundNote = """
-            6.2 Background Correction / 背景噪音修正说明: Background level (L90 = \(String(format: "%.1f", l90)) dB(A)) is more than 10 dB(A) below the measured Leq (\(String(format: "%.1f", leq)) dB(A)). No background correction is required; exceedance determination remains valid.
-            """
+            backgroundNote = copy.backgroundNoCorrection(l90: l90, leq: leq)
         } else {
-            backgroundNote = """
-            6.2 Background Correction / 背景噪音修正说明: Background level (L90 = \(String(format: "%.1f", l90)) dB(A)) is within 10 dB(A) of measured Leq (\(String(format: "%.1f", leq)) dB(A)). Professional background correction may be required for formal regulatory submission.
-            """
+            backgroundNote = copy.backgroundNeedsCorrection(l90: l90, leq: leq)
         }
 
         let recommendations = [
-            """
-            6.3 Recommendations / 建议措施 — Construction management: Restrict high-noise equipment after 22:00; secure vehicle loading areas and prohibit unnecessary horn use.
-            """,
-            """
-            Engineering noise control: Install or raise perimeter barriers with absorptive treatment near sensitive receptors; target 5–8 dB(A) path attenuation.
-            """,
-            """
-            Follow-up monitoring: Repeat measurement within 7 days after corrective actions to verify compliance.
-            """,
+            copy.recommendationConstruction,
+            copy.recommendationEngineering,
+            copy.recommendationFollowUp,
         ]
 
         return ConclusionSummary(
@@ -185,7 +172,7 @@ enum SleepNEMRStatistics {
         session: SleepForensicPDFExporter.SleepNoiseSessionSnapshot,
         localLimit: Float
     ) -> HourlyResultRow {
-        let decibels = samples.map { max($0.dbMax, $0.leq, $0.dbCurrent) }
+        let decibels = samples.map { $0.leq > 0 ? $0.leq : $0.dbCurrent }
         let leq: Float
         let lmax: Float
         let l90: Float

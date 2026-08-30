@@ -188,6 +188,12 @@ final class NoiseMonitorEngine {
         voiceRecorder.state
     }
 
+    /// Continuous session-track start time while monitoring (for Live elapsed UI).
+    var sessionRecordingStartedAt: Date? {
+        guard isMonitoring else { return nil }
+        return voiceRecorder.sessionRecordingStartedAt
+    }
+
     /// 监测期间连续录音链路是否运行。
     var isVoiceRecordingRunning: Bool {
         isMonitoring
@@ -465,14 +471,8 @@ final class NoiseMonitorEngine {
     }
 
     func deferredSessionSaveGate() -> DeferredSessionSaveGate {
-        guard let event = deferredSessionRecording else { return .nothingToSave }
-        if SubscriptionManager.shared.isPremiumUser { return .saveImmediately }
-        let fileName = event.fileURL.lastPathComponent
-        let startedAt = RecordingSession.parseStartDate(from: fileName) ?? event.startedAt
-        let duration = max(0, event.endedAt.timeIntervalSince(startedAt))
-        if duration > VoiceActivatedRecorder.freeMaxClipDuration {
-            return .requiresPaywall
-        }
+        // In-app persistence is free; export/share and long preview are gated elsewhere.
+        guard deferredSessionRecording != nil else { return .nothingToSave }
         return .saveImmediately
     }
 

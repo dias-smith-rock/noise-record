@@ -92,6 +92,10 @@ enum PaywallContext: String, Sendable {
     case videoDurationLimit
     case sleepHistory
     case sleepExport
+    /// Audio/video export, system share, or save-to-photos.
+    case mediaExport
+    /// Optional upsell when free preview hits the 3s cap.
+    case mediaPreviewLimit
 
     /// Stable feature tag for purchase funnel attribution (pairs with `context`).
     var defaultTriggerFeature: String {
@@ -106,6 +110,8 @@ enum PaywallContext: String, Sendable {
         case .videoDurationLimit: "video_duration"
         case .sleepHistory: "sleep_history"
         case .sleepExport: "sleep_export"
+        case .mediaExport: "media_export"
+        case .mediaPreviewLimit: "media_preview_limit"
         }
     }
 }

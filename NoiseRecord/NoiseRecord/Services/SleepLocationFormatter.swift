@@ -44,24 +44,25 @@ enum SleepLocationFormatter {
         start: SleepLocationSnapshot?,
         end: SleepLocationSnapshot? = nil,
         startPlaceName: String? = nil,
-        endPlaceName: String? = nil
+        endPlaceName: String? = nil,
+        copy: SleepNEMRCopy
     ) -> String {
-        guard let english = pdfEnglishSummary(
+        guard let summary = pdfEnglishSummary(
             start: start,
             end: end,
             startPlaceName: startPlaceName,
             endPlaceName: endPlaceName
         ) else {
-            return "Not recorded / 未记录"
+            return copy.notRecorded
         }
-        return "\(english) / \(english)"
+        return summary
     }
 
-    static func pdfNEMRLine(fromResolvedSummary summary: String?) -> String {
+    static func pdfNEMRLine(fromResolvedSummary summary: String?, copy: SleepNEMRCopy) -> String {
         guard let summary, !summary.isEmpty else {
-            return "Not recorded / 未记录"
+            return copy.notRecorded
         }
-        return "\(summary) / \(summary)"
+        return summary
     }
 
     static func formattedCoordinates(latitude: Double, longitude: Double) -> String {

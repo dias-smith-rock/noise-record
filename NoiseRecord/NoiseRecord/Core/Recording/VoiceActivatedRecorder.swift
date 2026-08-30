@@ -49,6 +49,11 @@ final class VoiceActivatedRecorder: @unchecked Sendable {
     /// Reflects VAD track state for UI badges.
     private(set) var state: RecordingState = .idle
 
+    /// Start of the continuous session track written while monitoring is active.
+    var sessionRecordingStartedAt: Date? {
+        fileQueue.sync { sessionStartDate }
+    }
+
     // MARK: - Continuous session track
 
     private var sessionPcmAccumulator = PCMFrameAccumulator(sampleRate: 44_100)

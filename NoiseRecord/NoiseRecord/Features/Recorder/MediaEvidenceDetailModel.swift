@@ -12,6 +12,10 @@ final class MediaEvidenceDetailModel {
     var isPlaying = false
     var duration: TimeInterval = 0
     var waveformReferenceLimitDB = NoiseReferenceLimits.residentialNightDB
+    /// Set when free preview hits the 3s cap (VIP paywall presented or weekly unlock used).
+    var didHitPreviewLimit = false
+    /// True after consuming this week's free full-preview allowance for the current item.
+    private(set) var weeklyPreviewUnlocked = false
 
     private var audioPlayer: AVAudioPlayer?
     private var videoPlayer: AVPlayer?
@@ -31,6 +35,13 @@ final class MediaEvidenceDetailModel {
             return timelineDuration
         }
         return 0
+    }
+
+    var previewLimit: TimeInterval? {
+        MediaEntitlementGate.previewPlaybackLimit(
+            duration: playbackDuration,
+            weeklyPreviewUnlocked: weeklyPreviewUnlocked
+        )
     }
 
     func loadTimeline(from url: URL, isVideo: Bool) async {
@@ -59,9 +70,13 @@ final class MediaEvidenceDetailModel {
         mediaURL = url
         self.isVideo = isVideo
         duration = fallbackDuration
+        didHitPreviewLimit = false
+        weeklyPreviewUnlocked = false
 
         if isVideo {
             let player = AVPlayer(url: url)
+            // Full asset timeline — restriction is enforced by pausing at 3s, not truncating the item.
+            player.currentItem?.forwardPlaybackEndTime = .invalid
             videoPlayer = player
             attachVideoTimeObserver(to: player)
         } else {
@@ -83,6 +98,11 @@ final class MediaEvidenceDetailModel {
     }
 
     func play() {
+        // At/after the free wall: don't restart silently — re-trigger VIP gate.
+        if let limit = previewLimit, currentTime >= limit - 0.02 {
+            handlePreviewLimitReached(forcePresentPaywall: true)
+            return
+        }
         if isVideo {
             videoPlayer?.play()
         } else {
@@ -103,7 +123,11 @@ final class MediaEvidenceDetailModel {
     }
 
     func seek(to time: TimeInterval) {
-        let clamped = min(max(time, 0), max(duration, 0))
+        let clamped = MediaEntitlementGate.clampSeekTime(
+            time,
+            duration: max(duration, playbackDuration),
+            weeklyPreviewUnlocked: weeklyPreviewUnlocked
+        )
         currentTime = clamped
         if isVideo {
             let cmTime = CMTime(seconds: clamped, preferredTimescale: 600)
@@ -134,16 +158,50 @@ final class MediaEvidenceDetailModel {
         audioPlayer = nil
     }
 
+    private func handlePreviewLimitReached(forcePresentPaywall: Bool = false) {
+        pause()
+        if let limit = previewLimit {
+            seek(to: limit)
+        }
+        if !forcePresentPaywall {
+            guard !didHitPreviewLimit else { return }
+        }
+        didHitPreviewLimit = true
+
+        // Weekly free credit continues playback; otherwise stop and show VIP paywall.
+        if MediaEntitlementGate.tryUnlockFullPreview(triggerFeature: "media_preview_cap") {
+            weeklyPreviewUnlocked = true
+            didHitPreviewLimit = false
+            if isVideo {
+                videoPlayer?.play()
+            } else {
+                audioPlayer?.play()
+                startAudioTimer()
+            }
+            isPlaying = true
+        }
+        // If paywall was shown: keep didHitPreviewLimit == true until the user taps Play again
+        // (`forcePresentPaywall`), which re-opens VIP without auto-restarting from 0s.
+    }
+
     private func attachVideoTimeObserver(to player: AVPlayer) {
         let interval = CMTime(seconds: 0.05, preferredTimescale: 600)
         timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
-            guard let self else { return }
-            currentTime = time.seconds
-            if let itemDuration = player.currentItem?.duration.seconds, itemDuration.isFinite, itemDuration > 0 {
-                duration = itemDuration
-            }
-            if currentTime >= duration, duration > 0 {
-                isPlaying = false
+            Task { @MainActor in
+                guard let self else { return }
+                self.currentTime = time.seconds
+                if let itemDuration = player.currentItem?.duration.seconds,
+                   itemDuration.isFinite,
+                   itemDuration > 0 {
+                    self.duration = itemDuration
+                }
+                if let limit = self.previewLimit, self.currentTime >= limit - 0.02 {
+                    self.handlePreviewLimitReached()
+                    return
+                }
+                if self.currentTime >= self.duration, self.duration > 0 {
+                    self.isPlaying = false
+                }
             }
         }
     }
@@ -151,12 +209,18 @@ final class MediaEvidenceDetailModel {
     private func startAudioTimer() {
         stopAudioTimer()
         playbackTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
-            guard let self, let audioPlayer else { return }
-            currentTime = audioPlayer.currentTime
-            duration = audioPlayer.duration
-            if !audioPlayer.isPlaying {
-                isPlaying = false
-                stopAudioTimer()
+            Task { @MainActor in
+                guard let self, let audioPlayer = self.audioPlayer else { return }
+                self.currentTime = audioPlayer.currentTime
+                self.duration = audioPlayer.duration
+                if let limit = self.previewLimit, self.currentTime >= limit - 0.02 {
+                    self.handlePreviewLimitReached()
+                    return
+                }
+                if !audioPlayer.isPlaying {
+                    self.isPlaying = false
+                    self.stopAudioTimer()
+                }
             }
         }
     }

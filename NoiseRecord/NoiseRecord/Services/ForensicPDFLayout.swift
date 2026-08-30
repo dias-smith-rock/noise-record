@@ -23,6 +23,19 @@ enum ForensicPDFLayout {
         static let border = UIColor.black
         static let chartLine = UIColor(red: 0.16, green: 0.52, blue: 0.68, alpha: 1)
         static let limitLine = UIColor.red
+        static let sessionPeak = UIColor(red: 0.75, green: 0.12, blue: 0.12, alpha: 1)
+        static let anomalyPeak = UIColor(red: 0.85, green: 0.45, blue: 0.08, alpha: 1)
+    }
+
+    struct PeakMarker: Sendable {
+        enum Kind: Sendable {
+            case sessionPeak
+            case anomaly
+        }
+
+        let timestamp: Date
+        let decibels: Float
+        let kind: Kind
     }
 
     static let footerDisclaimer =
@@ -376,19 +389,30 @@ enum ForensicPDFLayout {
         sessionStart: Date,
         sessionEnd: Date,
         limitDB: Float = 45,
-        limitLabel: String = "EPA/WHO Nighttime Limit (45 dB)"
+        limitLabel: String = "EPA/WHO Nighttime Limit (45 dB)",
+        peakMarkers: [PeakMarker] = []
     ) -> CGFloat {
-        let chartHeight: CGFloat = 220
+        let hasMarkers = !peakMarkers.isEmpty
+        let chartHeight: CGFloat = hasMarkers ? 248 : 220
         let chartRect = CGRect(x: Constants.margin, y: y, width: Constants.contentWidth, height: chartHeight)
-        let plotRect = chartRect.insetBy(dx: 36, dy: 24)
+        let plotRect = chartRect.insetBy(dx: 36, dy: hasMarkers ? 36 : 24)
 
         Colors.cardFill.setFill()
         UIBezierPath(roundedRect: chartRect, cornerRadius: 8).fill()
         Colors.border.setStroke()
         UIBezierPath(roundedRect: chartRect, cornerRadius: 8).stroke()
 
-        let minY: Float = 0
-        let maxY: Float = max(100, (points.map(\.decibels).max() ?? limitDB) + 10)
+        let minY: Float
+        let maxY: Float
+        let dataValues = points.map(\.decibels) + peakMarkers.map(\.decibels) + [limitDB]
+        if let dataMin = dataValues.min(), let dataMax = dataValues.max() {
+            let pad: Float = 5
+            minY = max(0, floor((dataMin - pad) / 5) * 5)
+            maxY = max(minY + 20, ceil((dataMax + pad) / 5) * 5)
+        } else {
+            minY = 0
+            maxY = 100
+        }
 
         func pointPosition(for date: Date, db: Float) -> CGPoint {
             let total = max(sessionEnd.timeIntervalSince(sessionStart), 1)
@@ -422,11 +446,8 @@ enum ForensicPDFLayout {
         let plotPoints = downsampledChartPoints(points, maxCount: 240)
         if plotPoints.count >= 2 {
             Colors.chartLine.setStroke()
-            let line = UIBezierPath()
-            line.move(to: pointPosition(for: plotPoints[0].timestamp, db: plotPoints[0].decibels))
-            for point in plotPoints.dropFirst() {
-                line.addLine(to: pointPosition(for: point.timestamp, db: point.decibels))
-            }
+            let anchors = plotPoints.map { pointPosition(for: $0.timestamp, db: $0.decibels) }
+            let line = WaveformSinePath.uiBezierPath(through: anchors, samplesPerSegment: 10)
             line.lineWidth = 1.25
             line.stroke()
         } else if let only = plotPoints.first {
@@ -435,11 +456,20 @@ enum ForensicPDFLayout {
             UIBezierPath(ovalIn: CGRect(x: center.x - 2, y: center.y - 2, width: 4, height: 4)).fill()
         }
 
+        drawPeakMarkers(
+            markers: peakMarkers,
+            plotRect: plotRect,
+            pointPosition: pointPosition
+        )
+
         let axisAttrs: [NSAttributedString.Key: Any] = [
             .font: UIFont.systemFont(ofSize: 8),
             .foregroundColor: Colors.secondaryText,
         ]
-        "0".draw(at: CGPoint(x: plotRect.minX - 18, y: plotRect.maxY - 6), withAttributes: axisAttrs)
+        "\(String(format: "%.0f", minY))".draw(
+            at: CGPoint(x: plotRect.minX - 24, y: plotRect.maxY - 6),
+            withAttributes: axisAttrs
+        )
         String(format: "%.0f", maxY).draw(
             at: CGPoint(x: plotRect.minX - 24, y: plotRect.minY - 4),
             withAttributes: axisAttrs
@@ -453,7 +483,131 @@ enum ForensicPDFLayout {
             withAttributes: axisAttrs
         )
 
-        return y + chartHeight + 12
+        var bottom = y + chartHeight + 8
+        if hasMarkers {
+            let legendAttrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 8),
+                .foregroundColor: Colors.secondaryText,
+            ]
+            Colors.sessionPeak.setFill()
+            UIBezierPath(ovalIn: CGRect(x: Constants.margin, y: bottom + 1, width: 7, height: 7)).fill()
+            "Session Peak".draw(
+                at: CGPoint(x: Constants.margin + 11, y: bottom),
+                withAttributes: legendAttrs
+            )
+            Colors.anomalyPeak.setFill()
+            UIBezierPath(ovalIn: CGRect(x: Constants.margin + 92, y: bottom + 1, width: 7, height: 7)).fill()
+            "Anomaly Peak (time + dB labeled)".draw(
+                at: CGPoint(x: Constants.margin + 103, y: bottom),
+                withAttributes: legendAttrs
+            )
+            bottom += 14
+        }
+        return bottom + 4
+    }
+
+    private static func drawPeakMarkers(
+        markers: [PeakMarker],
+        plotRect: CGRect,
+        pointPosition: (Date, Float) -> CGPoint
+    ) {
+        guard !markers.isEmpty else { return }
+
+        let sorted = markers.sorted { $0.timestamp < $1.timestamp }
+        var previousLabelMaxX: CGFloat = -.greatestFiniteMagnitude
+        var alternateUp = false
+
+        for marker in sorted {
+            let center = pointPosition(marker.timestamp, marker.decibels)
+            let color: UIColor = marker.kind == .sessionPeak ? Colors.sessionPeak : Colors.anomalyPeak
+            let radius: CGFloat = marker.kind == .sessionPeak ? 4.5 : 3.5
+
+            color.withAlphaComponent(0.35).setStroke()
+            let stem = UIBezierPath()
+            stem.move(to: CGPoint(x: center.x, y: plotRect.maxY))
+            stem.addLine(to: center)
+            stem.lineWidth = 1
+            stem.setLineDash([2, 2], count: 2, phase: 0)
+            stem.stroke()
+
+            color.setFill()
+            UIBezierPath(
+                ovalIn: CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2)
+            ).fill()
+            Colors.border.setStroke()
+            let ring = UIBezierPath(
+                ovalIn: CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2)
+            )
+            ring.lineWidth = 0.6
+            ring.stroke()
+
+            let title = marker.kind == .sessionPeak ? "Peak" : "Evt"
+            let label = "\(title) \(formattedTime(marker.timestamp))\n\(String(format: "%.1f dB", marker.decibels))"
+            let labelAttrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 7, weight: .semibold),
+                .foregroundColor: color,
+            ]
+            let labelSize = (label as NSString).boundingRect(
+                with: CGSize(width: 88, height: 36),
+                options: [.usesLineFragmentOrigin],
+                attributes: labelAttrs,
+                context: nil
+            ).size
+
+            var labelX = min(max(center.x - labelSize.width / 2, plotRect.minX), plotRect.maxX - labelSize.width)
+            if labelX < previousLabelMaxX + 4 {
+                alternateUp.toggle()
+                if !alternateUp {
+                    labelX = min(previousLabelMaxX + 4, plotRect.maxX - labelSize.width)
+                }
+            } else {
+                alternateUp = false
+            }
+            let labelY = alternateUp
+                ? max(plotRect.minY - 2, center.y - labelSize.height - 14)
+                : max(plotRect.minY, center.y - labelSize.height - 6)
+            label.draw(
+                in: CGRect(x: labelX, y: labelY, width: labelSize.width, height: labelSize.height + 2),
+                withAttributes: labelAttrs
+            )
+            previousLabelMaxX = labelX + labelSize.width
+        }
+    }
+
+    /// Builds labeled peak markers: always includes session Lpk, plus top anomaly peaks.
+    static func makePeakMarkers(
+        chartPoints: [SleepForensicPDFExporter.ChartPoint],
+        incidents: [SleepForensicPDFExporter.IncidentRow],
+        sessionPeakDB: Float? = nil,
+        sessionPeakTimestamp: Date? = nil,
+        maxAnomalyMarkers: Int = 6
+    ) -> [PeakMarker] {
+        var markers: [PeakMarker] = []
+
+        let chartPeak = chartPoints.max(by: { $0.decibels < $1.decibels })
+        let peakDB = sessionPeakDB ?? chartPeak?.decibels
+        let peakTime = sessionPeakTimestamp ?? chartPeak?.timestamp
+        if let peakDB, let peakTime {
+            markers.append(PeakMarker(timestamp: peakTime, decibels: peakDB, kind: .sessionPeak))
+        }
+
+        let anomalyCandidates = incidents
+            .sorted { $0.peakDB > $1.peakDB }
+            .prefix(max(0, maxAnomalyMarkers))
+
+        for incident in anomalyCandidates {
+            let tooCloseToSessionPeak = markers.contains {
+                $0.kind == .sessionPeak
+                    && abs($0.timestamp.timeIntervalSince(incident.timestamp)) < 90
+                    && abs($0.decibels - incident.peakDB) < 1.5
+            }
+            if tooCloseToSessionPeak { continue }
+            markers.append(
+                PeakMarker(timestamp: incident.timestamp, decibels: incident.peakDB, kind: .anomaly)
+            )
+        }
+
+        return markers.sorted { $0.timestamp < $1.timestamp }
     }
 
     static func drawIncidentLog(
@@ -602,9 +756,23 @@ enum ForensicPDFLayout {
         _ points: [SleepForensicPDFExporter.ChartPoint],
         maxCount: Int
     ) -> [SleepForensicPDFExporter.ChartPoint] {
-        guard points.count > maxCount else { return points }
-        let stride = max(1, points.count / maxCount)
-        return Swift.stride(from: 0, to: points.count, by: stride).map { points[$0] }
+        guard points.count > maxCount, maxCount > 0 else { return points }
+        let bucketSize = Double(points.count) / Double(maxCount)
+        var result: [SleepForensicPDFExporter.ChartPoint] = []
+        result.reserveCapacity(maxCount)
+        var cursor = 0.0
+        while result.count < maxCount {
+            let start = Int(cursor.rounded(.down))
+            let end = min(points.count, Int((cursor + bucketSize).rounded(.down)))
+            let slice = points[start..<max(end, start + 1)]
+            // Keep the loudest sample in each bucket so overnight peaks survive downsampling.
+            if let peak = slice.max(by: { $0.decibels < $1.decibels }) {
+                result.append(peak)
+            }
+            cursor += bucketSize
+            if start >= points.count - 1 { break }
+        }
+        return result
     }
 
     private static func measuredHeight(

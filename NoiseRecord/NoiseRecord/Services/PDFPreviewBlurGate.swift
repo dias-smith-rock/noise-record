@@ -8,7 +8,8 @@ enum PDFPreviewBlurGate {
         case .legacyOvernight:
             "2. EXECUTIVE SUMMARY"
         case .nighttimeEnvironmental:
-            "2. 监测依据与参考标准"
+            // Always contains English "References & Standards" (primary or secondary).
+            "References & Standards"
         }
     }
 
@@ -101,6 +102,8 @@ struct BlurredPDFPageImage: View {
 /// 固定在晨报第一屏底部的 VIP 解锁入口。
 struct PDFPreviewUnlockBar: View {
     let theme: ModeVisualTheme
+    var title: String = L10n.sleepReportPDFUnlockTitle
+    var subtitle: String = L10n.paywallContextSleepExport
     let onUnlock: () -> Void
 
     var body: some View {
@@ -111,12 +114,12 @@ struct PDFPreviewUnlockBar: View {
                     .foregroundStyle(theme.accent)
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(L10n.sleepReportPDFUnlockTitle)
+                    Text(title)
                         .font(.subheadline.weight(.bold))
                         .foregroundStyle(.primary)
                         .multilineTextAlignment(.leading)
 
-                    Text(L10n.paywallContextSleepExport)
+                    Text(subtitle)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.leading)
@@ -143,5 +146,30 @@ struct PDFPreviewUnlockBar: View {
             )
         }
         .buttonStyle(.plain)
+    }
+}
+
+struct PDFPreviewWatermarkOverlay: View {
+    var body: some View {
+        GeometryReader { geometry in
+            let cols = Int(geometry.size.width / 180) + 2
+            let rows = Int(geometry.size.height / 120) + 2
+            ZStack {
+                ForEach(0..<(cols * rows), id: \.self) { index in
+                    let col = index % cols
+                    let row = index / cols
+                    Text(L10n.sleepReportPDFWatermark)
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(Color.red.opacity(0.16))
+                        .rotationEffect(.degrees(-32))
+                        .position(
+                            x: CGFloat(col) * 180 - 20,
+                            y: CGFloat(row) * 120 + 40
+                        )
+                }
+            }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .allowsHitTesting(false)
+        }
     }
 }

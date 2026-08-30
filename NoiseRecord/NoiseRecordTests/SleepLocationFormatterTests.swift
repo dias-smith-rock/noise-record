@@ -26,11 +26,13 @@ final class SleepLocationFormatterTests: XCTestCase {
     }
 
     func testPDFNEMRLineUsesResolvedSummary() {
+        let copy = SleepNEMRCopy(primaryLanguage: .en)
         XCTAssertEqual(
             SleepLocationFormatter.pdfNEMRLine(
-                fromResolvedSummary: "37.7749° N, 122.4194° W — San Francisco, CA (session start)"
+                fromResolvedSummary: "37.7749° N, 122.4194° W — San Francisco, CA (session start)",
+                copy: copy
             ),
-            "37.7749° N, 122.4194° W — San Francisco, CA (session start) / 37.7749° N, 122.4194° W — San Francisco, CA (session start)"
+            "37.7749° N, 122.4194° W — San Francisco, CA (session start)"
         )
     }
 
@@ -39,9 +41,15 @@ final class SleepLocationFormatterTests: XCTestCase {
     }
 
     func testPDFNEMRLineUsesFallbackWhenMissing() {
+        let copy = SleepNEMRCopy(primaryLanguage: .zhHant)
         XCTAssertEqual(
-            SleepLocationFormatter.pdfNEMRLine(start: nil),
-            "Not recorded / 未记录"
+            SleepLocationFormatter.pdfNEMRLine(start: nil, copy: copy),
+            "未記錄 (Not recorded)"
+        )
+        let englishOnly = SleepNEMRCopy(primaryLanguage: .en)
+        XCTAssertEqual(
+            SleepLocationFormatter.pdfNEMRLine(start: nil, copy: englishOnly),
+            "Not recorded"
         )
     }
 }

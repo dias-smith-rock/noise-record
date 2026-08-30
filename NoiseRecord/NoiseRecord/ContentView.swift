@@ -547,25 +547,9 @@ struct ContentView: View {
 
     private func applyDeferredSessionSaveGate() {
         switch engine.deferredSessionSaveGate() {
-        case .saveImmediately:
+        case .saveImmediately, .requiresPaywall:
             engine.commitDeferredSessionRecording()
             syncAppReviewFilesCount()
-        case .requiresPaywall:
-            AppTelemetry.logProductEvent(
-                "freemium_limit_hit",
-                parameters: ["limit_type": "voice_duration"]
-            )
-            PaywallPresenter.shared.present(
-                context: .voiceDurationLimit,
-                triggerFeature: "voice_session_save"
-            ) { purchased in
-                if purchased {
-                    engine.commitDeferredSessionRecording()
-                    syncAppReviewFilesCount()
-                } else {
-                    engine.discardDeferredSessionRecording()
-                }
-            }
         case .nothingToSave:
             engine.clearStopSavePromptState()
         }

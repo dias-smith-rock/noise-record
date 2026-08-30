@@ -27,6 +27,12 @@ nonisolated enum AppLocalization {
         resolvedLocale(for: nil)
     }
 
+    /// Resolves `.system` to a concrete language used for report generation.
+    static func resolvedAppLanguage(for language: AppLanguage? = nil) -> AppLanguage {
+        let code = resourceCode(for: language ?? currentLanguage())
+        return AppLanguage(rawValue: code) ?? .en
+    }
+
     static func string(_ key: String.LocalizationValue, language: AppLanguage? = nil) -> String {
         String(localized: key, bundle: bundle(for: language))
     }
@@ -51,7 +57,7 @@ nonisolated enum AppLocalization {
         "uk", "vi", "zh-Hans", "zh-Hant",
     ]
 
-    private static func resourceCode(for language: AppLanguage) -> String {
+    static func resourceCode(for language: AppLanguage) -> String {
         switch language {
         case .system:
             for candidate in systemLocaleCandidates() {

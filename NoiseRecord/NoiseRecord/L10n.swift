@@ -569,6 +569,10 @@ nonisolated enum L10n {
     // MARK: - Paywall
 
     static var paywallTitle: String { localized("paywall.title") }
+    static var paywallTitlePreview: String { localized("paywall.title.preview") }
+    static var paywallTitleExport: String { localized("paywall.title.export") }
+    static var paywallTitleSleepExport: String { localized("paywall.title.sleepExport") }
+    static var paywallTitleAI: String { localized("paywall.title.ai") }
     static var paywallHeadline: String { localized("paywall.headline") }
     static var paywallEarlySupporterMessage: String { localized("paywall.earlySupporter") }
     static var paywallBestValue: String { localized("paywall.bestValue") }
@@ -580,6 +584,8 @@ nonisolated enum L10n {
     static var paywallPurchasedTitle: String { localized("paywall.alert.purchased.title") }
     static var paywallPurchasedMessage: String { localized("paywall.alert.purchased.message") }
     static var paywallBenefitVideo: String { localized("paywall.benefit.video") }
+    static var paywallBenefitFullPlayback: String { localized("paywall.benefit.fullPlayback") }
+    static var paywallBenefitExportShare: String { localized("paywall.benefit.exportShare") }
     static var paywallBenefitAI: String { localized("paywall.benefit.ai") }
     static var paywallBenefitSleepReport: String { localized("paywall.benefit.sleepReport") }
     static var paywallBenefitVoiceUnlimited: String { localized("paywall.benefit.voiceUnlimited") }
@@ -590,6 +596,13 @@ nonisolated enum L10n {
     static var paywallContextVoiceDuration: String { localized("paywall.context.voiceDuration") }
     static var paywallContextVideoDaily: String { localized("paywall.context.videoDaily") }
     static var paywallContextVideoDuration: String { localized("paywall.context.videoDuration") }
+    static var paywallContextMediaExport: String { localized("paywall.context.mediaExport") }
+    static var paywallContextMediaPreviewLimit: String { localized("paywall.context.mediaPreviewLimit") }
+    static var mediaPreviewLimitHint: String { localized("media.preview.limitHint") }
+    static var videoSaveFreeHint: String { localized("video.save.freeHint") }
+    static var sleepReportPDFWatermark: String { localized("sleep.report.pdf.watermark") }
+    static var sleepReportPDFExportCleanTitle: String { localized("sleep.report.pdf.exportClean.title") }
+    static var sleepReportPDFExportCleanSubtitle: String { localized("sleep.report.pdf.exportClean.subtitle") }
     static var paywallUpgradeBannerTitle: String { localized("paywall.banner.title") }
     static var paywallUpgradeBannerSubtitle: String { localized("paywall.banner.subtitle") }
     static var paywallVIPBannerTitle: String { localized("paywall.banner.vip.title") }
@@ -625,6 +638,9 @@ nonisolated enum L10n {
     }
 
     static var paywallCTASubscribeNow: String { localized("paywall.cta.subscribeNow") }
+    static var paywallCTAUnlockPlayback: String { localized("paywall.cta.unlockPlayback") }
+    static var paywallCTAUnlockExport: String { localized("paywall.cta.unlockExport") }
+    static var paywallCTAUnlockCleanPDF: String { localized("paywall.cta.unlockCleanPDF") }
 
     static func paywallCTASubtitleTrialYearly(monthlyPrice: String, trialDays: Int) -> String {
         formattedPriceAndTrialDays("paywall.cta.subtitle.trialYearly", price: monthlyPrice, days: trialDays)
@@ -764,6 +780,7 @@ nonisolated enum L10n {
     static var sleepReportViewHistory: String { localized("sleep.report.viewHistory") }
     static var sleepReportExport: String { localized("sleep.report.export") }
     static var sleepReportExportPDF: String { localized("sleep.report.exportPDF") }
+    static var sleepReportNEMRSelectLanguage: String { localized("sleep.report.nemr.selectLanguage") }
     static var sleepReportPDFUnlockTitle: String { localized("sleep.report.pdfUnlockTitle") }
     static var sleepReportImpactDeepSleep: String { localized("sleep.report.impactDeepSleep") }
     static var sleepReportImpactLightSleep: String { localized("sleep.report.impactLightSleep") }

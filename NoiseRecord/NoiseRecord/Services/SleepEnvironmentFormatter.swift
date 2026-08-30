@@ -36,19 +36,19 @@ enum SleepEnvironmentFormatter {
 
     static func pdfNEMRLine(
         start: SleepEnvironmentSnapshot?,
-        end: SleepEnvironmentSnapshot? = nil
+        end: SleepEnvironmentSnapshot? = nil,
+        copy: SleepNEMRCopy
     ) -> String {
+        let primaryLocale = AppLocalization.resolvedLocale(for: copy.primaryLanguage)
+        let primary = formattedRange(start: start, end: end, locale: primaryLocale) ?? copy.notRecorded
+        guard copy.includesEnglishSecondary else { return primary }
         let english = formattedRange(
             start: start,
             end: end,
             locale: Locale(identifier: "en_US_POSIX")
-        ) ?? "Not recorded"
-        let chinese = formattedRange(
-            start: start,
-            end: end,
-            locale: Locale(identifier: "zh-Hans")
-        ) ?? "未记录"
-        return "\(english) / \(chinese)"
+        ) ?? AppLocalization.string("sleep.nemr.value.notRecorded", language: .en)
+        if primary == english { return primary }
+        return "\(primary) (\(english))"
     }
 
     static func appSummaryClause(

@@ -237,6 +237,7 @@ struct RecordingListView: View {
                     url: session.fileURL,
                     title: EvidenceDisplayNaming.listTitle(from: session.fileName),
                     initialToastMessage: videoSleepReportReadyToast,
+                    fallbackDuration: session.duration,
                     onDismiss: { dismissPresentedVideo() },
                     onPlaybackFinished: { finishVideoPlayback() }
                 )
@@ -776,9 +777,31 @@ struct RecordingListView: View {
         }
         AppTelemetry.logProductEvent(
             "recording_share_tap",
-            parameters: ["kind": "audio"]
+            parameters: ["kind": "audio", "source": "files"]
         )
-        SharePresenter.present(items: [session.fileURL])
+        guard MediaEntitlementGate.requireShareAccess(triggerFeature: "recording_share_audio") else {
+            AppTelemetry.logProductEvent(
+                "recording_share_result",
+                parameters: [
+                    "kind": "audio",
+                    "source": "files",
+                    "shared": "false",
+                    "activity": "vip_gate",
+                ]
+            )
+            return
+        }
+        SharePresenter.present(items: [session.fileURL]) { didShare, activityType in
+            AppTelemetry.logProductEvent(
+                "recording_share_result",
+                parameters: [
+                    "kind": "audio",
+                    "source": "files",
+                    "shared": didShare ? "true" : "false",
+                    "activity": activityType ?? "none",
+                ]
+            )
+        }
     }
 
     private func shareMedia(_ session: VideoEvidenceSession) {
@@ -788,9 +811,51 @@ struct RecordingListView: View {
         }
         AppTelemetry.logProductEvent(
             "recording_share_tap",
-            parameters: ["kind": "video"]
+            parameters: ["kind": "video", "source": "files"]
         )
-        SharePresenter.present(items: [session.fileURL])
+        AppTelemetry.logProductEvent(
+            "video_share_tap",
+            parameters: ["source": "files"]
+        )
+        guard MediaEntitlementGate.requireShareAccess(triggerFeature: "recording_share_video") else {
+            AppTelemetry.logProductEvent(
+                "recording_share_result",
+                parameters: [
+                    "kind": "video",
+                    "source": "files",
+                    "shared": "false",
+                    "activity": "vip_gate",
+                ]
+            )
+            AppTelemetry.logProductEvent(
+                "video_share_result",
+                parameters: [
+                    "source": "files",
+                    "shared": "false",
+                    "activity": "vip_gate",
+                ]
+            )
+            return
+        }
+        SharePresenter.present(items: [session.fileURL]) { didShare, activityType in
+            AppTelemetry.logProductEvent(
+                "recording_share_result",
+                parameters: [
+                    "kind": "video",
+                    "source": "files",
+                    "shared": didShare ? "true" : "false",
+                    "activity": activityType ?? "none",
+                ]
+            )
+            AppTelemetry.logProductEvent(
+                "video_share_result",
+                parameters: [
+                    "source": "files",
+                    "shared": didShare ? "true" : "false",
+                    "activity": activityType ?? "none",
+                ]
+            )
+        }
     }
 
     @MainActor
@@ -800,9 +865,37 @@ struct RecordingListView: View {
             return
         }
 
+        AppTelemetry.logProductEvent(
+            "video_save_to_photos_tap",
+            parameters: [
+                "source": "files",
+                "count": "1",
+            ]
+        )
+
+        guard MediaEntitlementGate.requireExportAccess(triggerFeature: "video_save_to_photos_files") else {
+            AppTelemetry.logProductEvent(
+                "video_save_to_photos_result",
+                parameters: [
+                    "source": "files",
+                    "status": "vip_gate",
+                    "count": "1",
+                ]
+            )
+            return
+        }
+
         let authorized = await PhotoLibrarySaver.requestAddOnlyAccess()
         guard authorized else {
             showPhotoPermissionDenied = true
+            AppTelemetry.logProductEvent(
+                "video_save_to_photos_result",
+                parameters: [
+                    "source": "files",
+                    "status": "permission_denied",
+                    "count": "1",
+                ]
+            )
             return
         }
 
@@ -815,9 +908,25 @@ struct RecordingListView: View {
                     "count": "1",
                 ]
             )
+            AppTelemetry.logProductEvent(
+                "video_save_to_photos_result",
+                parameters: [
+                    "source": "files",
+                    "status": "success",
+                    "count": "1",
+                ]
+            )
             toastMessage = PhotoLibrarySaver.successMessage(for: kind)
         } catch {
             saveToPhotosErrorMessage = error.localizedDescription
+            AppTelemetry.logProductEvent(
+                "video_save_to_photos_result",
+                parameters: [
+                    "source": "files",
+                    "status": "error",
+                    "count": "1",
+                ]
+            )
         }
     }
 
@@ -827,10 +936,39 @@ struct RecordingListView: View {
 
         let items = videoSessions.filter { selectedVideoIDs.contains($0.id) && $0.fileExists }
         guard !items.isEmpty else { return }
+        let count = String(items.count)
+
+        AppTelemetry.logProductEvent(
+            "video_save_to_photos_tap",
+            parameters: [
+                "source": "files_batch",
+                "count": count,
+            ]
+        )
+
+        guard MediaEntitlementGate.requireExportAccess(triggerFeature: "video_save_to_photos_batch") else {
+            AppTelemetry.logProductEvent(
+                "video_save_to_photos_result",
+                parameters: [
+                    "source": "files_batch",
+                    "status": "vip_gate",
+                    "count": count,
+                ]
+            )
+            return
+        }
 
         let authorized = await PhotoLibrarySaver.requestAddOnlyAccess()
         guard authorized else {
             showPhotoPermissionDenied = true
+            AppTelemetry.logProductEvent(
+                "video_save_to_photos_result",
+                parameters: [
+                    "source": "files_batch",
+                    "status": "permission_denied",
+                    "count": count,
+                ]
+            )
             return
         }
 
@@ -845,6 +983,14 @@ struct RecordingListView: View {
                         "count": "1",
                     ]
                 )
+                AppTelemetry.logProductEvent(
+                    "video_save_to_photos_result",
+                    parameters: [
+                        "source": "files_batch",
+                        "status": "success",
+                        "count": "1",
+                    ]
+                )
                 toastMessage = PhotoLibrarySaver.successMessage(for: kind)
             } else {
                 try await PhotoLibrarySaver.saveFiles(at: urls)
@@ -852,34 +998,104 @@ struct RecordingListView: View {
                     "video_save_to_photos",
                     parameters: [
                         "source": "files_batch",
-                        "count": String(urls.count),
+                        "count": count,
+                    ]
+                )
+                AppTelemetry.logProductEvent(
+                    "video_save_to_photos_result",
+                    parameters: [
+                        "source": "files_batch",
+                        "status": "success",
+                        "count": count,
                     ]
                 )
                 toastMessage = L10n.playerSavedItemsToPhotos(urls.count)
             }
         } catch {
             saveToPhotosErrorMessage = error.localizedDescription
+            AppTelemetry.logProductEvent(
+                "video_save_to_photos_result",
+                parameters: [
+                    "source": "files_batch",
+                    "status": "error",
+                    "count": count,
+                ]
+            )
         }
     }
 
     private func shareSelected() {
         let urls: [URL]
+        let kind: String
         switch selectedTab {
         case .audio:
             urls = sessions
                 .filter { selectedAudioIDs.contains($0.id) && $0.fileExists }
                 .map(\.fileURL)
+            kind = "audio"
         case .video:
             urls = videoSessions
                 .filter { selectedVideoIDs.contains($0.id) && $0.fileExists }
                 .map(\.fileURL)
+            kind = "video"
         }
         guard !urls.isEmpty else { return }
+
         AppTelemetry.logProductEvent(
             "recording_share_tap",
-            parameters: ["kind": selectedTab == .audio ? "audio" : "video"]
+            parameters: ["kind": kind, "source": "files_batch"]
         )
-        SharePresenter.present(items: urls)
+        if kind == "video" {
+            AppTelemetry.logProductEvent(
+                "video_share_tap",
+                parameters: ["source": "files_batch"]
+            )
+        }
+
+        guard MediaEntitlementGate.requireShareAccess(triggerFeature: "recording_share_batch") else {
+            AppTelemetry.logProductEvent(
+                "recording_share_result",
+                parameters: [
+                    "kind": kind,
+                    "source": "files_batch",
+                    "shared": "false",
+                    "activity": "vip_gate",
+                ]
+            )
+            if kind == "video" {
+                AppTelemetry.logProductEvent(
+                    "video_share_result",
+                    parameters: [
+                        "source": "files_batch",
+                        "shared": "false",
+                        "activity": "vip_gate",
+                    ]
+                )
+            }
+            return
+        }
+
+        SharePresenter.present(items: urls) { didShare, activityType in
+            AppTelemetry.logProductEvent(
+                "recording_share_result",
+                parameters: [
+                    "kind": kind,
+                    "source": "files_batch",
+                    "shared": didShare ? "true" : "false",
+                    "activity": activityType ?? "none",
+                ]
+            )
+            if kind == "video" {
+                AppTelemetry.logProductEvent(
+                    "video_share_result",
+                    parameters: [
+                        "source": "files_batch",
+                        "shared": didShare ? "true" : "false",
+                        "activity": activityType ?? "none",
+                    ]
+                )
+            }
+        }
     }
 
     // MARK: - Delete

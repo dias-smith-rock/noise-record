@@ -15,39 +15,39 @@ enum SleepNEMRReportMetadata {
         let locationTableRows: [(String, String, String)]
     }
 
-    static let clientPlaceholder = "[委托方名称/地址 / Client Name & Address]"
-    static let sitePlaceholder = "[项目具体地址 / Site Address]"
-    static let firmPlaceholder = "[公司名称及资质 / Monitoring Firm & Credentials]"
-    static let siteMapPlaceholder = "[Site map not included / 未附平面图]"
-
     static func build(
         session: SleepForensicPDFExporter.SleepNoiseSessionSnapshot,
         locationSummary: String?,
-        sampleCount: Int
+        sampleCount: Int,
+        copy: SleepNEMRCopy
     ) -> ReportFields {
         let endedAt = session.endedAt ?? session.startedAt
         let reportNumber = SleepNEMRStatistics.reportNumber(
             for: session.id,
             monitoringDate: session.startedAt
         )
-        let siteAddress = locationSummary ?? sitePlaceholder
+        let siteAddress = locationSummary ?? copy.sitePlaceholder
         let monitoringFirm = HardwareIdentifier.pdfDeviceMetadataLine
         let environmentLine = SleepEnvironmentFormatter.pdfNEMRLine(
             start: session.startEnvironmentSnapshot,
-            end: session.endEnvironmentSnapshot
+            end: session.endEnvironmentSnapshot,
+            copy: copy
         )
-        let gpsLine = SleepLocationFormatter.pdfNEMRLine(fromResolvedSummary: locationSummary)
+        let gpsLine = SleepLocationFormatter.pdfNEMRLine(
+            fromResolvedSummary: locationSummary,
+            copy: copy
+        )
 
         return ReportFields(
             reportNumber: reportNumber,
             monitoringDateRange: ForensicPDFLayout.formattedDateRange(start: session.startedAt, end: endedAt),
             reportDate: ForensicPDFLayout.formattedDate(Date()),
-            client: clientPlaceholder,
+            client: copy.clientPlaceholder,
             siteAddress: siteAddress,
-            purpose: "Nighttime construction noise compliance assessment / residential noise complaint investigation / environmental baseline survey",
+            purpose: copy.purposeValue,
             monitoringFirm: monitoringFirm,
-            introductionParagraph: introductionText(
-                client: clientPlaceholder,
+            introductionParagraph: copy.introduction(
+                client: copy.clientPlaceholder,
                 firm: monitoringFirm,
                 monitoringDate: ForensicPDFLayout.formattedDate(session.startedAt),
                 siteAddress: siteAddress
@@ -55,97 +55,92 @@ enum SleepNEMRReportMetadata {
             instrumentationRows: instrumentationRows(
                 for: session,
                 environmentLine: environmentLine,
-                gpsLine: gpsLine
+                gpsLine: gpsLine,
+                copy: copy
             ),
             methodologyRows: methodologyRows(
                 session: session,
                 endedAt: endedAt,
-                sampleCount: sampleCount
+                sampleCount: sampleCount,
+                copy: copy
             ),
-            locationTableRows: locationRows(siteAddress: siteAddress)
+            locationTableRows: locationRows(siteAddress: siteAddress, copy: copy)
         )
-    }
-
-    private static func introductionText(
-        client: String,
-        firm: String,
-        monitoringDate: String,
-        siteAddress: String
-    ) -> String {
-        """
-        本报告受 \(client) 委托，由 \(firm) 于 \(monitoringDate) 对 \(siteAddress) 周边声环境进行夜间噪声监测。监测旨在评估该区域夜间（22:00 – 07:00）噪音水平是否符合联邦及地方相关标准。
-
-        This report was commissioned by \(client) and performed by \(firm) on \(monitoringDate) at \(siteAddress). The objective is to evaluate whether nighttime (22:00 – 07:00) noise levels comply with applicable federal and local standards.
-        """
     }
 
     private static func instrumentationRows(
         for session: SleepForensicPDFExporter.SleepNoiseSessionSnapshot,
         environmentLine: String,
-        gpsLine: String
+        gpsLine: String,
+        copy: SleepNEMRCopy
     ) -> [(String, String)] {
         let weighting: String
         if session.isHighSensitivitySession {
-            weighting = "dBZ High-Sensitivity (full-band; not ANSI Type 1 certified)"
+            weighting = copy.weightingZ
         } else if session.weightingMode == WeightingType.c.rawValue {
-            weighting = "C-weighting (not ANSI Type 1 certified)"
+            weighting = copy.weightingC
         } else {
-            weighting = "A-weighting (not ANSI Type 1 certified)"
+            weighting = copy.weightingA
         }
 
         let calibrationText: String
         if DeviceCalibrationStore.userAdjustment != 0 {
-            calibrationText = String(
-                format: "User calibration offset: %+.1f dB (reference SPL %.0f dB). Consumer iOS device — not ANSI Type 1 certified.",
-                DeviceCalibrationStore.userAdjustment,
-                DeviceCalibrationStore.referenceSPL
+            calibrationText = copy.calibrationUserOffset(
+                offset: DeviceCalibrationStore.userAdjustment,
+                referenceSPL: DeviceCalibrationStore.referenceSPL
             )
         } else {
-            calibrationText = "Factory device offset applied. No user field calibration recorded. Consumer iOS device — not ANSI Type 1 certified."
+            calibrationText = copy.calibrationFactory
         }
 
         return [
-            ("Sound Level Meter / 声级计", "\(HardwareIdentifier.pdfHardwareDescription) · Decibel Meter Pro"),
-            ("Weighting / 频率加权", weighting),
-            ("Time Response / 时间响应", "Fast / equivalent continuous (Leq) integration"),
-            ("Acoustic Calibrator / 声校准器", "Not used — consumer device calibration only / 未使用标准声校准器"),
-            ("Calibration Record / 校准记录", calibrationText),
-            ("Temperature / Humidity / 温度与湿度", environmentLine),
-            ("GPS Coordinates / GPS 坐标", gpsLine),
+            (copy.labelSoundLevelMeter, "\(HardwareIdentifier.pdfHardwareDescription) · Decibel Meter Pro"),
+            (copy.labelWeighting, weighting),
+            (copy.labelTimeResponse, copy.timeResponseValue),
+            (copy.labelCalibrator, copy.calibratorValue),
+            (copy.labelCalibrationRecord, calibrationText),
+            (copy.labelTemperatureHumidity, environmentLine),
+            (copy.labelGPS, gpsLine),
         ]
     }
 
     private static func methodologyRows(
         session: SleepForensicPDFExporter.SleepNoiseSessionSnapshot,
         endedAt: Date,
-        sampleCount: Int
+        sampleCount: Int,
+        copy: SleepNEMRCopy
     ) -> [(String, String)] {
         [
             (
-                "Monitoring Window / 监测时段",
+                copy.labelMonitoringWindow,
                 "\(ForensicPDFLayout.formattedDateTime(session.startedAt)) – \(ForensicPDFLayout.formattedDateTime(endedAt))"
             ),
             (
-                "Measurement Duration / 测量时长",
-                "\(ForensicPDFLayout.formattedDuration(max(0, endedAt.timeIntervalSince(session.startedAt)))) continuous monitoring"
+                copy.labelMeasurementDuration,
+                copy.measurementDurationValue(
+                    ForensicPDFLayout.formattedDuration(max(0, endedAt.timeIntervalSince(session.startedAt)))
+                )
             ),
             (
-                "Sampling Interval / 数据记录间隔",
-                "Approximately \(Int(SleepMeasurementPersistence.sampleInterval)) seconds (\(sampleCount) logged samples)"
+                copy.labelSamplingInterval,
+                copy.samplingIntervalValue(
+                    seconds: Int(SleepMeasurementPersistence.sampleInterval),
+                    sampleCount: sampleCount
+                )
             ),
             (
-                "Site Map / 附图",
-                siteMapPlaceholder
+                copy.labelSiteMap,
+                copy.siteMapPlaceholder
             ),
         ]
     }
 
-    private static func locationRows(siteAddress: String) -> [(String, String, String)] {
+    private static func locationRows(siteAddress: String, copy: SleepNEMRCopy) -> [(String, String, String)] {
         [
             (
                 "P1",
-                "Primary monitoring point at \(siteAddress); microphone at typical indoor/bedroom height via handheld device",
-                "Local environmental noise affecting sensitive receptor"
+                copy.locationDescription(siteAddress: siteAddress),
+                copy.locationSource
             ),
         ]
     }

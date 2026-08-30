@@ -13,9 +13,15 @@ final class SleepEnvironmentFormatterTests: XCTestCase {
     }
 
     func testPDFNEMRLineUsesFallbackWhenMissing() {
+        let copy = SleepNEMRCopy(primaryLanguage: .zhHant)
         XCTAssertEqual(
-            SleepEnvironmentFormatter.pdfNEMRLine(start: nil),
-            "Not recorded / 未记录"
+            SleepEnvironmentFormatter.pdfNEMRLine(start: nil, copy: copy),
+            "未記錄 (Not recorded)"
+        )
+        let englishOnly = SleepNEMRCopy(primaryLanguage: .en)
+        XCTAssertEqual(
+            SleepEnvironmentFormatter.pdfNEMRLine(start: nil, copy: englishOnly),
+            "Not recorded"
         )
     }
 

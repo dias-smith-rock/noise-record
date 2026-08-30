@@ -52,27 +52,25 @@ enum VideoNoiseWaveformStripDrawer {
 
         let minDB = mode.waveformMinDB
         let maxDB = mode.waveformMaxDB
-        let path = UIBezierPath()
+        var anchors: [CGPoint] = []
+        anchors.reserveCapacity(window.count)
 
         for (index, sample) in window.enumerated() {
             let xRatio = CGFloat(index) / CGFloat(max(window.count - 1, 1))
             let clamped = min(max(sample.decibel, minDB), maxDB)
             let yRatio = CGFloat((clamped - minDB) / max(maxDB - minDB, 1))
-            let point = CGPoint(
-                x: plotRect.minX + plotRect.width * xRatio,
-                y: plotRect.maxY - plotRect.height * yRatio
+            anchors.append(
+                CGPoint(
+                    x: plotRect.minX + plotRect.width * xRatio,
+                    y: plotRect.maxY - plotRect.height * yRatio
+                )
             )
-            if index == 0 {
-                path.move(to: point)
-            } else {
-                path.addLine(to: point)
-            }
         }
+
+        let path = WaveformSinePath.uiBezierPath(through: anchors, samplesPerSegment: 8)
 
         UIColor.systemOrange.setStroke()
         path.lineWidth = max(2.5 * scale, 2)
-        path.lineJoinStyle = .round
-        path.lineCapStyle = .round
         path.stroke()
 
         let labelAttributes: [NSAttributedString.Key: Any] = [

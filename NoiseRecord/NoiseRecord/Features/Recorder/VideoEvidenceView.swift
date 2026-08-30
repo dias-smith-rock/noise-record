@@ -112,17 +112,6 @@ final class VideoEvidenceCoordinator {
 
     func startRecording() async throws {
         let isPremium = SubscriptionManager.shared.isPremiumUser
-        guard isPremium || FreemiumUsageStore.shared.canStartVideoRecording(isPremium: isPremium) else {
-            AppTelemetry.logProductEvent(
-                "freemium_limit_hit",
-                parameters: ["limit_type": "video_daily"]
-            )
-            PaywallPresenter.shared.present(
-                context: .videoDailyLimit,
-                triggerFeature: "video_start_blocked"
-            )
-            return
-        }
         guard isSessionReady, isPreviewReady, !isRecording else { return }
         peakDB = 0
         currentSegmentGroupID = nil
@@ -143,9 +132,7 @@ final class VideoEvidenceCoordinator {
         }
         // Start the free-quota clock only after capture is actually running.
         recordingStartedAt = isRecording ? Date() : nil
-        if isRecording, !isPremium {
-            FreemiumUsageStore.shared.recordVideoSessionStarted()
-        }
+        _ = isPremium
     }
 
     func stopRecording(completion: @escaping (Result<URL, Error>) -> Void) {
@@ -347,7 +334,6 @@ struct VideoEvidenceView: View {
         .onReceive(recordingClock) { now in
             guard coordinator.isRecording else { return }
             recordingTick = now
-            autoStopFreeRecordingIfNeeded()
         }
         .onChange(of: coordinator.cameraPosition) { _, _ in
             previewZoomFactor = coordinator.recorder.currentZoomFactor
@@ -436,6 +422,7 @@ struct VideoEvidenceView: View {
                 SyncedVideoPlayerView(
                     url: url,
                     title: presentedVideoTitle ?? EvidenceDisplayNaming.listTitle(from: url.lastPathComponent),
+                    fallbackDuration: lastSavedDuration,
                     onDismiss: {
                         clearPresentedVideo()
                     },
@@ -628,17 +615,6 @@ struct VideoEvidenceView: View {
                             .padding(.vertical, 5)
                             .background(.black.opacity(0.55))
                             .clipShape(Capsule())
-
-                        if !subscriptions.isPremiumUser {
-                            Text(L10n.videoFreeRemainingSeconds(recordingRemainingSeconds))
-                                .font(.caption2.bold())
-                                .monospacedDigit()
-                                .foregroundStyle(recordingRemainingSeconds <= 5 ? .orange : .white)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 5)
-                                .background(.black.opacity(0.55))
-                                .clipShape(Capsule())
-                        }
                     }
                 }
             }
@@ -767,11 +743,7 @@ struct VideoEvidenceView: View {
     @ViewBuilder
     private var recordingHints: some View {
         if !subscriptions.isPremiumUser {
-            let remaining = FreemiumUsageStore.shared.remainingVideoRecordingsToday(isPremium: false)
-            let maxDuration = Int(
-                FreemiumUsageStore.shared.allowedVideoSaveDuration(isPremium: false).rounded(.down)
-            )
-            Text(L10n.videoFreeQuotaHint(remaining: remaining, maxDuration: maxDuration))
+            Text(L10n.videoSaveFreeHint)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -852,6 +824,18 @@ struct VideoEvidenceView: View {
                             "save_id": saveID,
                         ]
                     )
+                    guard MediaEntitlementGate.requireShareAccess(triggerFeature: "video_share_save_success") else {
+                        AppTelemetry.logProductEvent(
+                            "video_share_result",
+                            parameters: [
+                                "source": "save_success",
+                                "save_id": saveID,
+                                "shared": "false",
+                                "activity": "vip_gate",
+                            ]
+                        )
+                        return
+                    }
                     SharePresenter.present(items: [url]) { didShare, activityType in
                         AppTelemetry.logProductEvent(
                             "video_share_result",
@@ -1067,21 +1051,6 @@ struct VideoEvidenceView: View {
         return max(0, Date().timeIntervalSince(startedAt))
     }
 
-    private var recordingRemainingSeconds: Int {
-        let limit = FreemiumUsageStore.shared.allowedVideoSaveDuration(
-            isPremium: subscriptions.isPremiumUser
-        )
-        guard limit.isFinite else { return 0 }
-        return max(0, Int((limit - recordingElapsedSeconds).rounded(.down)))
-    }
-
-    private func autoStopFreeRecordingIfNeeded() {
-        guard coordinator.isRecording, !subscriptions.isPremiumUser, !isStoppingRecording else { return }
-        let limit = FreemiumUsageStore.shared.allowedVideoSaveDuration(isPremium: false)
-        guard recordingElapsedSeconds >= limit else { return }
-        requestStopRecording(reason: "free_limit")
-    }
-
     private func finalizeStoppedRecording(_ result: Result<URL, Error>, reason: String) async {
         stopMonitoringAfterVideoEvidence()
         switch result {
@@ -1105,52 +1074,11 @@ struct VideoEvidenceView: View {
 
     private func finishVideoSave(fileURL: URL, stopReason: String) async {
         saveBannerMessage = nil
-        let allowed = FreemiumUsageStore.shared.allowedVideoSaveDuration(
-            isPremium: subscriptions.isPremiumUser
-        )
         let duration = videoRecordingDuration()
-        var didTrim = false
-        var hitFreeLimit = stopReason == "free_limit"
-        var outputURL = fileURL
-
-        if !subscriptions.isPremiumUser, allowed.isFinite, duration > allowed + 0.15 {
-            isSavingTrimmedClip = true
-            defer { isSavingTrimmedClip = false }
-            do {
-                let result = try await VideoEvidenceTrimmer.trimIfNeeded(
-                    fileURL: fileURL,
-                    maxDuration: allowed
-                )
-                didTrim = result.didTrim
-                if didTrim {
-                    outputURL = result.url
-                    hitFreeLimit = true
-                    AppTelemetry.logProductEvent(
-                        "video_trim_applied",
-                        parameters: [
-                            "limit_seconds": String(Int(allowed)),
-                            "original_seconds": String(Int(duration.rounded())),
-                        ]
-                    )
-                    saveBannerMessage = L10n.videoTrimmedSavedHint(seconds: Int(allowed))
-                }
-            } catch {
-                AppTelemetry.logProductEvent(
-                    "video_trim_failed",
-                    parameters: ["message": error.localizedDescription]
-                )
-                saveBannerMessage = L10n.videoTrimFailedKeptFullClip
-            }
-        } else if hitFreeLimit, allowed.isFinite {
-            saveBannerMessage = L10n.videoTrimmedSavedHint(seconds: Int(allowed))
-        }
+        let outputURL = fileURL
 
         commitPendingVideoSegments()
-        if !subscriptions.isPremiumUser {
-            FreemiumUsageStore.shared.markFirstClipBonusConsumedIfNeeded()
-        }
-        let savedDuration = didTrim && allowed.isFinite ? allowed : duration
-        lastSavedDuration = savedDuration
+        lastSavedDuration = duration
         lastSavedPeakDB = coordinator.peakDB
         savedVideoURL = outputURL
         let saveID = UUID().uuidString
@@ -1158,9 +1086,9 @@ struct VideoEvidenceView: View {
         AppTelemetry.logProductEvent(
             "video_save_success",
             parameters: [
-                "duration_s": String(Int(savedDuration.rounded())),
+                "duration_s": String(Int(duration.rounded())),
                 "original_s": String(Int(duration.rounded())),
-                "trimmed": didTrim ? "true" : "false",
+                "trimmed": "false",
                 "stop_reason": stopReason,
                 "save_id": saveID,
             ]
@@ -1168,22 +1096,6 @@ struct VideoEvidenceView: View {
         noteVideoEvidenceSavedForReview()
         pendingVideoSegments = []
         coordinator.recordingStartedAt = nil
-
-        if hitFreeLimit, !subscriptions.isPremiumUser {
-            AppTelemetry.logProductEvent(
-                "freemium_limit_hit",
-                parameters: [
-                    "limit_type": "video_duration",
-                    "limit_s": allowed.isFinite ? String(Int(allowed.rounded())) : "none",
-                    "recorded_s": String(Int(duration.rounded())),
-                    "trimmed": didTrim ? "true" : "false",
-                ]
-            )
-            PaywallPresenter.shared.present(
-                context: .videoDurationLimit,
-                triggerFeature: "video_save_over_limit"
-            )
-        }
     }
 
     private func noteVideoEvidenceSavedForReview() {

@@ -85,42 +85,60 @@ struct DashboardView: View {
             environment.stopUpdating()
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            ProFloatingActionButton(
-                title: monitorActionTitle,
-                systemImage: monitorActionSymbol,
-                theme: theme,
-                isDestructive: isMonitorFABShowingStop
-            ) {
-                guard audioStateManager.appAudioState != .playing else { return }
-                AdSceneLifecycle.recordFirstInteraction(source: "monitor_toggle")
-                if sleepCoordinator.isSleepMonitoring {
-                    AppTelemetry.logProductEvent(
-                        "monitor_fab_tap",
-                        parameters: ["action": "sleep_end"]
-                    )
-                } else {
-                    AppTelemetry.logProductEvent(
-                        "monitor_fab_tap",
-                        parameters: [
-                            "action": audioStateManager.appAudioState == .monitoring ? "stop" : "start",
-                        ]
-                    )
-                }
-                Task {
-                    switch audioStateManager.appAudioState {
-                    case .monitoring:
-                        handleStopMonitoringTapped()
-                    case .idle:
-                        MonitoringFunnelTracker.noteMonitoringStarted()
-                        await audioStateManager.manuallyResumeMonitoring()
-                    case .playing:
-                        break
+            HStack(alignment: .center, spacing: 12) {
+                Spacer(minLength: 0)
+
+                ProFloatingActionButton(
+                    title: monitorActionTitle,
+                    systemImage: monitorActionSymbol,
+                    theme: theme,
+                    isDestructive: isMonitorFABShowingStop
+                ) {
+                    guard audioStateManager.appAudioState != .playing else { return }
+                    AdSceneLifecycle.recordFirstInteraction(source: "monitor_toggle")
+                    if sleepCoordinator.isSleepMonitoring {
+                        AppTelemetry.logProductEvent(
+                            "monitor_fab_tap",
+                            parameters: ["action": "sleep_end"]
+                        )
+                    } else {
+                        AppTelemetry.logProductEvent(
+                            "monitor_fab_tap",
+                            parameters: [
+                                "action": audioStateManager.appAudioState == .monitoring ? "stop" : "start",
+                            ]
+                        )
+                    }
+                    Task {
+                        switch audioStateManager.appAudioState {
+                        case .monitoring:
+                            handleStopMonitoringTapped()
+                        case .idle:
+                            MonitoringFunnelTracker.noteMonitoringStarted()
+                            await audioStateManager.manuallyResumeMonitoring()
+                        case .playing:
+                            break
+                        }
                     }
                 }
+                .disabled(audioStateManager.appAudioState == .playing)
+                .opacity(audioStateManager.appAudioState == .playing ? 0.5 : 1)
+
+                if isMonitorFABShowingStop, let startedAt = engine.sessionRecordingStartedAt {
+                    TimelineView(.periodic(from: .now, by: 1)) { context in
+                        let elapsed = DurationFormatting.hms(
+                            from: context.date.timeIntervalSince(startedAt)
+                        )
+                        Text(elapsed)
+                            .font(.body.monospacedDigit().weight(.semibold))
+                            .foregroundStyle(.primary)
+                            .accessibilityLabel(L10n.videoRecordingDurationLabel(elapsed))
+                    }
+                    .frame(minWidth: 52, alignment: .leading)
+                    .transition(.opacity.combined(with: .move(edge: .trailing)))
+                }
             }
-            .disabled(audioStateManager.appAudioState == .playing)
-            .opacity(audioStateManager.appAudioState == .playing ? 0.5 : 1)
-            .frame(maxWidth: .infinity, alignment: .trailing)
+            .animation(.easeInOut(duration: 0.2), value: isMonitorFABShowingStop)
             .padding(.horizontal, 16)
             .padding(.top, 8)
             .padding(.bottom, 4)
@@ -448,21 +466,8 @@ struct DashboardView: View {
         case .saveImmediately:
             completeSessionEndSave()
         case .requiresPaywall:
-            AppTelemetry.logProductEvent(
-                "freemium_limit_hit",
-                parameters: ["limit_type": "voice_duration"]
-            )
-            PaywallPresenter.shared.present(
-                context: .voiceDurationLimit,
-                triggerFeature: "voice_session_save"
-            ) { purchased in
-                if purchased {
-                    completeSessionEndSave()
-                } else {
-                    engine.discardDeferredSessionRecording()
-                    dismissSessionEndSheet()
-                }
-            }
+            // Legacy path retained for enum exhaustiveness; auto-save is free.
+            completeSessionEndSave()
         case .nothingToSave:
             engine.clearStopSavePromptState()
             dismissSessionEndSheet()
@@ -588,6 +593,9 @@ struct DashboardView: View {
     }
 
     private func exportCSV() {
+        guard MediaEntitlementGate.requireExportAccess(triggerFeature: "dashboard_csv_export") else {
+            return
+        }
         let descriptor = FetchDescriptor<MeasurementSample>(
             sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
         )

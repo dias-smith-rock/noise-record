@@ -151,8 +151,33 @@ enum SleepForensicPDFExporter {
                 gpsSummary: gpsSummary ?? payload.locationSummary
             )
 
+            let peakMarkers = ForensicPDFLayout.makePeakMarkers(
+                chartPoints: payload.chartPoints,
+                incidents: payload.incidents,
+                sessionPeakDB: payload.session.peakDB,
+                sessionPeakTimestamp: peakTimestamp
+            )
+            cursorY = ForensicPDFLayout.ensureSpace(context: context, y: cursorY, required: 300)
+            cursorY = ForensicPDFLayout.drawSectionTitle("3. OVERNIGHT WAVEFORM WITH PEAK MARKERS", y: cursorY)
+            cursorY = ForensicPDFLayout.drawBodyParagraphs(
+                y: cursorY,
+                paragraphs: [
+                    """
+                    The overnight level trend below plots continuous A-weighted sound pressure levels. Session Peak (Lpk) and discrete anomaly peaks are marked with timestamps for chronological correlation with the incident log.
+                    """,
+                ],
+                fontSize: 9
+            )
+            cursorY = ForensicPDFLayout.drawTrendChart(
+                y: cursorY,
+                points: payload.chartPoints,
+                sessionStart: payload.session.startedAt,
+                sessionEnd: endedAt,
+                peakMarkers: peakMarkers
+            )
+
             cursorY = ForensicPDFLayout.ensureSpace(context: context, y: cursorY, required: 120)
-            cursorY = ForensicPDFLayout.drawSectionTitle("3. CHRONOLOGICAL INCIDENT LOG", y: cursorY)
+            cursorY = ForensicPDFLayout.drawSectionTitle("4. CHRONOLOGICAL INCIDENT LOG", y: cursorY)
             cursorY = ForensicPDFLayout.drawOvernightIncidentLog(
                 context: context,
                 y: cursorY,
@@ -160,7 +185,7 @@ enum SleepForensicPDFExporter {
             )
 
             cursorY = ForensicPDFLayout.ensureSpace(context: context, y: cursorY, required: 140)
-            cursorY = ForensicPDFLayout.drawSectionTitle("4. SPECTROGRAM FREQUENCY EVIDENCE", y: cursorY)
+            cursorY = ForensicPDFLayout.drawSectionTitle("5. SPECTROGRAM FREQUENCY EVIDENCE", y: cursorY)
             cursorY = ForensicPDFLayout.drawBodyParagraphs(
                 y: cursorY,
                 paragraphs: [spectrogramNote(isHighSensitivity: payload.session.isHighSensitivitySession)],
@@ -169,7 +194,7 @@ enum SleepForensicPDFExporter {
 
             cursorY = ForensicPDFLayout.ensureSpace(context: context, y: cursorY, required: 160)
             cursorY = ForensicPDFLayout.drawSectionTitle(
-                "5. REGULATORY HEALTH ASSESSMENT & COMPLIANCE STATEMENTS",
+                "6. REGULATORY HEALTH ASSESSMENT & COMPLIANCE STATEMENTS",
                 y: cursorY
             )
             cursorY = drawRegulatorySection(
@@ -179,11 +204,11 @@ enum SleepForensicPDFExporter {
             )
 
             cursorY = ForensicPDFLayout.ensureSpace(context: context, y: cursorY, required: 160)
-            cursorY = ForensicPDFLayout.drawSectionTitle("6. PLAINTIFF ATTESTATION & DIGITAL SIGNATURE", y: cursorY)
+            cursorY = ForensicPDFLayout.drawSectionTitle("7. PLAINTIFF ATTESTATION & DIGITAL SIGNATURE", y: cursorY)
             cursorY = drawAttestationBlock(y: cursorY, endedAt: endedAt)
 
             cursorY = ForensicPDFLayout.ensureSpace(context: context, y: cursorY, required: 120)
-            cursorY = ForensicPDFLayout.drawSectionTitle("7. LEGAL DISCLAIMER", y: cursorY)
+            cursorY = ForensicPDFLayout.drawSectionTitle("8. LEGAL DISCLAIMER", y: cursorY)
             _ = ForensicPDFLayout.drawBodyParagraphs(
                 y: cursorY,
                 paragraphs: [legalDisclaimerParagraph],
@@ -208,7 +233,9 @@ enum SleepForensicPDFExporter {
         let realPoints = samples.map { sample in
             ChartPoint(
                 timestamp: sample.timestamp,
-                decibels: max(sample.dbMax, sample.leq, sample.dbCurrent)
+                // Use instantaneous/interval level — NOT session-running maxDB
+                // (maxDB only rises and would flatten the overnight waveform).
+                decibels: sample.leq > 0 ? sample.leq : sample.dbCurrent
             )
         }.sorted { $0.timestamp < $1.timestamp }
 
@@ -566,16 +593,13 @@ enum SleepForensicPDFExporter {
         session: SleepNoiseSession,
         realPoints: [ChartPoint]
     ) -> [ChartPoint] {
-        let end = session.endedAt ?? session.startedAt.addingTimeInterval(60)
-        let duration = max(end.timeIntervalSince(session.startedAt), 60)
-
+        // Prefer measured samples only. Synthesis is a last resort for empty histories.
         if realPoints.count >= 2 {
-            let span = realPoints.last!.timestamp.timeIntervalSince(realPoints.first!.timestamp)
-            if span >= duration * 0.05 {
-                return realPoints
-            }
+            return realPoints
         }
 
+        let end = session.endedAt ?? session.startedAt.addingTimeInterval(60)
+        let duration = max(end.timeIntervalSince(session.startedAt), 60)
         return synthesizedChartPoints(
             session: session,
             end: end,

@@ -128,7 +128,8 @@ final class SleepNEMRStatisticsTests: XCTestCase {
         let conclusion = SleepNEMRStatistics.buildConclusion(
             hourlyRows: rows,
             peakRow: peak,
-            session: session
+            session: session,
+            copy: SleepNEMRCopy(primaryLanguage: .en)
         )
 
         XCTAssertTrue(conclusion.backgroundCorrectionNote.contains("No background correction is required"))

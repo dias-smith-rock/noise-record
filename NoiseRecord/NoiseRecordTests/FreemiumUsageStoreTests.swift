@@ -17,55 +17,21 @@ final class FreemiumUsageStoreTests: XCTestCase {
         super.tearDown()
     }
 
-    func testPremiumBypassesDailyVideoLimit() {
-        XCTAssertTrue(store.canStartVideoRecording(isPremium: true))
-        store.recordVideoSessionStarted()
-        XCTAssertTrue(store.canStartVideoRecording(isPremium: true))
-    }
-
-    func testFreeUserCanRecordOncePerDay() {
+    func testRecordingIsAlwaysAllowed() {
         XCTAssertTrue(store.canStartVideoRecording(isPremium: false))
         store.recordVideoSessionStarted()
-        XCTAssertFalse(store.canStartVideoRecording(isPremium: false))
-        XCTAssertEqual(store.remainingVideoRecordingsToday(isPremium: false), 0)
+        XCTAssertTrue(store.canStartVideoRecording(isPremium: false))
+        XCTAssertTrue(store.canStartVideoRecording(isPremium: true))
     }
 
-    func testRemainingCountBeforeUse() {
-        XCTAssertEqual(store.remainingVideoRecordingsToday(isPremium: false), 1)
-    }
-
-    func testFirstClipGetsLongerAllowance() {
+    func testAllowedDurationIsUnlimited() {
         XCTAssertEqual(
             store.allowedVideoSaveDuration(isPremium: false),
-            FreemiumUsageStore.freeVideoFirstClipMaxDuration
+            .greatestFiniteMagnitude
         )
-        store.markFirstClipBonusConsumedIfNeeded()
-        XCTAssertEqual(
-            store.allowedVideoSaveDuration(isPremium: false),
-            FreemiumUsageStore.freeVideoStandardMaxDuration
-        )
-        XCTAssertTrue(store.hasUsedFirstClipBonus())
-    }
-
-    func testPremiumAllowedDurationIsUnlimited() {
         XCTAssertEqual(
             store.allowedVideoSaveDuration(isPremium: true),
             .greatestFiniteMagnitude
         )
     }
-
-    #if DEBUG
-    func testResetClearsUsage() {
-        store.recordVideoSessionStarted()
-        store.markFirstClipBonusConsumedIfNeeded()
-        XCTAssertFalse(store.canStartVideoRecording(isPremium: false))
-        store.resetVideoUsageForTesting()
-        XCTAssertTrue(store.canStartVideoRecording(isPremium: false))
-        XCTAssertFalse(store.hasUsedFirstClipBonus())
-        XCTAssertEqual(
-            store.allowedVideoSaveDuration(isPremium: false),
-            FreemiumUsageStore.freeVideoFirstClipMaxDuration
-        )
-    }
-    #endif
 }

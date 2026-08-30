@@ -27,12 +27,6 @@ struct PaywallView: View {
                     if subscriptions.isEarlySupporter {
                         earlySupporterBanner
                     }
-                    if let subtitle = contextSubtitle {
-                        Text(subtitle)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.leading)
-                    }
                     // Pricing first so amounts stay above the sticky footer without scrolling.
                     tierCardsSection
                     benefitsSection
@@ -124,7 +118,7 @@ struct PaywallView: View {
 
     private var heroSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(L10n.paywallTitle)
+            Text(heroTitle)
                 .font(.system(size: 26, weight: .bold, design: .rounded))
                 .foregroundStyle(
                     LinearGradient(
@@ -133,9 +127,10 @@ struct PaywallView: View {
                         endPoint: .trailing
                     )
                 )
-            Text(L10n.paywallHeadline)
+            Text(heroHeadline)
                 .font(.footnote)
                 .foregroundStyle(.white.opacity(0.78))
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.top, 4)
     }
@@ -156,30 +151,63 @@ struct PaywallView: View {
             )
     }
 
-    private var contextSubtitle: String? {
+    private var heroTitle: String {
         switch context {
-        case .videoEvidence: L10n.paywallContextVideo
+        case .mediaPreviewLimit: L10n.paywallTitlePreview
+        case .mediaExport: L10n.paywallTitleExport
+        case .sleepExport: L10n.paywallTitleSleepExport
+        case .aiFilter: L10n.paywallTitleAI
+        case .launch, .settings: L10n.paywallTitle
+        case .videoEvidence, .videoDailyLimit, .videoDurationLimit,
+             .voiceDurationLimit, .advancedFFT, .sleepHistory:
+            L10n.paywallTitle
+        }
+    }
+
+    private var heroHeadline: String {
+        switch context {
+        case .mediaPreviewLimit: L10n.paywallContextMediaPreviewLimit
+        case .mediaExport: L10n.paywallContextMediaExport
+        case .sleepExport: L10n.paywallContextSleepExport
         case .aiFilter: L10n.paywallContextAI
-        case .advancedFFT: L10n.paywallContextSpectrum
-        case .voiceDurationLimit: L10n.paywallContextVoiceDuration
+        case .launch, .settings: L10n.paywallHeadline
+        case .videoEvidence: L10n.paywallContextVideo
         case .videoDailyLimit: L10n.paywallContextVideoDaily
         case .videoDurationLimit: L10n.paywallContextVideoDuration
+        case .voiceDurationLimit: L10n.paywallContextVoiceDuration
+        case .advancedFFT: L10n.paywallContextSpectrum
         case .sleepHistory: L10n.paywallContextSleepHistory
-        case .sleepExport: L10n.paywallContextSleepExport
-        case .launch, .settings: nil
+        }
+    }
+
+    private var primaryCTATitle: String {
+        if subscriptions.shouldPresentFreeTrial(for: selectedTier) {
+            return L10n.paywallCTAStartFreeTrial(
+                days: subscriptions.introductoryTrialDays(for: selectedTier)
+            )
+        }
+        switch context {
+        case .mediaPreviewLimit:
+            return L10n.paywallCTAUnlockPlayback
+        case .mediaExport:
+            return L10n.paywallCTAUnlockExport
+        case .sleepExport:
+            return L10n.paywallCTAUnlockCleanPDF
+        default:
+            return L10n.paywallCTASubscribeNow
         }
     }
 
     private var benefitsSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            benefitRow(L10n.paywallBenefitVoiceUnlimited, icon: "mic.badge.plus")
-            benefitRow(L10n.paywallBenefitVideo, icon: "video.badge.checkmark")
-            benefitRow(L10n.paywallBenefitSleepReport, icon: "moon.stars.fill")
+        VStack(alignment: .leading, spacing: 12) {
+            benefitRow(L10n.paywallBenefitFullPlayback, icon: "play.circle.fill")
+            benefitRow(L10n.paywallBenefitExportShare, icon: "square.and.arrow.up")
+            benefitRow(L10n.paywallBenefitSleepReport, icon: "doc.richtext.fill")
             benefitRow(L10n.paywallBenefitAI, icon: "waveform.badge.magnifyingglass")
             benefitRow(L10n.paywallBenefitNoAds, icon: "sparkles")
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.vertical, 14)
         .background(
             RoundedRectangle(cornerRadius: 14)
                 .fill(Color.white.opacity(0.06))
@@ -189,11 +217,11 @@ struct PaywallView: View {
     private func benefitRow(_ text: String, icon: String) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: icon)
-                .font(.footnote.weight(.semibold))
+                .font(.body.weight(.semibold))
                 .foregroundStyle(accent)
-                .frame(width: 20)
+                .frame(width: 22)
             Text(text)
-                .font(.footnote)
+                .font(.subheadline.weight(.medium))
                 .foregroundStyle(.white.opacity(0.92))
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -332,7 +360,7 @@ struct PaywallView: View {
                             ProgressView()
                                 .tint(.black)
                         } else {
-                            Text(subscriptions.purchaseButtonTitle(for: selectedTier))
+                            Text(primaryCTATitle)
                                 .font(.headline)
                                 .multilineTextAlignment(.center)
                         }
