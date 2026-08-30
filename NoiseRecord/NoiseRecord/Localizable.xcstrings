@@ -110374,6 +110374,71 @@
           }
         }
       }
+    },
+    "paywall.weeklyFreeTip": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every week includes free VIP credits: one full media preview, one export, and one share or save to Photos."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每周赠送免费 VIP 体验次数：可完整预览一次音视频、导出一次，以及分享或保存到相册一次。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每週贈送免費 VIP 體驗次數：可完整預覽一次音視頻、匯出一次，以及分享或儲存到相簿一次。"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada semana incluye créditos VIP gratis: una vista previa completa, una exportación y un compartir o guardar en Fotos."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toda semana inclui créditos VIP grátis: uma prévia completa, uma exportação e um compartilhar ou salvar em Fotos."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chaque semaine inclut des crédits VIP gratuits : un aperçu complet, une exportation et un partage ou enregistrement dans Photos."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "كل أسبوع يتضمن أرصدة VIP مجانية: معاينة كاملة واحدة، وتصدير واحد، ومشاركة أو حفظ واحد إلى الصور."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "毎週、無料のVIPクレジットをご利用いただけます。フル再生プレビュー1回、書き出し1回、共有または写真への保存1回。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "매주 무료 VIP 크레딧이 제공됩니다. 전체 미리보기 1회, 내보내기 1회, 공유 또는 사진 앱 저장 1회."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jede Woche gibt es gratis VIP-Credits: eine volle Vorschau, einen Export und einmal Teilen oder in Fotos speichern."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

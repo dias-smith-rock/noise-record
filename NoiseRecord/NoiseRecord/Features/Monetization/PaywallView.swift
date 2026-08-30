@@ -30,6 +30,7 @@ struct PaywallView: View {
                     // Pricing first so amounts stay above the sticky footer without scrolling.
                     tierCardsSection
                     benefitsSection
+                    weeklyFreeTip
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 8)
@@ -212,6 +213,32 @@ struct PaywallView: View {
             RoundedRectangle(cornerRadius: 14)
                 .fill(Color.white.opacity(0.06))
         )
+    }
+
+    private var weeklyFreeTip: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "gift.fill")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(accent)
+            Text(L10n.paywallWeeklyFreeTip)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.white.opacity(0.95))
+                .fixedSize(horizontal: false, vertical: true)
+                .multilineTextAlignment(.leading)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(accent.opacity(0.16))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .strokeBorder(accent.opacity(0.55), lineWidth: 1.5)
+        )
+        .shadow(color: glow.opacity(0.35), radius: 10, y: 2)
+        .accessibilityElement(children: .combine)
     }
 
     private func benefitRow(_ text: String, icon: String) -> some View {
