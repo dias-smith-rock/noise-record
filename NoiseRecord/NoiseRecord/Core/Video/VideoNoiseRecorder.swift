@@ -621,9 +621,15 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
                 sessionQueue.async { [weak self] in
                     self?.detachAudioCaptureLocked()
                     self?.detachRecordingOutputsLocked()
+                    if let url {
+                        DispatchQueue.main.async { completion(.success(url)) }
+                    } else {
+                        DispatchQueue.main.async {
+                            completion(.failure(VideoNoiseRecorderError.finishFailed(L10n.errorUnknown)))
+                        }
+                    }
                 }
-            }
-            if let url {
+            } else if let url {
                 DispatchQueue.main.async { completion(.success(url)) }
             } else {
                 DispatchQueue.main.async {
@@ -636,9 +642,11 @@ final class VideoNoiseRecorder: NSObject, @unchecked Sendable {
                 sessionQueue.async { [weak self] in
                     self?.detachAudioCaptureLocked()
                     self?.detachRecordingOutputsLocked()
+                    DispatchQueue.main.async { completion(.failure(error)) }
                 }
+            } else {
+                DispatchQueue.main.async { completion(.failure(error)) }
             }
-            DispatchQueue.main.async { completion(.failure(error)) }
         }
     }
 

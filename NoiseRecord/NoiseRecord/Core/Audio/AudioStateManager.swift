@@ -17,6 +17,8 @@ enum AppAudioState: Equatable, Sendable {
 final class AudioStateManager {
     /// 当前对外状态，供 SwiftUI 绑定。
     private(set) var appAudioState: AppAudioState
+    /// Video evidence recording owns measurement-session mutations until stop/detach finishes.
+    private(set) var isVideoCaptureHoldingAudioSession = false
 
     private let engine: NoiseMonitorEngine
 
@@ -27,7 +29,18 @@ final class AudioStateManager {
 
     /// 是否允许 App 生命周期回调（进入后台/回前台）自动恢复监测管道。
     var allowsAutomaticMonitoringRecovery: Bool {
-        appAudioState == .monitoring
+        appAudioState == .monitoring && !isVideoCaptureHoldingAudioSession
+    }
+
+    /// Blocks scene/ad/background session recovery while AVCapture audio is attached.
+    func beginVideoCaptureAudioSessionHold() {
+        isVideoCaptureHoldingAudioSession = true
+        engine.suppressAutomaticAudioSessionRecovery = true
+    }
+
+    func endVideoCaptureAudioSessionHold() {
+        isVideoCaptureHoldingAudioSession = false
+        engine.suppressAutomaticAudioSessionRecovery = false
     }
 
     // MARK: - 动作一：准备播放
@@ -105,7 +118,7 @@ final class AudioStateManager {
 
     /// 全屏广告关闭后恢复监测管道（延迟 + 一次重试，避免与 AdMob 释放会话竞态）。
     func recoverAfterFullscreenAdDismiss() {
-        guard appAudioState == .monitoring else { return }
+        guard appAudioState == .monitoring, !isVideoCaptureHoldingAudioSession else { return }
 
         Task { @MainActor in
             let delays = [
@@ -114,7 +127,7 @@ final class AudioStateManager {
             ]
             for (index, delayMs) in delays.enumerated() {
                 try? await Task.sleep(for: .milliseconds(delayMs))
-                guard appAudioState == .monitoring else { return }
+                guard appAudioState == .monitoring, !isVideoCaptureHoldingAudioSession else { return }
 
                 if !engine.isMonitoring {
                     // Intent says monitoring but engine flag was cleared — restart cleanly.

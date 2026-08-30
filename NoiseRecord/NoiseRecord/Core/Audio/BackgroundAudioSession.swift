@@ -1,6 +1,18 @@
 import AVFoundation
 import Foundation
 
+/// Serializes shared `AVAudioSession` category / `setActive` mutations across monitoring,
+/// video capture, playback, and lifecycle recovery paths.
+enum AudioSessionActivationGate {
+    private static let lock = NSLock()
+
+    static func sync<T>(_ body: () throws -> T) rethrows -> T {
+        lock.lock()
+        defer { lock.unlock() }
+        return try body()
+    }
+}
+
 /// Keeps the measurement audio session alive while the app is backgrounded.
 enum BackgroundAudioSession {
     /// - Parameter skipSessionActivation: When `AVAudioEngine` is already running, the session
@@ -10,43 +22,49 @@ enum BackgroundAudioSession {
         backgroundEnabled: Bool,
         skipSessionActivation: Bool = false
     ) throws {
-        try AudioSessionManager.configureForMeasurement(backgroundEnabled: backgroundEnabled)
+        try AudioSessionActivationGate.sync {
+            try AudioSessionManager.configureForMeasurement(backgroundEnabled: backgroundEnabled)
 
-        let session = AVAudioSession.sharedInstance()
-        try session.setPreferredSampleRate(44_100)
-        try session.setPreferredIOBufferDuration(0.005)
+            let session = AVAudioSession.sharedInstance()
+            try session.setPreferredSampleRate(44_100)
+            try session.setPreferredIOBufferDuration(0.005)
 
-        guard !skipSessionActivation else { return }
-        try session.setActive(true)
+            guard !skipSessionActivation else { return }
+            try session.setActive(true)
+        }
     }
 
     /// Re-locks raw measurement mode after AVCapture attaches an audio route.
     /// Uses `notifyOthersOnDeactivation` so the shared session returns to linear PCM
     /// without AGC / echo cancellation for the AVAudioEngine monitoring tap.
     static func forceActivateMeasurementForVideoCapture(backgroundEnabled: Bool) throws {
-        try AudioSessionManager.configureForMeasurement(backgroundEnabled: backgroundEnabled)
+        try AudioSessionActivationGate.sync {
+            try AudioSessionManager.configureForMeasurement(backgroundEnabled: backgroundEnabled)
 
-        let session = AVAudioSession.sharedInstance()
-        try session.setPreferredSampleRate(44_100)
-        try session.setPreferredIOBufferDuration(0.005)
-        try session.setActive(true, options: .notifyOthersOnDeactivation)
+            let session = AVAudioSession.sharedInstance()
+            try session.setPreferredSampleRate(44_100)
+            try session.setPreferredIOBufferDuration(0.005)
+            try session.setActive(true, options: .notifyOthersOnDeactivation)
+        }
     }
 
     /// Re-locks measurement mode after ads / camera / other apps release the shared session.
     static func forceActivateMeasurementAfterExternalInterruption(backgroundEnabled: Bool) throws {
-        try AudioSessionManager.configureForMeasurement(backgroundEnabled: backgroundEnabled)
+        try AudioSessionActivationGate.sync {
+            try AudioSessionManager.configureForMeasurement(backgroundEnabled: backgroundEnabled)
 
-        let session = AVAudioSession.sharedInstance()
-        // Prefer the hardware's current rate when available; forcing 44.1 kHz after ads
-        // often leaves a stale AVAudioEngine graph that crashes installTap.
-        let hardwareRate = session.sampleRate
-        if hardwareRate > 0 {
-            try session.setPreferredSampleRate(hardwareRate)
-        } else {
-            try session.setPreferredSampleRate(44_100)
+            let session = AVAudioSession.sharedInstance()
+            // Prefer the hardware's current rate when available; forcing 44.1 kHz after ads
+            // often leaves a stale AVAudioEngine graph that crashes installTap.
+            let hardwareRate = session.sampleRate
+            if hardwareRate > 0 {
+                try session.setPreferredSampleRate(hardwareRate)
+            } else {
+                try session.setPreferredSampleRate(44_100)
+            }
+            try session.setPreferredIOBufferDuration(0.005)
+            try session.setActive(true, options: .notifyOthersOnDeactivation)
         }
-        try session.setPreferredIOBufferDuration(0.005)
-        try session.setActive(true, options: .notifyOthersOnDeactivation)
     }
 
     static func interruptionType(in notification: Notification) -> AVAudioSession.InterruptionType? {

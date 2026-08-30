@@ -66,21 +66,23 @@ struct AudioSessionManager {
         coexistingWithMonitoring: Bool,
         backgroundEnabled: Bool = false
     ) throws {
-        let session = AVAudioSession.sharedInstance()
         do {
-            if coexistingWithMonitoring {
-                try session.setCategory(
-                    .playAndRecord,
-                    mode: .default,
-                    options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers]
-                )
-            } else {
-                // `defaultToSpeaker` is only valid with `playAndRecord`.
-                try session.setCategory(.playback, mode: .default)
+            try AudioSessionActivationGate.sync {
+                let session = AVAudioSession.sharedInstance()
+                if coexistingWithMonitoring {
+                    try session.setCategory(
+                        .playAndRecord,
+                        mode: .default,
+                        options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers]
+                    )
+                } else {
+                    // `defaultToSpeaker` is only valid with `playAndRecord`.
+                    try session.setCategory(.playback, mode: .default)
+                }
+                try session.setActive(true)
+                // Non-fatal: simulator or some routes may reject speaker override.
+                try? session.overrideOutputAudioPort(.speaker)
             }
-            try session.setActive(true)
-            // Non-fatal: simulator or some routes may reject speaker override.
-            try? session.overrideOutputAudioPort(.speaker)
         } catch {
             throw AudioSessionError.configurationFailed(error.localizedDescription)
         }
@@ -88,11 +90,13 @@ struct AudioSessionManager {
 
     /// 独占播放：监测已停止时使用，走 `.playback` 大扬声器链路。
     static func configureForExclusivePlayback() throws {
-        let session = AVAudioSession.sharedInstance()
         do {
-            try session.setCategory(.playback, mode: .default, options: [])
-            try session.setActive(true)
-            try? session.overrideOutputAudioPort(.speaker)
+            try AudioSessionActivationGate.sync {
+                let session = AVAudioSession.sharedInstance()
+                try session.setCategory(.playback, mode: .default, options: [])
+                try session.setActive(true)
+                try? session.overrideOutputAudioPort(.speaker)
+            }
         } catch {
             throw AudioSessionError.configurationFailed(error.localizedDescription)
         }

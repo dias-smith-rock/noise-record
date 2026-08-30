@@ -76,7 +76,7 @@ final class NoiseMonitorEngine {
         didSet {
             guard backgroundMonitoringEnabled != oldValue else { return }
             persistSettings()
-            if isMonitoring {
+            if isMonitoring, !suppressAutomaticAudioSessionRecovery {
                 try? reconfigureAudioSessionForCurrentState()
             }
         }
@@ -138,6 +138,8 @@ final class NoiseMonitorEngine {
     /// When true, high-sensitivity was enabled only for video evidence and should be restored afterward.
     private var shouldRestoreStandardModeAfterVideo = false
     private var isApplyingTemporaryVideoHighSensitivity = false
+    /// Set while video capture owns measurement-session mutations; skips scene/background auto-recover.
+    var suppressAutomaticAudioSessionRecovery = false
 
     private struct UIPublishSnapshot: Sendable {
         let generation: UInt64
@@ -548,6 +550,7 @@ final class NoiseMonitorEngine {
         onRecordingFinished?(event)
     }
     func prepareForBackgroundIfNeeded() {
+        guard !suppressAutomaticAudioSessionRecovery else { return }
         guard backgroundMonitoringEnabled else { return }
         guard !isMonitoring else {
             try? reconfigureAudioSessionForCurrentState()
@@ -567,6 +570,7 @@ final class NoiseMonitorEngine {
             voiceRecorder.emergencyFinalizeForLifecycleEvent()
         }
         onVideoEmergencyFinalize?()
+        guard !suppressAutomaticAudioSessionRecovery else { return }
         guard backgroundMonitoringEnabled else { return }
         if !isMonitoring, permissionGranted {
             startMonitoring()
@@ -576,6 +580,7 @@ final class NoiseMonitorEngine {
 
     func handleDidBecomeActive() {
         isAppInBackground = false
+        guard !suppressAutomaticAudioSessionRecovery else { return }
         resumeMonitoringIfNeededAfterForeground()
         if isSleepModeActive {
             lastSleepSampleTime = Date.distantPast
@@ -851,6 +856,8 @@ final class NoiseMonitorEngine {
             }
         case .ended:
             // Ads often end interruptions without `.shouldResume`; still recover if we intend to monitor.
+            // Video capture hold suppresses scene/background recovery, but interruption still needs
+            // the AVAudioEngine graph for watermark dB — recover under the activation gate.
             guard isMonitoring else { return }
             resumeMonitoringIfNeededAfterForeground()
         @unknown default:

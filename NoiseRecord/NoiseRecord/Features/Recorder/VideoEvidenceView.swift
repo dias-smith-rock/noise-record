@@ -29,7 +29,6 @@ final class VideoEvidenceCoordinator {
 
     /// Invalidates in-flight configure / startSession completions when leaving the tab.
     private var configureGeneration = 0
-    private var storedBackgroundMonitoringEnabled = false
 
     func configure(backgroundMonitoringEnabled: Bool, isMonitoring: Bool) async {
         let configureSignpost = VideoTabPerformance.begin(.configureTotal)
@@ -37,7 +36,6 @@ final class VideoEvidenceCoordinator {
 
         configureGeneration += 1
         let generation = configureGeneration
-        storedBackgroundMonitoringEnabled = backgroundMonitoringEnabled
 
         isSessionReady = false
         isPreviewReady = false
@@ -129,21 +127,20 @@ final class VideoEvidenceCoordinator {
         peakDB = 0
         currentSegmentGroupID = nil
 
-        // Claim measurement audio + GPS only when capture actually starts.
-        let audioSignpost = VideoTabPerformance.begin(.audioSession)
-        try configureAudioSessionForVideo(
-            backgroundMonitoringEnabled: storedBackgroundMonitoringEnabled,
-            isMonitoring: true
-        )
-        VideoTabPerformance.end(.audioSession, audioSignpost)
-        didMutateAudioSessionForVideo = true
-        VideoTabPerformance.mark(.audioSessionDone)
-        // Prompt or start GPS for evidence watermark — idle preview no longer opens Best GPS.
+        // Single measurement-session activation happens inside attachAudioCapture after
+        // AVCapture adds its mic route — avoid a second setActive here.
         locationProvider.requestPermission()
         VideoTabPerformance.mark(.locationPermissionRequested)
 
+        let audioSignpost = VideoTabPerformance.begin(.audioSession)
         try await recorder.startRecording()
+        VideoTabPerformance.end(.audioSession, audioSignpost)
+        VideoTabPerformance.mark(.audioSessionDone)
+
         isRecording = recorder.isRecording
+        if isRecording {
+            didMutateAudioSessionForVideo = true
+        }
         // Start the free-quota clock only after capture is actually running.
         recordingStartedAt = isRecording ? Date() : nil
         if isRecording, !isPremium {
@@ -219,21 +216,6 @@ final class VideoEvidenceCoordinator {
             case .failure(let error):
                 self.errorMessage = error.localizedDescription
             }
-        }
-    }
-
-    private func configureAudioSessionForVideo(
-        backgroundMonitoringEnabled: Bool,
-        isMonitoring: Bool
-    ) throws {
-        if isMonitoring {
-            try BackgroundAudioSession.activateForMeasurement(
-                backgroundEnabled: backgroundMonitoringEnabled
-            )
-        } else {
-            try BackgroundAudioSession.forceActivateMeasurementForVideoCapture(
-                backgroundEnabled: backgroundMonitoringEnabled
-            )
         }
     }
 }
@@ -999,14 +981,20 @@ struct VideoEvidenceView: View {
         audioStateManager.noteMonitoringStarted()
         coordinator.syncNoise(from: engine)
         coordinator.syncLocation(from: engine)
+        audioStateManager.beginVideoCaptureAudioSessionHold()
         do {
             try await coordinator.startRecording()
+            guard coordinator.isRecording else {
+                audioStateManager.endVideoCaptureAudioSessionHold()
+                return
+            }
             // Capture audio attach can interrupt the monitoring graph — rebuild only if needed.
             if !engine.isAudioEngineRunning {
                 audioStateManager.restoreMonitoringPipelineIfNeeded()
             }
             AppTelemetry.logVideoRecordingStart()
         } catch {
+            audioStateManager.endVideoCaptureAudioSessionHold()
             stopMonitoringAfterVideoEvidence()
             coordinator.errorMessage = error.localizedDescription
         }
@@ -1107,6 +1095,7 @@ struct VideoEvidenceView: View {
 
     /// Video evidence owns the temporary monitoring session — stop it with the recording.
     private func stopMonitoringAfterVideoEvidence() {
+        audioStateManager.endVideoCaptureAudioSessionHold()
         engine.endTemporaryHighSensitivityForVideoIfNeeded()
         if engine.isMonitoring {
             engine.stopMonitoring(presentSessionSavePrompt: false)
