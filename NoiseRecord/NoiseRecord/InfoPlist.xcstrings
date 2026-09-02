@@ -20,127 +20,127 @@
         "bg": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "Децибел метър"
           }
         },
         "ca": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "Mesurador de decibels"
           }
         },
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "Decibel Metr"
           }
         },
         "da": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "Decibel måler"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "Dezibel-Meter"
           }
         },
         "el": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "Μετρητής ντεσιμπέλ"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "Medidor de decibeles"
           }
         },
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "Desibelimittari"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "Décibel mètre"
           }
         },
         "he": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "מד דציבלים"
           }
         },
         "hi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "डेसीबल मीटर"
           }
         },
         "hr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "Decibel metar"
           }
         },
         "hu": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "Decibel mérő"
           }
         },
         "id": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "Pengukur Desibel"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "Misuratore di decibel"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "デシベルメーター"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "데시벨 측정기"
           }
         },
         "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "Meter Desibel"
           }
         },
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "Desibelmåler"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "Decibelmeter"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "Decybelomierz"
           }
         },
         "pt": {
@@ -152,49 +152,49 @@
         "ro": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "Contor de decibeli"
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "Децибел-метр"
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "Decibel meter"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "Decibelmätare"
           }
         },
         "th": {
           "stringUnit": {
             "state": "translated",
-            "value": "__เงื่อนไข0__"
+            "value": "เครื่องวัดเดซิเบล"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "Desibel Ölçer"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "Децибел метр"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decibel Meter"
+            "value": "Máy đo decibel"
           }
         },
         "zh-Hans": {
@@ -636,7 +636,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "يُستخدم الموقع لإظهار درجة الحرارة والرطوبة على الشاشة، ولإدراج إحداثيات 6 في أدلة الصوت والفيديو."
           }
         },
         "en": {
@@ -648,31 +648,31 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "La ubicación se utiliza para mostrar la temperatura y la humedad en el monitor y para incrustar coordenadas GPS en evidencia de audio y video."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "La localisation est utilisée pour afficher la température et l'humidité sur le moniteur et pour intégrer les coordonnées GPS dans les preuves audio et vidéo."
           }
         },
         "hi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "स्थान का उपयोग मॉनिटर पर तापमान और आर्द्रता दिखाने और ऑडियो और वीडियो साक्ष्य में GPS निर्देशांक एम्बेड करने के लिए किया जाता है।"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "A localização é usada para mostrar temperatura e umidade no monitor e para incorporar coordenadas GPS em evidências de áudio e vídeo."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "Местоположение используется для отображения температуры и влажности на мониторе, а также для встраивания координат GPS в аудио- и видеодоказательства."
           }
         },
         "zh-Hans": {
@@ -690,151 +690,151 @@
         "bg": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "Местоположението се използва за показване на температурата и влажността на монитора и за вграждане на GPS координати в аудио и видео доказателства."
           }
         },
         "ca": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "La ubicació s'utilitza per mostrar la temperatura i la humitat al monitor i per incrustar GPS coordenades en proves d'àudio i vídeo."
           }
         },
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "Poloha se používá k zobrazení teploty a vlhkosti na monitoru a k vložení GPS souřadnic do zvukových a obrazových důkazů."
           }
         },
         "da": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "Placering bruges til at vise temperatur og fugtighed på skærmen og til at indlejre GPS koordinater i lyd- og videobeviser."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "Der Standort wird verwendet, um Temperatur und Luftfeuchtigkeit auf dem Monitor anzuzeigen und GPS Koordinaten in Audio- und Videobeweise einzubetten."
           }
         },
         "el": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "Η τοποθεσία χρησιμοποιείται για την εμφάνιση της θερμοκρασίας και της υγρασίας στην οθόνη και για την ενσωμάτωση συντεταγμένων GPS σε στοιχεία ήχου και βίντεο."
           }
         },
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "Sijaintia käytetään lämpötilan ja kosteuden näyttämiseen näytössä ja GPS koordinaattien upottamiseen ääni- ja videoaineistoon."
           }
         },
         "he": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "המיקום משמש להצגת טמפרטורה ולחות על הצג, ולהטמעת קואורדינטות GPS בראיות שמע ווידאו."
           }
         },
         "hr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "Lokacija se koristi za prikaz temperature i vlažnosti na monitoru, te za ugradnju GPS koordinata u audio i video dokaze."
           }
         },
         "hu": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "A helymeghatározás a hőmérséklet és a páratartalom megjelenítésére szolgál a monitoron, valamint a GPS koordináták hang- és képanyagba ágyazására."
           }
         },
         "id": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "Lokasi digunakan untuk menunjukkan suhu dan kelembapan di monitor, dan untuk menyematkan 6 koordinat dalam bukti audio dan video."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "La posizione viene utilizzata per mostrare la temperatura e l'umidità sul monitor e per incorporare le coordinate GPS nelle prove audio e video."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "位置情報は、モニターに温度と湿度を表示し、音声とビデオの証拠に 6 座標を埋め込むために使用されます。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "위치는 모니터에 온도와 습도를 표시하고 오디오 및 비디오 증거에 GPS 좌표를 삽입하는 데 사용됩니다."
           }
         },
         "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "Lokasi digunakan untuk menunjukkan suhu dan kelembapan pada monitor, dan untuk membenamkan GPS koordinat dalam bukti audio dan video."
           }
         },
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "Plassering brukes til å vise temperatur og fuktighet på skjermen, og til å bygge inn GPS-koordinater i lyd- og videobevis."
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "Locatie wordt gebruikt om de temperatuur en vochtigheid op de monitor weer te geven, en om GPS coördinaten in audio- en videobewijsmateriaal in te sluiten."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "Lokalizacja służy do pokazywania na monitorze temperatury i wilgotności oraz do umieszczania współrzędnych GPS w dowodach audio i wideo."
           }
         },
         "ro": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "Locația este folosită pentru a afișa temperatura și umiditatea pe monitor și pentru a încorpora GPS coordonate în dovezi audio și video."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "Poloha sa používa na zobrazenie teploty a vlhkosti na monitore a na vloženie GPS súradníc do zvukových a obrazových dôkazov."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "Plats används för att visa temperatur och luftfuktighet på monitorn och för att bädda in GPS-koordinater i ljud- och videobevis."
           }
         },
         "th": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "ตำแหน่งใช้เพื่อแสดงอุณหภูมิและความชื้นบนจอภาพ และเพื่อฝังพิกัด 6 ในหลักฐานเสียงและวิดีโอ"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "Konum, monitörde sıcaklık ve nemi göstermek ve GPS koordinatlarını ses ve video kanıtlarına yerleştirmek için kullanılır."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "Розташування використовується для відображення температури та вологості на моніторі, а також для вбудовування координат GPS в аудіо- та відеодокази."
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Location is used to show temperature and humidity on the monitor, and to embed GPS coordinates in audio and video evidence."
+            "value": "Vị trí được sử dụng để hiển thị nhiệt độ và độ ẩm trên màn hình, đồng thời nhúng tọa độ 6 vào bằng chứng âm thanh và video."
           }
         }
       }

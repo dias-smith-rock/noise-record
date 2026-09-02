@@ -17,7 +17,8 @@ struct AppLanguageRefreshModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         let _ = revision
-        return content
+        content
+            .environment(\.locale, AppLocalization.resolvedLocale)
     }
 }
 

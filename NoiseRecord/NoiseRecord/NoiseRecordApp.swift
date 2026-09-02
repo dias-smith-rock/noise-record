@@ -40,9 +40,11 @@ struct NoiseRecordApp: App {
         WindowGroup {
             Group {
                 if let modelContainer {
+                    let _ = appearance.languageRefreshID
                     ContentView()
                         .modelContainer(modelContainer)
                         .environment(\.locale, AppLocalization.resolvedLocale(for: appearance.preferredLanguage))
+                        .environment(\.appLanguageRevision, appearance.languageRefreshID)
                         #if DEBUG
                         .onAppear {
                             SleepDebugMockData.seedIfNeeded(in: modelContainer.mainContext)

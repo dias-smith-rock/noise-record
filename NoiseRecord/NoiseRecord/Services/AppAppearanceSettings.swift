@@ -268,11 +268,15 @@ final class AppAppearanceSettings {
 
     private static func persistLanguage(_ language: AppLanguage) {
         UserDefaults.standard.set(language.rawValue, forKey: AppLocalization.languageKey)
+        // Update the lookup language before any UI refresh reads L10n.
         AppLocalization.setActiveLanguage(language)
+        // Keep AppleLanguages aligned for next cold launch / system Text lookups.
+        // Runtime UI must not rely on this alone — AppleLanguages often only applies after relaunch.
         if language == .system {
             UserDefaults.standard.removeObject(forKey: "AppleLanguages")
         } else {
             UserDefaults.standard.set([language.rawValue], forKey: "AppleLanguages")
         }
+        UserDefaults.standard.synchronize()
     }
 }

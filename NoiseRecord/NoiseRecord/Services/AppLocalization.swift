@@ -34,7 +34,12 @@ nonisolated enum AppLocalization {
     }
 
     static func string(_ key: String.LocalizationValue, language: AppLanguage? = nil) -> String {
-        String(localized: key, bundle: bundle(for: language))
+        let locale = resolvedLocale(for: language)
+        // Prefer LocalizedStringResource: `String(localized:bundle:locale:)` can ignore
+        // the locale for String Catalogs and keep following Bundle preferredLocalizations
+        // (system language / AppleLanguages), so in-app language switches appear stuck.
+        let resource = LocalizedStringResource(key, locale: locale)
+        return String(localized: resource)
     }
 
     static func bundle(for language: AppLanguage? = nil) -> Bundle {
